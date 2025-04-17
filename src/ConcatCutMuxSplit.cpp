@@ -537,14 +537,6 @@ void FFMpegWrapper::cutWithoutEncoding(
 		time_t utcTimestamp = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
 		localtime_r(&utcTimestamp, &tmUtcTimestamp);
-		/*
-		sprintf(
-			sUtcTimestamp, "%04d-%02d-%02d-%02d-%02d-%02d", tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday,
-			tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec
-		);
-
-		_outputFfmpegPathFileName = std::format("{}/{}_{}_{}.log", _ffmpegTempDir, "cutWithoutEncoding", _currentIngestionJobKey, sUtcTimestamp);
-		*/
 		_outputFfmpegPathFileName = std::format(
 			"{}/{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "cutWithoutEncoding", _currentIngestionJobKey,
 			tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min,
@@ -656,40 +648,41 @@ void FFMpegWrapper::cutWithoutEncoding(
 				// found before your specified timestamp
 				// KeyFrameSeeking è impreciso (perchè utilizza il keyframe) ma veloce
 
-				ffmpegExecuteCommand += (string("-ss ") + startTimeToBeUsed + " " + "-i " + sourcePhysicalPath + " ");
+				ffmpegExecuteCommand += std::format("-ss {} -i {} ", startTimeToBeUsed, sourcePhysicalPath);
 			}
 			else // if (cutType == "FrameAccurateWithoutEncoding") output seeking or "KeyFrameSeekingInterval"
 			{
 				// FrameAccurateWithoutEncoding: it means it is used any frame even if it is not a key frame
 				// FrameAccurateWithoutEncoding è lento (perchè NON utilizza il keyframe) ma preciso (pechè utilizza il frame indicato)
-				ffmpegExecuteCommand += (string("-i ") + sourcePhysicalPath + " " + "-ss " + startTimeToBeUsed + " ");
+				ffmpegExecuteCommand += std::format("-i {} -ss {} ", sourcePhysicalPath, startTimeToBeUsed);
 			}
 		}
 
 		if (cutType != "KeyFrameSeekingInterval" && framesNumber != -1)
-			ffmpegExecuteCommand += (string("-vframes ") + to_string(framesNumber) + " ");
+			ffmpegExecuteCommand += std::format("-vframes {} ", framesNumber);
 		else
-			ffmpegExecuteCommand += (string("-to ") + endTimeToBeUsed + " ");
+			ffmpegExecuteCommand += std::format("-to {} ", endTimeToBeUsed);
 
-		ffmpegExecuteCommand += (
+		ffmpegExecuteCommand += std::format(
 			// string("-async 1 ")
 			// commented because aresample filtering requires encoding and here we are just streamcopy
 			// + "-af \"aresample=async=1:min_hard_comp=0.100000:first_pts=0\" "
 			// -map 0:v and -map 0:a is to get all video-audio tracks
-			"-map 0:v -c:v copy -map 0:a -c:a copy " + cutMediaPathName + " " + "> " + _outputFfmpegPathFileName + " " + "2>&1"
+			"-map 0:v -c:v copy -map 0:a -c:a copy {} > {} 2>&1", cutMediaPathName, _outputFfmpegPathFileName
 		);
 	}
 	else
 	{
 		// audio
 
-		ffmpegExecuteCommand = _ffmpegPath + "/ffmpeg " + "-ss " + startTime + " " + "-i " + sourcePhysicalPath + " " + "-to " + endTime +
-							   " "
-							   // + "-async 1 "
-							   // commented because aresample filtering requires encoding and here we are just streamcopy
-							   // + "-af \"aresample=async=1:min_hard_comp=0.100000:first_pts=0\" "
-							   // -map 0:v and -map 0:a is to get all video-audio tracks
-							   + "-map 0:a -c:a copy " + cutMediaPathName + " " + "> " + _outputFfmpegPathFileName + " " + "2>&1";
+		// + "-async 1 "
+		// commented because aresample filtering requires encoding and here we are just streamcopy
+		// + "-af \"aresample=async=1:min_hard_comp=0.100000:first_pts=0\" "
+		// -map 0:v and -map 0:a is to get all video-audio tracks
+		ffmpegExecuteCommand = std::format(
+			"{}/ffmpeg -ss {} -i {} -to {} -map 0:a -c:a copy {} > {} 2>&1", _ffmpegPath, startTime, sourcePhysicalPath, endTime, cutMediaPathName,
+			_outputFfmpegPathFileName
+		);
 	}
 
 #ifdef __APPLE__

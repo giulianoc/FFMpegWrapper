@@ -332,7 +332,7 @@ pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, string 
 		long centsOfSeconds;
 		if (decimals != 0)
 		{
-			sSeconds = to_string((hours * 3600) + (minutes * 60) + seconds) + "." + to_string(decimals);
+			sSeconds = std::format("{}.{}", (hours * 3600) + (minutes * 60) + seconds, decimals);
 			dSeconds = stod(sSeconds);
 
 			centsOfSeconds = ((hours * 3600) + (minutes * 60) + seconds) * 100 + decimals;
@@ -394,7 +394,7 @@ string FFMpegWrapper::secondsToTime(int64_t ingestionJobKey, double dSeconds)
 			{
 				// poichè siamo interessati ai decimi di secondo
 				int decimals = dLocalSeconds * 100;
-				time += ("." + to_string(decimals));
+				time += std::format(".{}", decimals);
 				/*
 				string decimals = to_string(dLocalSeconds);
 				size_t decimalPoint = decimals.find(".");
