@@ -76,8 +76,6 @@ add_library(FFMpegWrapper SHARED ${SOURCES} ${HEADERS})
 
 if(APPLE)
     target_link_libraries(FFMpegWrapper StringUtils)
-    target_link_libraries(FFMpegWrapper ErrMsg)
-    target_link_libraries(FFMpegWrapper Tools)
     target_link_libraries(FFMpegWrapper mysqlcppconn)
     target_link_libraries(FFMpegWrapper jsoncpp)
     target_link_libraries(FFMpegWrapper Magick++-7.Q16HDRI)
