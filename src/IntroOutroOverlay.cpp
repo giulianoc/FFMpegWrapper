@@ -781,7 +781,7 @@ void FFMpegWrapper::introOverlay(
 				{
 					int32_t fadeDuration = 2;
 					ffmpegFilterComplex += std::format(
-						"[0:a]afade=t=out:st={}:d={}, volume=enable='gte(t,{})':volume=0[intro_overlay_muted];", introStartOverlayInSeconds,
+						"[0:a]afade=t=out:st={}:d={},volume=enable='gte(t,{})':volume=0[intro_overlay_muted];", introStartOverlayInSeconds,
 						fadeDuration, introStartOverlayInSeconds + fadeDuration
 					);
 				}
