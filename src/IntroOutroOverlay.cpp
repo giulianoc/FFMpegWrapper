@@ -782,9 +782,10 @@ void FFMpegWrapper::introOverlay(
 						introVideoDurationInSeconds
 					);
 				*/
-				// se la durata del mute è di almeno 4 secondi, non mutiamo con uno "stacco netto" ma mettiamo un fade di 2 secondi
+				// se la durata del mute è di almeno 3 secondi, non mutiamo con uno "stacco netto" ma mettiamo un fade out di 2 secondi
 				// altrimenti mettiamo solo un fade
-				if (introVideoDurationInSeconds - introStartOverlayInSeconds >= 4)
+				// fade out: il volume parte dal volume normale e decresce fino a 0 (muto) in un intervallo di tempo specificato
+				if (introVideoDurationInSeconds - introStartOverlayInSeconds >= 3)
 				{
 					/*
 					 * Viene aggiunto un fade piu mute sulla prima traccia audio (intro)
@@ -1293,7 +1294,7 @@ void FFMpegWrapper::outroOverlay(
 				// ffmpegFilterComplex += std::format("volume=enable='between(t,0,{})':volume=0,", outroOverlayDurationInSeconds);
 				// se la durata dell'overlay è di almeno 4 secondi, non mutiamo con uno "stacco netto" ma mettiamo un fade di 2 secondi
 				// altrimenti mettiamo solo un fade
-				if (outroOverlayDurationInSeconds >= 4)
+				if (outroOverlayDurationInSeconds >= 3)
 				{
 					/*
 					 * Viene aggiunto un fade piu mute sulla prima traccia audio (intro)
@@ -1311,6 +1312,7 @@ void FFMpegWrapper::outroOverlay(
 				else
 				{
 					/*
+					 * fade in: il volume parte da 0 (muto) e cresce fino al volume normale in un intervallo di tempo specificato
 					 * Viene aggiunto un fade sulla seconda traccia audio (outro)
 					 AAAAAAAAAA
 					 VVVVVVVVVV
