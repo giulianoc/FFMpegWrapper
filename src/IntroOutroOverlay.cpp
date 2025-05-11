@@ -14,6 +14,7 @@
 #include "FFMpegWrapper.h"
 #include "ProcessUtility.h"
 #include "spdlog/spdlog.h"
+#include <cmath>
 
 void FFMpegWrapper::introOutroOverlay(
 	string introVideoAssetPathName, int64_t introVideoDurationInMilliSeconds, string mainVideoAssetPathName, int64_t mainVideoDurationInMilliSeconds,
@@ -708,20 +709,10 @@ void FFMpegWrapper::introOverlay(
 		);
 
 		{
-			// char sUtcTimestamp[64];
 			tm tmUtcTimestamp;
 			time_t utcTimestamp = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
 			localtime_r(&utcTimestamp, &tmUtcTimestamp);
-			/*
-			sprintf(
-				sUtcTimestamp, "%04d-%02d-%02d-%02d-%02d-%02d", tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday,
-				tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec
-			);
-
-			_outputFfmpegPathFileName =
-				std::format("{}/{}_{}_{}_{}.log", _ffmpegTempDir, "introOverlay", _currentIngestionJobKey, _currentEncodingJobKey, sUtcTimestamp);
-				*/
 			_outputFfmpegPathFileName = std::format(
 				"{}/{}_{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "introOverlay", _currentIngestionJobKey,
 				_currentEncodingJobKey, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour,
@@ -761,12 +752,48 @@ void FFMpegWrapper::introOverlay(
 				throw runtime_error(errorMessage);
 			}
 
+			/*
 			if (muteIntroOverlay)
 				ffmpegFilterComplex += "[0:a]volume=enable='between(t," + to_string(introStartOverlayInSeconds) + "," +
 									   to_string(introVideoDurationInSeconds) + ")':volume=0[intro_overlay_muted];";
 			ffmpegFilterComplex +=
 				"[1:v]tpad=start_duration=" + to_string(introStartOverlayInSeconds) + ":start_mode=add:color=white[main_video_moved];";
 			ffmpegFilterComplex += "[1:a]adelay=delays=" + to_string(introStartOverlayInSeconds) + "s:all=1[main_audio_moved];";
+			ffmpegFilterComplex += "[main_video_moved][0:v]overlay=eof_action=pass[final_video];";
+			ffmpegFilterComplex += "[main_audio_moved]";
+			if (muteIntroOverlay)
+				ffmpegFilterComplex += "[intro_overlay_muted]";
+			else
+				ffmpegFilterComplex += "[0:a]";
+			ffmpegFilterComplex += "amix=inputs=2[final_audio]";
+			*/
+			if (muteIntroOverlay)
+			{
+				/*
+					ffmpegFilterComplex += std::format(
+						"[0:a]volume=enable='between(t,{},{})':volume=0[intro_overlay_muted];", introStartOverlayInSeconds,
+						introVideoDurationInSeconds
+					);
+				*/
+				// se la durata del mute è di almeno 4 secondi, non mutiamo con uno "stacco netto" ma mettiamo un fade di 2 secondi
+				// altrimenti mettiamo solo un fade
+				if (introVideoDurationInSeconds - introStartOverlayInSeconds >= 4)
+				{
+					int32_t fadeDuration = 2;
+					ffmpegFilterComplex += std::format(
+						"[0:a]afade=t=out:st={}:d={}, volume=enable='gte(t,{})':volume=0[intro_overlay_muted];", introStartOverlayInSeconds,
+						fadeDuration, introStartOverlayInSeconds + fadeDuration
+					);
+				}
+				else
+					ffmpegFilterComplex += std::format(
+						"[0:a]afade=t=out:st={}:d={}[intro_overlay_muted];", introStartOverlayInSeconds,
+						introVideoDurationInSeconds - introStartOverlayInSeconds
+					);
+			}
+			ffmpegFilterComplex +=
+				std::format("[1:v]tpad=start_duration={}:start_mode=add:color=white[main_video_moved];", introStartOverlayInSeconds);
+			ffmpegFilterComplex += std::format("[1:a]adelay=delays={}s:all=1[main_audio_moved];", introStartOverlayInSeconds);
 			ffmpegFilterComplex += "[main_video_moved][0:v]overlay=eof_action=pass[final_video];";
 			ffmpegFilterComplex += "[main_audio_moved]";
 			if (muteIntroOverlay)
