@@ -767,6 +767,13 @@ void FFMpegWrapper::introOverlay(
 				ffmpegFilterComplex += "[0:a]";
 			ffmpegFilterComplex += "amix=inputs=2[final_audio]";
 			*/
+			/*
+			 * Situazione iniziale (minuscolo prima traccia (intro), maiuscolo la seconda traccia (video))
+			 aaaaaaaaaa
+			 vvvvvvvvvv
+			 AAAAAAAAAA
+			 VVVVVVVVVV
+			 */
 			if (muteIntroOverlay)
 			{
 				/*
@@ -779,6 +786,13 @@ void FFMpegWrapper::introOverlay(
 				// altrimenti mettiamo solo un fade
 				if (introVideoDurationInSeconds - introStartOverlayInSeconds >= 4)
 				{
+					/*
+					 * Viene aggiunto un fade piu mute sulla prima traccia audio (intro)
+					 aaaaaaFFMM
+					 vvvvvvvvvv
+					 AAAAAAAAAA
+					 VVVVVVVVVV
+					 */
 					int32_t fadeDuration = 2;
 					ffmpegFilterComplex += std::format(
 						"[0:a]afade=t=out:st={}:d={},volume=enable='gte(t,{})':volume=0[intro_overlay_muted];", introStartOverlayInSeconds,
@@ -786,20 +800,54 @@ void FFMpegWrapper::introOverlay(
 					);
 				}
 				else
+				{
+					/*
+					 * Viene aggiunto un fade sulla prima traccia audio (intro)
+					 aaaaaaaaMM
+					 vvvvvvvvvv
+					 AAAAAAAAAA
+					 VVVVVVVVVV
+					 */
 					ffmpegFilterComplex += std::format(
 						"[0:a]afade=t=out:st={}:d={}[intro_overlay_muted];", introStartOverlayInSeconds,
 						introVideoDurationInSeconds - introStartOverlayInSeconds
 					);
+				}
 			}
+			/*
+			 * Viene spostata la seconda traccia video
+			 aaaaaaFFMM
+			 vvvvvvvvvv
+			 AAAAAAAAAA
+				   VVVVVVVVVV
+			 */
 			ffmpegFilterComplex +=
 				std::format("[1:v]tpad=start_duration={}:start_mode=add:color=white[main_video_moved];", introStartOverlayInSeconds);
+			/*
+			 * Viene spostata la seconda traccia audio
+			 aaaaaaFFMM
+			 vvvvvvvvvv
+				   AAAAAAAAAA
+				   VVVVVVVVVV
+			 */
 			ffmpegFilterComplex += std::format("[1:a]adelay=delays={}s:all=1[main_audio_moved];", introStartOverlayInSeconds);
+			/*
+			 * Viene eseguito un overlay delle due traccie video
+			 aaaaaaFFMM
+			 vvvvvvVvVvVVVVVV
+				   AAAAAAAAAA
+			 */
 			ffmpegFilterComplex += "[main_video_moved][0:v]overlay=eof_action=pass[final_video];";
 			ffmpegFilterComplex += "[main_audio_moved]";
 			if (muteIntroOverlay)
 				ffmpegFilterComplex += "[intro_overlay_muted]";
 			else
 				ffmpegFilterComplex += "[0:a]";
+			/*
+			 * Viene eseguito un mix delle due traccie audio
+			 aaaaaaFFMMAAAAAA
+			 vvvvvvVvVvVVVVVV
+			 */
 			ffmpegFilterComplex += "amix=inputs=2[final_audio]";
 		}
 
@@ -1182,15 +1230,6 @@ void FFMpegWrapper::outroOverlay(
 			time_t utcTimestamp = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
 			localtime_r(&utcTimestamp, &tmUtcTimestamp);
-			/*
-			sprintf(
-				sUtcTimestamp, "%04d-%02d-%02d-%02d-%02d-%02d", tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday,
-				tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec
-			);
-
-			_outputFfmpegPathFileName =
-				std::format("{}/{}_{}_{}_{}.log", _ffmpegTempDir, "outroOverlay", _currentIngestionJobKey, _currentEncodingJobKey, sUtcTimestamp);
-				*/
 			_outputFfmpegPathFileName = std::format(
 				"{}/{}_{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "outroOverlay", _currentIngestionJobKey,
 				_currentEncodingJobKey, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour,
@@ -1229,6 +1268,7 @@ void FFMpegWrapper::outroOverlay(
 				throw runtime_error(errorMessage);
 			}
 
+			/*
 			ffmpegFilterComplex += "[1:a]";
 			if (muteOutroOverlay)
 				ffmpegFilterComplex += "volume=enable='between(t,0," + to_string(outroOverlayDurationInSeconds) + ")':volume=0,";
@@ -1239,6 +1279,79 @@ void FFMpegWrapper::outroOverlay(
 
 			ffmpegFilterComplex += "[0:a][outro_audio_overlayMuted_and_moved]amix=inputs=2[final_audio];";
 			ffmpegFilterComplex += "[0:v][outro_video_moved]overlay=enable='gte(t," + to_string(outroStartOverlayInSeconds) + ")'[final_video]";
+			*/
+			/*
+			 * Situazione iniziale (maiuscolo prima traccia (video), minuscolo la seconda traccia (outro))
+			 AAAAAAAAAA
+			 VVVVVVVVVV
+			 aaaaaaaaaa
+			 vvvvvvvvvv
+			 */
+			ffmpegFilterComplex += "[1:a]";
+			if (muteOutroOverlay)
+			{
+				// ffmpegFilterComplex += std::format("volume=enable='between(t,0,{})':volume=0,", outroOverlayDurationInSeconds);
+				// se la durata dell'overlay è di almeno 4 secondi, non mutiamo con uno "stacco netto" ma mettiamo un fade di 2 secondi
+				// altrimenti mettiamo solo un fade
+				if (outroOverlayDurationInSeconds >= 4)
+				{
+					/*
+					 * Viene aggiunto un fade piu mute sulla prima traccia audio (intro)
+					 AAAAAAAAAA
+					 VVVVVVVVVV
+					 MMFFaaaaaa
+					 vvvvvvvvvv
+					 */
+					int32_t fadeDuration = 2;
+					ffmpegFilterComplex += std::format(
+						"volume=enable='between(t,0,{})':volume=0,afade=t=in:st={}:d={},", outroOverlayDurationInSeconds - fadeDuration,
+						outroOverlayDurationInSeconds - fadeDuration, fadeDuration
+					);
+				}
+				else
+				{
+					/*
+					 * Viene aggiunto un fade sulla seconda traccia audio (outro)
+					 AAAAAAAAAA
+					 VVVVVVVVVV
+					 FFFFaaaaaa
+					 vvvvvvvvvv
+					 */
+					ffmpegFilterComplex += std::format("afade=t=in:st=0:d={},", outroOverlayDurationInSeconds);
+				}
+			}
+			/*
+			 * Viene spostata la seconda traccia audio
+				 AAAAAAAAAA
+				 VVVVVVVVVV
+					   MMFFaaaaaa
+				 vvvvvvvvvv
+			 */
+			ffmpegFilterComplex += std::format("adelay=delays={}s:all=1[outro_audio_overlayMuted_and_moved];", outroStartOverlayInSeconds);
+
+			/*
+			 * Viene spostata la seconda traccia video
+				 AAAAAAAAAA
+				 VVVVVVVVVV
+					   MMFFaaaaaa
+					   vvvvvvvvvv
+			 */
+			ffmpegFilterComplex +=
+				std::format("[1:v]tpad=start_duration={}:start_mode=add:color=white[outro_video_moved];", outroStartOverlayInSeconds);
+
+			/*
+			 * Viene fatto il mix audio tra le due tracce audio
+				 AAAAAAAMAFaaaaaa
+				 VVVVVVVVVV
+					   vvvvvvvvvv
+			 */
+			ffmpegFilterComplex += "[0:a][outro_audio_overlayMuted_and_moved]amix=inputs=2[final_audio];";
+			/*
+			 * Viene fatto il mix audio tra le due tracce audio
+				 AAAAAAAMAFaaaaaa
+				 VVVVVVvVvVvvvvvv
+			 */
+			ffmpegFilterComplex += std::format("[0:v][outro_video_moved]overlay=enable='gte(t,{})'[final_video]", outroStartOverlayInSeconds);
 		}
 
 		vector<string> ffmpegArgumentList;
