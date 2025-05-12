@@ -1258,11 +1258,11 @@ void FFMpegWrapper::outroOverlay(
 			if (outroStartOverlayInSeconds < 0)
 			{
 				string errorMessage = std::format(
-					"introOutroOverlay: wrong durations"
+					"{}: wrong durations"
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
 					", outroStartOverlayInSeconds: {}",
-					encodingJobKey, ingestionJobKey, outroStartOverlayInSeconds
+					toString(_currentApiName), encodingJobKey, ingestionJobKey, outroStartOverlayInSeconds
 				);
 				SPDLOG_ERROR(errorMessage);
 
@@ -1407,11 +1407,11 @@ void FFMpegWrapper::outroOverlay(
 						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
-						"introOutroOverlay: Executing ffmpeg command"
+						"{}: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str()
+						toString(_currentApiName), encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str()
 					);
 
 					bool redirectionStdOutput = true;
