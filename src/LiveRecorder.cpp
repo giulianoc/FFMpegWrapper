@@ -2373,7 +2373,7 @@ void FFMpegWrapper::liveRecorder2(
 			ffmpegArgumentList.push_back(to_string(streamingDuration));
 		}
 
-		bool systemTimeOverlay = false;
+		bool systemTimeOverlay = true;
 		if (systemTimeOverlay)
 		{
 			{
