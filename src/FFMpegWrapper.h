@@ -246,6 +246,7 @@ class FFMpegWrapper
 		int64_t ingestionJobKey, string sourcePhysicalPath, vector<pair<string, int>> &tracksToBeExtracted, string extractTrackMediaPathName
 	);
 
+	/*
 	void liveRecorder(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string segmentListPathName, string recordedFileNamePrefix,
 
@@ -264,6 +265,7 @@ class FFMpegWrapper
 
 		pid_t *pChildPid, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 	);
+	*/
 
 	void liveRecorder2(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string segmentListPathName, string recordedFileNamePrefix,

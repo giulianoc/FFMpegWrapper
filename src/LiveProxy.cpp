@@ -2512,73 +2512,49 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 		// in caso di drawtext filter, set textFilePathName sicuramente se è presente reloadAtFrameInterval
 		// Inoltre in caso di caratteri speciali come ', bisogna usare il file
+		if (filtersRoot != nullptr)
 		{
-			if (filtersRoot != nullptr)
+			if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
 			{
-				if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
+				json videoFiltersRoot = filtersRoot["video"];
+				for (int filterIndex = 0; filterIndex < videoFiltersRoot.size(); filterIndex++)
 				{
-					json videoFiltersRoot = filtersRoot["video"];
-					for (int filterIndex = 0; filterIndex < videoFiltersRoot.size(); filterIndex++)
+					json videoFilterRoot = videoFiltersRoot[filterIndex];
+					if (JSONUtils::isMetadataPresent(videoFilterRoot, "type") && videoFilterRoot["type"] == "drawtext")
 					{
-						json videoFilterRoot = videoFiltersRoot[filterIndex];
-						if (JSONUtils::isMetadataPresent(videoFilterRoot, "type") && videoFilterRoot["type"] == "drawtext")
+						int reloadAtFrameInterval = JSONUtils::asInt(videoFilterRoot, "reloadAtFrameInterval", -1);
+						string overlayText = JSONUtils::asString(videoFilterRoot, "text", "");
+						if (reloadAtFrameInterval > 0 ||
+							// caratteri dove non si puo usare escape
+							overlayText.find("'") != string::npos)
 						{
-							int reloadAtFrameInterval = JSONUtils::asInt(videoFilterRoot, "reloadAtFrameInterval", -1);
-							string overlayText = JSONUtils::asString(videoFilterRoot, "text", "");
-							if (reloadAtFrameInterval > 0 ||
-								// caratteri dove non si puo usare escape
-								overlayText.find("'") != string::npos)
+							string textTemporaryFileName = getDrawTextTemporaryPathName(ingestionJobKey, encodingJobKey, outputIndex);
 							{
-								string textTemporaryFileName = getDrawTextTemporaryPathName(ingestionJobKey, encodingJobKey, outputIndex);
-								{
-									ofstream of(textTemporaryFileName, ofstream::trunc);
-									of << overlayText;
-									of.flush();
-								}
-
-								videoFilterRoot["textFilePathName"] = textTemporaryFileName;
-								videoFiltersRoot[filterIndex] = videoFilterRoot;
-								filtersRoot["video"] = videoFiltersRoot;
+								ofstream of(textTemporaryFileName, ofstream::trunc);
+								of << overlayText;
+								of.flush();
 							}
+
+							videoFilterRoot["textFilePathName"] = textTemporaryFileName;
+							videoFiltersRoot[filterIndex] = videoFilterRoot;
+							filtersRoot["video"] = videoFiltersRoot;
 						}
 					}
 				}
 			}
 		}
 
+		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", nullptr);
+		/*
 		json encodingProfileDetailsRoot = nullptr;
 		if (JSONUtils::isMetadataPresent(outputRoot, "encodingProfileDetails"))
 			encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
+		*/
 
 		string otherOutputOptions = JSONUtils::asString(outputRoot, "otherOutputOptions", "");
 
 		string encodingProfileContentType = JSONUtils::asString(outputRoot, "encodingProfileContentType", "Video");
 		bool isVideo = encodingProfileContentType == "Video" ? true : false;
-
-		/*
-		if (ffmpegDrawTextFilter == "" && JSONUtils::isMetadataPresent(outputRoot, "drawTextDetails"))
-		{
-			string field = "drawTextDetails";
-			json drawTextDetailsRoot = outputRoot[field];
-
-			string text = JSONUtils::asString(drawTextDetailsRoot, "text", "");
-
-			string textTemporaryFileName = getDrawTextTemporaryPathName(ingestionJobKey, encodingJobKey, outputIndex);
-			{
-				ofstream of(textTemporaryFileName, ofstream::trunc);
-				of << text;
-				of.flush();
-			}
-
-			// string ffmpegDrawTextFilter;
-			{
-				json filterRoot = drawTextDetailsRoot;
-				filterRoot["type"] = "drawtext";
-				filterRoot["textFilePathName"] = textTemporaryFileName;
-				ffmpegDrawTextFilter = ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds);
-			}
-		}
-		*/
 
 		string httpStreamingFileFormat;
 		string ffmpegHttpStreamingParameter = "";
@@ -2701,11 +2677,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		string audioFilters;
 		string complexFilters;
 		if (filtersRoot != nullptr)
-		{
-			tuple<string, string, string> allFilters =
+			tie(videoFilters, audioFilters, complexFilters) =
 				ffmpegFilters.addFilters(filtersRoot, ffmpegVideoResolutionParameter, "", streamingDurationInSeconds);
-			tie(videoFilters, audioFilters, complexFilters) = allFilters;
-		}
 
 		bool threadsParameterToBeAdded = false;
 

@@ -18,6 +18,7 @@
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
 
+/*
 void FFMpegWrapper::liveRecorder(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string segmentListPathName, string recordedFileNamePrefix,
 
@@ -60,11 +61,9 @@ void FFMpegWrapper::liveRecorder(
 
 	setStatus(
 		ingestionJobKey, encodingJobKey
-		/*
-		videoDurationInMilliSeconds,
-		mmsAssetPathName
-		stagingEncodedAssetPathName
-		*/
+		// videoDurationInMilliSeconds,
+		// mmsAssetPathName
+		// stagingEncodedAssetPathName
 	);
 
 	vector<string> ffmpegArgumentList;
@@ -206,15 +205,6 @@ void FFMpegWrapper::liveRecorder(
 			time_t utcTimestamp = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
 			localtime_r(&utcTimestamp, &tmUtcTimestamp);
-			/*
-			sprintf(
-				sUtcTimestamp, "%04d-%02d-%02d-%02d-%02d-%02d", tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday,
-				tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec
-			);
-
-			_outputFfmpegPathFileName =
-				std::format("{}/{}_{}_{}_{}.log", _ffmpegTempDir, "liveRecorder", _currentIngestionJobKey, _currentEncodingJobKey, sUtcTimestamp);
-				*/
 			_outputFfmpegPathFileName = std::format(
 				"{}/{}_{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "liveRecorder", _currentIngestionJobKey,
 				_currentEncodingJobKey, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour,
@@ -780,27 +770,6 @@ void FFMpegWrapper::liveRecorder(
 						// ffmpegArgumentList.push_back("-start_number");
 						// ffmpegArgumentList.push_back(to_string(10));
 					}
-					/*
-					else if (outputType == "DASH")
-					{
-						ffmpegArgumentList.push_back("-seg_duration");
-						ffmpegArgumentList.push_back(to_string(localSegmentDurationInSeconds));
-						ffmpegArgumentList.push_back("-window_size");
-						ffmpegArgumentList.push_back(to_string(playlistEntriesNumber));
-
-						// it is important to specify -init_seg_name because those files
-						// will not be removed in EncoderVideoAudioProxy.cpp
-						ffmpegArgumentList.push_back("-init_seg_name");
-						ffmpegArgumentList.push_back("init-stream$RepresentationID$.$ext$");
-
-						// the only difference with the ffmpeg default is that default is $Number%05d$
-						// We had to change it to $Number%01d$ because otherwise the generated file containing
-						// 00001 00002 ... but the videojs player generates file name like 1 2 ...
-						// and the streaming was not working
-						ffmpegArgumentList.push_back("-media_seg_name");
-						ffmpegArgumentList.push_back("chunk-stream$RepresentationID$-$Number%01d$.$ext$");
-					}
-					*/
 
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegArgumentList);
 
@@ -892,29 +861,8 @@ void FFMpegWrapper::liveRecorder(
 
 						ffmpegAudioBitRateParameter = audioBitRatesInfo[0];
 
-						/*
-						if (httpStreamingFileFormat != "")
-						{
-							string errorMessage = __FILEREF__ + "in case of proxy it is not possible to have an httpStreaming encoding"
-								+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-								+ ", encodingJobKey: " + to_string(encodingJobKey)
-							;
-							SPDLOG_ERROR(errorMessage);
-
-							throw runtime_error(errorMessage);
-						}
-						else */
 						if (twoPasses)
 						{
-							/*
-							string errorMessage = __FILEREF__ + "in case of proxy it is not possible to have a two passes encoding"
-								+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-								+ ", encodingJobKey: " + to_string(encodingJobKey)
-							;
-							SPDLOG_ERROR(errorMessage);
-
-							throw runtime_error(errorMessage);
-							*/
 							twoPasses = false;
 
 							SPDLOG_WARN(
@@ -1035,52 +983,6 @@ void FFMpegWrapper::liveRecorder(
 				// Per questo motivo sotto viene commentato
 				if (streamSourceType == "IP_PUSH" || streamSourceType == "IP_PULL" || streamSourceType == "TV")
 				{
-					/*
-					vector<tuple<int, int64_t, string, string, int, int, string, long>> inputVideoTracks;
-					vector<tuple<int, int64_t, string, long, int, long, string>> inputAudioTracks;
-
-					try
-					{
-						getMediaInfo(ingestionJobKey, false, liveURL, inputVideoTracks, inputAudioTracks);
-					}
-					catch(runtime_error& e)
-					{
-						string errorMessage = __FILEREF__ + "ffmpeg: getMediaInfo failed"
-							+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-							+ ", encodingJobKey: " + to_string(encodingJobKey)
-							+ ", e.what(): " + e.what()
-						;
-						SPDLOG_ERROR(errorMessage);
-
-						// throw e;
-					}
-
-					bool aacFilterToBeAdded = true;
-					for(tuple<int, int64_t, string, long, int, long, string> inputAudioTrack: inputAudioTracks)
-					{
-						// trackIndex, audioDurationInMilliSeconds, audioCodecName,
-						// audioSampleRate, audioChannels, audioBitRate, language));
-						string audioCodecName;
-
-						tie(ignore, ignore, audioCodecName, ignore, ignore, ignore, ignore) = inputAudioTrack;
-
-						string audioCodecNameLowerCase;
-						audioCodecNameLowerCase.resize(audioCodecName.size());
-						transform(audioCodecName.begin(), audioCodecName.end(), audioCodecNameLowerCase.begin(),
-							[](unsigned char c){return tolower(c); } );
-
-						if (audioCodecNameLowerCase.find("mp2") != string::npos
-						)
-							aacFilterToBeAdded = false;
-
-						info(__FILEREF__ + "aac check"
-							+ ", audioCodecName: " + audioCodecName
-							+ ", aacFilterToBeAdded: " + to_string(aacFilterToBeAdded)
-						);
-					}
-
-					if (aacFilterToBeAdded)
-					*/
 					{
 						ffmpegArgumentList.push_back("-bsf:a");
 						ffmpegArgumentList.push_back("aac_adtstoasc");
@@ -1346,27 +1248,6 @@ void FFMpegWrapper::liveRecorder(
 						// ffmpegArgumentList.push_back("-start_number");
 						// ffmpegArgumentList.push_back(to_string(10));
 					}
-					/*
-					else if (outputType == "DASH")
-					{
-						ffmpegArgumentList.push_back("-seg_duration");
-						ffmpegArgumentList.push_back(to_string(localSegmentDurationInSeconds));
-						ffmpegArgumentList.push_back("-window_size");
-						ffmpegArgumentList.push_back(to_string(playlistEntriesNumber));
-
-						// it is important to specify -init_seg_name because those files
-						// will not be removed in EncoderVideoAudioProxy.cpp
-						ffmpegArgumentList.push_back("-init_seg_name");
-						ffmpegArgumentList.push_back("init-stream$RepresentationID$.$ext$");
-
-						// the only difference with the ffmpeg default is that default is $Number%05d$
-						// We had to change it to $Number%01d$ because otherwise the generated file containing
-						// 00001 00002 ... but the videojs player generates file name like 1 2 ...
-						// and the streaming was not working
-						ffmpegArgumentList.push_back("-media_seg_name");
-						ffmpegArgumentList.push_back("chunk-stream$RepresentationID$-$Number%01d$.$ext$");
-					}
-					*/
 
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegArgumentList);
 
@@ -1458,29 +1339,8 @@ void FFMpegWrapper::liveRecorder(
 
 						ffmpegAudioBitRateParameter = audioBitRatesInfo[0];
 
-						/*
-						if (httpStreamingFileFormat != "")
-						{
-							string errorMessage = __FILEREF__ + "in case of proxy it is not possible to have an httpStreaming encoding"
-								+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-								+ ", encodingJobKey: " + to_string(encodingJobKey)
-							;
-							SPDLOG_ERROR(errorMessage);
-
-							throw runtime_error(errorMessage);
-						}
-						else */
 						if (twoPasses)
 						{
-							/*
-							string errorMessage = __FILEREF__ + "in case of proxy it is not possible to have a two passes encoding"
-								+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-								+ ", encodingJobKey: " + to_string(encodingJobKey)
-							;
-							SPDLOG_ERROR(errorMessage);
-
-							throw runtime_error(errorMessage);
-							*/
 							twoPasses = false;
 
 							SPDLOG_WARN(
@@ -1941,42 +1801,6 @@ void FFMpegWrapper::liveRecorder(
 			}
 		}
 
-		/*
-		// liveRecording exit before unexpectly
-		if (endFfmpegCommand - startFfmpegCommand < chrono::seconds(utcRecordingPeriodEnd - utcNow - 60))
-		{
-			char		sEndFfmpegCommand [64];
-
-			time_t	utcEndFfmpegCommand = chrono::system_clock::to_time_t(endFfmpegCommand);
-			tm		tmUtcEndFfmpegCommand;
-			localtime_r (&utcEndFfmpegCommand, &tmUtcEndFfmpegCommand);
-			sprintf (sEndFfmpegCommand, "%04d-%02d-%02d-%02d-%02d-%02d",
-				tmUtcEndFfmpegCommand. tm_year + 1900,
-				tmUtcEndFfmpegCommand. tm_mon + 1,
-				tmUtcEndFfmpegCommand. tm_mday,
-				tmUtcEndFfmpegCommand. tm_hour,
-				tmUtcEndFfmpegCommand. tm_min,
-				tmUtcEndFfmpegCommand. tm_sec);
-
-			string debugOutputFfmpegPathFileName =
-				_ffmpegTempDir + "/"
-				+ to_string(ingestionJobKey) + "_"
-				+ to_string(encodingJobKey) + "_"
-				+ sEndFfmpegCommand
-				+ ".liveRecorder.log.debug"
-				;
-
-			info(__FILEREF__ + "Coping"
-				+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-				+ ", encodingJobKey: " + to_string(encodingJobKey)
-				+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName
-				+ ", debugOutputFfmpegPathFileName: " + debugOutputFfmpegPathFileName
-				);
-			fs::copy(_outputFfmpegPathFileName, debugOutputFfmpegPathFileName);
-
-			throw runtime_error("liveRecording exit before unexpectly");
-		}
-		*/
 	}
 	catch (runtime_error &e)
 	{
@@ -2009,47 +1833,7 @@ void FFMpegWrapper::liveRecorder(
 		SPDLOG_ERROR(errorMessage);
 
 		// copy ffmpeg log file
-		/*
-		{
-			char		sEndFfmpegCommand [64];
 
-			time_t	utcEndFfmpegCommand = chrono::system_clock::to_time_t(
-				chrono::system_clock::now());
-			tm		tmUtcEndFfmpegCommand;
-			localtime_r (&utcEndFfmpegCommand, &tmUtcEndFfmpegCommand);
-			sprintf (sEndFfmpegCommand, "%04d-%02d-%02d-%02d-%02d-%02d",
-				tmUtcEndFfmpegCommand. tm_year + 1900,
-				tmUtcEndFfmpegCommand. tm_mon + 1,
-				tmUtcEndFfmpegCommand. tm_mday,
-				tmUtcEndFfmpegCommand. tm_hour,
-				tmUtcEndFfmpegCommand. tm_min,
-				tmUtcEndFfmpegCommand. tm_sec);
-
-			string debugOutputFfmpegPathFileName =
-				_ffmpegTempDir + "/"
-				+ to_string(ingestionJobKey) + "_"
-				+ to_string(encodingJobKey) + "_"
-				+ sEndFfmpegCommand
-				+ ".liveRecorder.log.debug"
-			;
-
-			info(__FILEREF__ + "Coping"
-				+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-				+ ", encodingJobKey: " + to_string(encodingJobKey)
-				+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName
-				+ ", debugOutputFfmpegPathFileName: " + debugOutputFfmpegPathFileName
-				);
-			fs::copy(_outputFfmpegPathFileName, debugOutputFfmpegPathFileName);
-		}
-		*/
-
-		/*
-		info(__FILEREF__ + "Remove"
-			+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-			+ ", encodingJobKey: " + to_string(encodingJobKey)
-			+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName);
-		fs::remove_all(_outputFfmpegPathFileName, exceptionInCaseOfError);
-		*/
 		renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 
 		SPDLOG_INFO(
@@ -2175,16 +1959,9 @@ void FFMpegWrapper::liveRecorder(
 			throw e;
 	}
 
-	/*
-	info(__FILEREF__ + "Remove"
-		+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-		+ ", encodingJobKey: " + to_string(encodingJobKey)
-		+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName);
-	bool exceptionInCaseOfError = false;
-	fs::remove_all(_outputFfmpegPathFileName, exceptionInCaseOfError);
-	*/
 	renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 }
+*/
 
 void FFMpegWrapper::liveRecorder2(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string segmentListPathName, string recordedFileNamePrefix,
@@ -2245,6 +2022,8 @@ void FFMpegWrapper::liveRecorder2(
 
 	try
 	{
+		segmentListPath = StringUtils::uriPathPrefix(segmentListPathName, true);
+		/*
 		size_t segmentListPathIndex = segmentListPathName.find_last_of("/");
 		if (segmentListPathIndex == string::npos)
 		{
@@ -2260,6 +2039,7 @@ void FFMpegWrapper::liveRecorder2(
 			throw runtime_error(errorMessage);
 		}
 		segmentListPath = segmentListPathName.substr(0, segmentListPathIndex);
+		*/
 
 		// directory is created by EncoderVideoAudioProxy using MMSStorage::getStagingAssetPathName
 		// I saw just once that the directory was not created and the liveencoder remains in the loop
@@ -2369,20 +2149,10 @@ void FFMpegWrapper::liveRecorder2(
 		}
 
 		{
-			// char sUtcTimestamp[64];
 			tm tmUtcTimestamp;
 			time_t utcTimestamp = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
 			localtime_r(&utcTimestamp, &tmUtcTimestamp);
-			/*
-			sprintf(
-				sUtcTimestamp, "%04d-%02d-%02d-%02d-%02d-%02d", tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday,
-				tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec
-			);
-
-			_outputFfmpegPathFileName =
-				std::format("{}/{}_{}_{}_{}.log", _ffmpegTempDir, "liveRecorder", _currentIngestionJobKey, _currentEncodingJobKey, sUtcTimestamp);
-				*/
 			_outputFfmpegPathFileName = std::format(
 				"{}/{}_{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "liveRecorder", _currentIngestionJobKey,
 				_currentEncodingJobKey, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour,
@@ -2466,9 +2236,7 @@ void FFMpegWrapper::liveRecorder2(
 		}
 
 		if (otherInputOptions != "")
-		{
 			FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegArgumentList);
-		}
 
 		if (framesToBeDetectedRoot != nullptr && framesToBeDetectedRoot.size() > 0)
 		{
@@ -2605,19 +2373,63 @@ void FFMpegWrapper::liveRecorder2(
 			ffmpegArgumentList.push_back(to_string(streamingDuration));
 		}
 
-		// this is to get all video tracks
-		ffmpegArgumentList.push_back("-map");
-		ffmpegArgumentList.push_back("0:v");
+		bool systemTimeOverlay = true;
+		if (systemTimeOverlay)
+		{
+			{
+				FFMpegFilters ffmpegFilters(_ffmpegTtfFontDir);
 
-		ffmpegArgumentList.push_back("-c:v");
-		ffmpegArgumentList.push_back("copy");
+				json filtersRoot;
+				json videoFiltersRoot = json::array();
 
-		// this is to get all audio tracks
-		ffmpegArgumentList.push_back("-map");
-		ffmpegArgumentList.push_back("0:a");
+				json drawTextFilterRoot;
+				drawTextFilterRoot["type"] = "drawtext";
+				{
+					drawTextFilterRoot["text"] = "Hello World: hours_counters min_counter";
+					drawTextFilterRoot["textPosition_X_InPixel"] = "10";
+					drawTextFilterRoot["textPosition_Y_InPixel"] = "10";
+					drawTextFilterRoot["fontType"] = "OpenSans-ExtraBold.ttf";
+					drawTextFilterRoot["fontSize"] = 48;
+					drawTextFilterRoot["fontColor"] = "orange";
+					drawTextFilterRoot["textPercentageOpacity"] = 100;
+					drawTextFilterRoot["shadowX"] = 0;
+					drawTextFilterRoot["shadowY"] = 0;
+					drawTextFilterRoot["boxEnable"] = false;
+				}
 
-		ffmpegArgumentList.push_back("-c:a");
-		ffmpegArgumentList.push_back("copy");
+				videoFiltersRoot.push_back(drawTextFilterRoot);
+				filtersRoot["video"] = videoFiltersRoot;
+
+				string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, "", "", -1);
+
+				ffmpegArgumentList.push_back("-filter:v");
+				ffmpegArgumentList.push_back(videoFilters);
+			}
+
+			// usiamo un codec di default
+			{
+				ffmpegArgumentList.push_back("-codec:v");
+				ffmpegArgumentList.push_back("libx264");
+				ffmpegArgumentList.push_back("-acodec");
+				ffmpegArgumentList.push_back("aac");
+			}
+		}
+		else
+		{
+			// this is to get all video tracks
+			ffmpegArgumentList.push_back("-map");
+			ffmpegArgumentList.push_back("0:v");
+
+			ffmpegArgumentList.push_back("-c:v");
+			ffmpegArgumentList.push_back("copy");
+
+			// this is to get all audio tracks
+			ffmpegArgumentList.push_back("-map");
+			ffmpegArgumentList.push_back("0:a");
+
+			ffmpegArgumentList.push_back("-c:a");
+			ffmpegArgumentList.push_back("copy");
+		}
 
 		if (segmenterType == "streamSegmenter")
 		{
