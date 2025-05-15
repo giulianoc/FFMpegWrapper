@@ -275,6 +275,8 @@ class FFMpegWrapper
 		string streamSourceType, string liveURL, int listenTimeoutInSeconds, int captureLive_videoDeviceNumber, string captureLive_videoInputFormat,
 		int captureLive_frameRate, int captureLive_width, int captureLive_height, int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
 
+		bool utcTimeOverlay,
+
 		string userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
 
 		int segmentDurationInSeconds, string outputFileFormat, string segmenterType,

@@ -52,6 +52,7 @@ if(LSB_RELEASE_ID_SHORT STREQUAL "CentOS")
 endif()
 
 include_directories("${STRINGUTILS_INCLUDE_DIR}")
+include_directories("${DATETIME_INCLUDE_DIR}")
 include_directories("${JSONUTILS_INCLUDE_DIR}")
 include_directories("${CURLWRAPPER_INCLUDE_DIR}")
 include_directories("${PROCESSUTILITY_INCLUDE_DIR}")

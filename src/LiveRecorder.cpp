@@ -10,6 +10,7 @@
  *
  * Created on February 18, 2018, 1:27 AM
  */
+#include "Datetime.h"
 #include "FFMpegEncodingParameters.h"
 #include "FFMpegFilters.h"
 #include "FFMpegWrapper.h"
@@ -1982,6 +1983,8 @@ void FFMpegWrapper::liveRecorder2(
 	int captureLive_videoDeviceNumber, string captureLive_videoInputFormat, int captureLive_frameRate, int captureLive_width, int captureLive_height,
 	int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
 
+	bool utcTimeOverlay,
+
 	string userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
 
 	int segmentDurationInSeconds, string outputFileFormat,
@@ -2373,8 +2376,7 @@ void FFMpegWrapper::liveRecorder2(
 			ffmpegArgumentList.push_back(to_string(streamingDuration));
 		}
 
-		bool systemTimeOverlay = true;
-		if (systemTimeOverlay)
+		if (utcTimeOverlay)
 		{
 			{
 				FFMpegFilters ffmpegFilters(_ffmpegTtfFontDir);
@@ -2385,9 +2387,13 @@ void FFMpegWrapper::liveRecorder2(
 				json drawTextFilterRoot;
 				drawTextFilterRoot["type"] = "drawtext";
 				{
-					drawTextFilterRoot["text"] = "Hello World: hours_counters min_counter";
-					drawTextFilterRoot["textPosition_X_InPixel"] = "10";
-					drawTextFilterRoot["textPosition_Y_InPixel"] = "10";
+					time_t utcTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
+
+					// drawTextFilterRoot["text"] = "time: %{localtime:%Y-%m-%d %H.%M.%S}";
+					// drawTextFilterRoot["text"] = "time: %{pts:localtime}";
+					drawTextFilterRoot["text"] = std::format("time: %{{pts:gmtime:{}}}", utcTime);
+					drawTextFilterRoot["textPosition_X_InPixel"] = "center";
+					drawTextFilterRoot["textPosition_Y_InPixel"] = "center";
 					drawTextFilterRoot["fontType"] = "OpenSans-ExtraBold.ttf";
 					drawTextFilterRoot["fontSize"] = 48;
 					drawTextFilterRoot["fontColor"] = "orange";
