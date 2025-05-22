@@ -302,21 +302,6 @@ void FFMpegWrapper::liveProxy2(
 				);
 			}
 		}
-		catch (runtime_error &e)
-		{
-			string errorMessage = std::format(
-				"liveProxy. Wrong input parameters"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", currentInputIndex: {}"
-				", currentNumberOfRepeatingSameInput: {}"
-				", exception: {}",
-				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, e.what()
-			);
-			SPDLOG_ERROR(errorMessage);
-
-			throw runtime_error(errorMessage);
-		}
 		catch (exception &e)
 		{
 			string errorMessage = std::format(
@@ -364,21 +349,6 @@ void FFMpegWrapper::liveProxy2(
 					ingestionJobKey, encodingJobKey, ffmpegOutputArgumentListStream.str()
 				);
 			}
-		}
-		catch (runtime_error &e)
-		{
-			string errorMessage = std::format(
-				"liveProxy. Wrong output parameters"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", currentInputIndex: {}"
-				", currentNumberOfRepeatingSameInput: {}"
-				", exception: {}",
-				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, e.what()
-			);
-			SPDLOG_ERROR(errorMessage);
-
-			throw runtime_error(errorMessage);
 		}
 		catch (exception &e)
 		{
