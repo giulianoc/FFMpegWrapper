@@ -2781,14 +2781,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		if (outputType == "CDN_AWS" || outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
 		{
 			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
-			if (rtmpUrl == "")
+			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
+			if (rtmpUrl == "" && srtUrl == "")
 			{
 				string errorMessage = std::format(
-					"rtmpUrl cannot be empty"
+					"rtmpUrl/srtUrl cannot be empty"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
-					", rtmpUrl: {}",
-					ingestionJobKey, encodingJobKey, rtmpUrl
+					", rtmpUrl: {}"
+					", srtUrl: {}",
+					ingestionJobKey, encodingJobKey, rtmpUrl, srtUrl
 				);
 				SPDLOG_ERROR(errorMessage);
 
@@ -2845,6 +2847,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 				if (aacFilterToBeAdded)
 				*/
+				if (rtmpUrl != "")
 				{
 					ffmpegOutputArgumentList.push_back("-bsf:a");
 					ffmpegOutputArgumentList.push_back("aac_adtstoasc");
@@ -2857,8 +2860,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			// right now it is fixed flv, it means cdnURL will be like "rtmp://...."
 			ffmpegOutputArgumentList.push_back("-f");
-			ffmpegOutputArgumentList.push_back("flv");
-			ffmpegOutputArgumentList.push_back(rtmpUrl);
+			if (rtmpUrl != "")
+			{
+				ffmpegOutputArgumentList.push_back("flv");
+				ffmpegOutputArgumentList.push_back(rtmpUrl);
+			}
+			else
+			{
+				ffmpegOutputArgumentList.push_back("mpegts");
+				ffmpegOutputArgumentList.push_back(srtUrl);
+			}
 		}
 		else if (outputType == "SRT_Channel")
 		{
