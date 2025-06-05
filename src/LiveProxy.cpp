@@ -2860,6 +2860,35 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			ffmpegOutputArgumentList.push_back("flv");
 			ffmpegOutputArgumentList.push_back(rtmpUrl);
 		}
+		else if (outputType == "SRT_Channel")
+		{
+			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
+			if (srtUrl == "")
+			{
+				string errorMessage = std::format(
+					"srtUrl cannot be empty"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", rtmpUrl: {}",
+					ingestionJobKey, encodingJobKey, srtUrl
+				);
+				SPDLOG_ERROR(errorMessage);
+
+				throw runtime_error(errorMessage);
+			}
+
+			// otherOutputOptions
+			{
+				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+					FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
+				else
+					FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
+			}
+
+			ffmpegOutputArgumentList.push_back("-f");
+			ffmpegOutputArgumentList.push_back("mpegts");
+			ffmpegOutputArgumentList.push_back(srtUrl);
+		}
 		else if (outputType == "HLS_Channel")
 		{
 			string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
