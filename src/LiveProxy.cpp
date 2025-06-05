@@ -2788,9 +2788,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					"rtmpUrl/srtUrl cannot be empty"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
-					", rtmpUrl: {}"
-					", srtUrl: {}",
-					ingestionJobKey, encodingJobKey, rtmpUrl, srtUrl
+					", outputRoot: {}",
+					ingestionJobKey, encodingJobKey, JSONUtils::toString(outputRoot)
 				);
 				SPDLOG_ERROR(errorMessage);
 
