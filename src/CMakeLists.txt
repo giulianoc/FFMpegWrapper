@@ -47,9 +47,6 @@ execute_process(
   OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 message("-- LSB_RELEASE_ID_SHORT: ${LSB_RELEASE_ID_SHORT}")
-if(LSB_RELEASE_ID_SHORT STREQUAL "CentOS")
-  include_directories("/usr/include/mysql-cppconn/jdbc")
-endif()
 
 include_directories("${STRINGUTILS_INCLUDE_DIR}")
 include_directories("${DATETIME_INCLUDE_DIR}")
@@ -59,27 +56,16 @@ include_directories("${PROCESSUTILITY_INCLUDE_DIR}")
 include_directories("${SPDLOG_INCLUDE_DIR}")
 include_directories("${NLOHMANN_INCLUDE_DIR}")
 if(APPLE)
-  include_directories(
-    "${PROJECT_SOURCE_DIR}/../mysql-connector-c++-1.1.9-macos10.12-x86-64bit/include"
-  )
-  include_directories(
-    "/usr/local/Cellar/imagemagick/7.0.7-22/include/ImageMagick-7")
-endif()
-
-if(APPLE)
-  link_directories("${PROJECT_SOURCE_DIR}/../usr_local/lib")
-  link_directories(
-    "${PROJECT_SOURCE_DIR}/../mysql-connector-c++-1.1.9-macos10.12-x86-64bit/lib"
-  )
+	link_directories("${JSONUTILS_LIB_DIR}")
 endif()
 
 add_library(FFMpegWrapper SHARED ${SOURCES} ${HEADERS})
 
 if(APPLE)
     target_link_libraries(FFMpegWrapper StringUtils)
-    target_link_libraries(FFMpegWrapper mysqlcppconn)
-    target_link_libraries(FFMpegWrapper jsoncpp)
-    target_link_libraries(FFMpegWrapper Magick++-7.Q16HDRI)
+    target_link_libraries(FFMpegWrapper JSONUtils)
+	target_link_libraries(FFMpegWrapper CurlWrapper)
+	target_link_libraries(FFMpegWrapper ProcessUtility)
 endif()
 
 install(TARGETS FFMpegWrapper DESTINATION lib)
