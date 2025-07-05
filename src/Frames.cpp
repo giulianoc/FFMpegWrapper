@@ -123,7 +123,7 @@ void FFMpegWrapper::generateFrameToIngest(
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "generateFrameToIngest: command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
+			errorMessage = string("generateFrameToIngest: command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey);
 			throw runtime_error(errorMessage);
 		}
 
@@ -408,7 +408,7 @@ void FFMpegWrapper::generateFramesToIngest(
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "generateFramesToIngest: command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+			errorMessage = string("generateFramesToIngest: command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
 						   ", ingestionJobKey: " + to_string(ingestionJobKey);
 			throw runtime_error(errorMessage);
 		}

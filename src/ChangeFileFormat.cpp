@@ -138,7 +138,7 @@ void FFMpegWrapper::changeFileFormat(
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "changeFileFormat: command failed";
+			errorMessage = "changeFileFormat: command failed";
 			throw runtime_error(errorMessage);
 		}
 

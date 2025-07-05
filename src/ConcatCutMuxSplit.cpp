@@ -77,13 +77,12 @@ void FFMpegWrapper::muxAllFiles(int64_t ingestionJobKey, vector<string> sourcesP
 		int executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
 		if (executeCommandStatus != 0)
 		{
-			string errorMessage = __FILEREF__ + toString(_currentApiName) + ": ffmpeg command failed" +
-								  ", ingestionJobKey: " + to_string(ingestionJobKey) + ", executeCommandStatus: " + to_string(executeCommandStatus) +
-								  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand;
+			string errorMessage = string(toString(_currentApiName)) + ": ffmpeg command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+								  ", executeCommandStatus: " + to_string(executeCommandStatus) + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand;
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + toString(_currentApiName) + ": command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
+			errorMessage = string(toString(_currentApiName)) + ": command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
 			throw runtime_error(errorMessage);
 		}
 
@@ -100,12 +99,12 @@ void FFMpegWrapper::muxAllFiles(int64_t ingestionJobKey, vector<string> sourcesP
 	}
 	catch (runtime_error &e)
 	{
-		string errorMessage = __FILEREF__ + "ffmpeg command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+		string errorMessage = string("ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand + ", e.what(): " + e.what();
 		SPDLOG_ERROR(errorMessage);
 
 		// to hide the ffmpeg staff
-		errorMessage = __FILEREF__ + "command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) + ", e.what(): " + e.what();
+		errorMessage = string("command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) + ", e.what(): " + e.what();
 		throw e;
 	}
 }
@@ -214,13 +213,13 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 
 				inputBuffer = input.str();
 			}
-			string errorMessage = __FILEREF__ + "concat: ffmpeg command failed" + ", executeCommandStatus: " + to_string(executeCommandStatus) +
+			string errorMessage = string("concat: ffmpeg command failed") + ", executeCommandStatus: " + to_string(executeCommandStatus) +
 								  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand + ", inputBuffer: " + inputBuffer;
 
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "concat: command failed" + ", inputBuffer: " + inputBuffer;
+			errorMessage = string("concat: command failed") + ", inputBuffer: " + inputBuffer;
 			throw runtime_error(errorMessage);
 		}
 
@@ -238,8 +237,7 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 	{
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		// 2020-07-20: log of ffmpegExecuteCommand commented because already added into the catched exception
-		string errorMessage = __FILEREF__ +
-							  "ffmpeg: ffmpeg command failed"
+		string errorMessage = string("ffmpeg: ffmpeg command failed")
 							  // + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand
 							  + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile + ", e.what(): " + e.what();
 		SPDLOG_ERROR(errorMessage);
@@ -259,7 +257,7 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 		fs::remove_all(_outputFfmpegPathFileName);
 
 		// to hide the ffmpeg staff
-		errorMessage = __FILEREF__ + "command failed" + ", e.what(): " + e.what();
+		errorMessage = string("command failed") + ", e.what(): " + e.what();
 		throw runtime_error(errorMessage);
 	}
 
@@ -349,7 +347,7 @@ void FFMpegWrapper::splitVideoInChunks(
 		size_t beginOfFileFormatIndex = sourcePhysicalPath.find_last_of(".");
 		if (beginOfFileFormatIndex == string::npos)
 		{
-			string errorMessage = __FILEREF__ + "sourcePhysicalPath is not well formed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+			string errorMessage = string("sourcePhysicalPath is not well formed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 								  ", sourcePhysicalPath: " + sourcePhysicalPath;
 			SPDLOG_ERROR(errorMessage);
 
@@ -385,12 +383,12 @@ void FFMpegWrapper::splitVideoInChunks(
 		int executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
 		if (executeCommandStatus != 0)
 		{
-			string errorMessage = __FILEREF__ + "splitVideoInChunks: ffmpeg command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+			string errorMessage = string("splitVideoInChunks: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 								  ", executeCommandStatus: " + to_string(executeCommandStatus) + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand;
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "splitVideoInChunks: command failed";
+			errorMessage = "splitVideoInChunks: command failed";
 			throw runtime_error(errorMessage);
 		}
 
@@ -407,7 +405,7 @@ void FFMpegWrapper::splitVideoInChunks(
 	catch (runtime_error &e)
 	{
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
-		string errorMessage = __FILEREF__ + "ffmpeg: ffmpeg command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+		string errorMessage = string("ffmpeg: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile +
 							  ", e.what(): " + e.what();
 		SPDLOG_ERROR(errorMessage);
@@ -484,7 +482,7 @@ void FFMpegWrapper::cutWithoutEncoding(
 		size_t endOfDirectoryIndex = cutMediaPathName.find_last_of("/");
 		if (endOfDirectoryIndex == string::npos)
 		{
-			string errorMessage = __FILEREF__ + "cutMediaPathName is not well formed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+			string errorMessage = string("cutMediaPathName is not well formed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 								  ", cutMediaPathName: " + cutMediaPathName;
 			SPDLOG_ERROR(errorMessage);
 
@@ -679,12 +677,12 @@ void FFMpegWrapper::cutWithoutEncoding(
 		int executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
 		if (executeCommandStatus != 0)
 		{
-			string errorMessage = __FILEREF__ + "cut: ffmpeg command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+			string errorMessage = string("cut: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 								  ", executeCommandStatus: " + to_string(executeCommandStatus) + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand;
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "cut: command failed";
+			errorMessage = "cut: command failed";
 			throw runtime_error(errorMessage);
 		}
 
@@ -701,7 +699,7 @@ void FFMpegWrapper::cutWithoutEncoding(
 	catch (runtime_error &e)
 	{
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
-		string errorMessage = __FILEREF__ + "ffmpeg: ffmpeg command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+		string errorMessage = string("ffmpeg: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile +
 							  ", e.what(): " + e.what();
 		SPDLOG_ERROR(errorMessage);
@@ -802,7 +800,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 
 		if (encodingProfileDetailsRoot == nullptr)
 		{
-			string errorMessage = __FILEREF__ + "encodingProfileDetailsRoot is mandatory" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+			string errorMessage = string("encodingProfileDetailsRoot is mandatory") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 								  ", encodingJobKey: " + to_string(encodingJobKey);
 			SPDLOG_ERROR(errorMessage);
 
@@ -1000,8 +998,12 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 					SPDLOG_ERROR(errorMessage);
 
 					// to hide the ffmpeg staff
-					errorMessage = __FILEREF__ + "cut with reencoding: command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
-								   ", ingestionJobKey: " + to_string(ingestionJobKey);
+					errorMessage = std::format(
+						"cut with reencoding: command failed"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}",
+						ingestionJobKey, encodingJobKey
+					);
 					throw runtime_error(errorMessage);
 				}
 
@@ -1273,7 +1275,7 @@ void FFMpegWrapper::extractTrackMediaToIngest(
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "extractTrackMediaToIngest: command failed";
+			errorMessage = "extractTrackMediaToIngest: command failed";
 			throw runtime_error(errorMessage);
 		}
 

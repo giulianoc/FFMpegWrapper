@@ -748,7 +748,7 @@ void FFMpegWrapper::liveGrid(
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "liveGrid: command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+			errorMessage = string("liveGrid: command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 						   ", encodingJobKey: " + to_string(encodingJobKey);
 			throw runtime_error(errorMessage);
 		}
@@ -804,10 +804,10 @@ void FFMpegWrapper::liveGrid(
 		string errorMessage;
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 		{
-			errorMessage = __FILEREF__ + "ffmpeg: ffmpeg command failed because killed by the user" +
-						   ", ingestionJobKey: " + to_string(ingestionJobKey) + ", encodingJobKey: " + to_string(encodingJobKey) +
-						   ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName + ", ffmpegArgumentList: " + ffmpegArgumentListStream.str() +
-						   ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile + ", e.what(): " + e.what();
+			errorMessage = string("ffmpeg: ffmpeg command failed because killed by the user") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+						   ", encodingJobKey: " + to_string(encodingJobKey) + ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName +
+						   ", ffmpegArgumentList: " + ffmpegArgumentListStream.str() + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile +
+						   ", e.what(): " + e.what();
 		}
 		else
 		{

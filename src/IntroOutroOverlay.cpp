@@ -402,7 +402,7 @@ void FFMpegWrapper::introOutroOverlay(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "introOutroOverlay command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+						errorMessage = string("introOutroOverlay command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
 									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -494,8 +494,8 @@ void FFMpegWrapper::introOutroOverlay(
 				SPDLOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
-				errorMessage = __FILEREF__ + "command failed, pictureInPicture encoded file size is 0" +
-							   ", encodingJobKey: " + to_string(encodingJobKey) + ", ingestionJobKey: " + to_string(ingestionJobKey);
+				errorMessage = string("command failed, pictureInPicture encoded file size is 0") + ", encodingJobKey: " + to_string(encodingJobKey) +
+							   ", ingestionJobKey: " + to_string(ingestionJobKey);
 				throw runtime_error(errorMessage);
 			}
 		}
@@ -917,8 +917,8 @@ void FFMpegWrapper::introOverlay(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + toString(_currentApiName) + " command failed" +
-									   ", encodingJobKey: " + to_string(encodingJobKey) + ", ingestionJobKey: " + to_string(ingestionJobKey);
+						errorMessage = string(toString(_currentApiName)) + " command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
 
@@ -1009,7 +1009,7 @@ void FFMpegWrapper::introOverlay(
 				SPDLOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
-				errorMessage = __FILEREF__ + "command failed, " + toString(_currentApiName) + " encoded file size is 0" +
+				errorMessage = string("command failed, ") + toString(_currentApiName) + " encoded file size is 0" +
 							   ", encodingJobKey: " + to_string(encodingJobKey) + ", ingestionJobKey: " + to_string(ingestionJobKey);
 				throw runtime_error(errorMessage);
 			}
@@ -1418,8 +1418,8 @@ void FFMpegWrapper::outroOverlay(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + toString(_currentApiName) + " command failed" +
-									   ", encodingJobKey: " + to_string(encodingJobKey) + ", ingestionJobKey: " + to_string(ingestionJobKey);
+						errorMessage = string(toString(_currentApiName)) + " command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
 
@@ -1510,7 +1510,7 @@ void FFMpegWrapper::outroOverlay(
 				SPDLOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
-				errorMessage = __FILEREF__ + "command failed, " + toString(_currentApiName) + " encoded file size is 0" +
+				errorMessage = string("command failed, ") + toString(_currentApiName) + " encoded file size is 0" +
 							   ", encodingJobKey: " + to_string(encodingJobKey) + ", ingestionJobKey: " + to_string(ingestionJobKey);
 				throw runtime_error(errorMessage);
 			}

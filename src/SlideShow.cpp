@@ -415,7 +415,7 @@ void FFMpegWrapper::slideShow(
 			);
 
 			// to hide the ffmpeg staff
-			string errorMessage = __FILEREF__ + "slideShow: command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
+			string errorMessage = string("slideShow: command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey);
 			throw runtime_error(errorMessage);
 		}
 

@@ -2683,7 +2683,7 @@ void FFMpegWrapper::liveRecorder2(
 				SPDLOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
-				errorMessage = __FILEREF__ + "liveRecorder: command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+				errorMessage = string("liveRecorder: command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 							   ", encodingJobKey: " + to_string(encodingJobKey);
 				throw runtime_error(errorMessage);
 			}

@@ -307,7 +307,7 @@ void FFMpegWrapper::encodeContent(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "encodeContent command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+						errorMessage = string("encodeContent command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 									   ", encodingJobKey: " + to_string(encodingJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -427,7 +427,7 @@ void FFMpegWrapper::encodeContent(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "encodeContent command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
 									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -554,7 +554,7 @@ void FFMpegWrapper::encodeContent(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "encodeContent command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
 									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -658,7 +658,7 @@ void FFMpegWrapper::encodeContent(
 				SPDLOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
-				errorMessage = __FILEREF__ + "command failed, encoded dir size is 0" + ", encodingJobKey: " + to_string(encodingJobKey) +
+				errorMessage = string("command failed, encoded dir size is 0") + ", encodingJobKey: " + to_string(encodingJobKey) +
 							   ", ingestionJobKey: " + to_string(ingestionJobKey);
 				throw runtime_error(errorMessage);
 			}
@@ -744,7 +744,7 @@ void FFMpegWrapper::encodeContent(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "encodeContent command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
 									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -865,7 +865,7 @@ void FFMpegWrapper::encodeContent(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "encodeContent command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
 									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -997,7 +997,7 @@ void FFMpegWrapper::encodeContent(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "encodeContent command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
 									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -1102,7 +1102,7 @@ void FFMpegWrapper::encodeContent(
 				SPDLOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
-				errorMessage = __FILEREF__ + "command failed, encoded dir size is 0" + ", encodingJobKey: " + to_string(encodingJobKey) +
+				errorMessage = string("command failed, encoded dir size is 0") + ", encodingJobKey: " + to_string(encodingJobKey) +
 							   ", ingestionJobKey: " + to_string(ingestionJobKey);
 				throw runtime_error(errorMessage);
 			}
@@ -1177,7 +1177,7 @@ void FFMpegWrapper::encodeContent(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "encodeContent command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
+						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
 									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -1299,7 +1299,7 @@ void FFMpegWrapper::encodeContent(
 						SPDLOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
-						errorMessage = __FILEREF__ + "encodeContent command failed (second step)" + ", encodingJobKey: " + to_string(encodingJobKey) +
+						errorMessage = string("encodeContent command failed (second step)") + ", encodingJobKey: " + to_string(encodingJobKey) +
 									   ", ingestionJobKey: " + to_string(ingestionJobKey);
 						throw runtime_error(errorMessage);
 					}
@@ -1594,7 +1594,7 @@ void FFMpegWrapper::encodeContent(
 				SPDLOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
-				errorMessage = __FILEREF__ + "command failed, encoded file size is 0" + ", encodingJobKey: " + to_string(encodingJobKey) +
+				errorMessage = string("command failed, encoded file size is 0") + ", encodingJobKey: " + to_string(encodingJobKey) +
 							   ", ingestionJobKey: " + to_string(ingestionJobKey);
 				throw runtime_error(errorMessage);
 			}

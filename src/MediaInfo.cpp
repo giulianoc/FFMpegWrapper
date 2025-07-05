@@ -160,13 +160,13 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 			int executeCommandStatus = ProcessUtility::execute(ffprobeExecuteCommand);
 			if (executeCommandStatus != 0)
 			{
-				string errorMessage =
-					__FILEREF__ + "getMediaInfo: ffmpeg: ffprobe command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-					", executeCommandStatus: " + to_string(executeCommandStatus) + ", ffprobeExecuteCommand: " + ffprobeExecuteCommand;
+				string errorMessage = string("getMediaInfo: ffmpeg: ffprobe command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+									  ", executeCommandStatus: " + to_string(executeCommandStatus) +
+									  ", ffprobeExecuteCommand: " + ffprobeExecuteCommand;
 				SPDLOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
-				errorMessage = __FILEREF__ + "getMediaInfo command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
+				errorMessage = string("getMediaInfo command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey);
 				throw runtime_error(errorMessage);
 			}
 			else
@@ -190,7 +190,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(detailsPathFileName, _charsToBeReadFromFfmpegErrorOutput);
-		string errorMessage = __FILEREF__ + "getMediaInfo: Executed ffmpeg command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+		string errorMessage = string("getMediaInfo: Executed ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 							  ", ffprobeExecuteCommand: " + ffprobeExecuteCommand + ", @FFMPEG statistics@ - duration (secs): @" +
 							  to_string(chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()) + "@" +
 							  ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile + ", e.what(): " + e.what();
@@ -1277,7 +1277,7 @@ int FFMpegWrapper::probeChannel(int64_t ingestionJobKey, string url)
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + toString(_currentApiName) + ": probe command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
+			errorMessage = string(toString(_currentApiName)) + ": probe command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
 			throw runtime_error(errorMessage);
 		}
 
@@ -1396,7 +1396,7 @@ void FFMpegWrapper::getLiveStreamingInfo(
 			SPDLOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = __FILEREF__ + "getLiveStreamingInfo failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
+			errorMessage = string("getLiveStreamingInfo failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 						   ", encodingJobKey: " + to_string(encodingJobKey);
 			throw runtime_error(errorMessage);
 		}
