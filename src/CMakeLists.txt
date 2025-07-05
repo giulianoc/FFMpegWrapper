@@ -63,6 +63,7 @@ add_library(FFMpegWrapper SHARED ${SOURCES} ${HEADERS})
 
 if(APPLE)
     target_link_libraries(FFMpegWrapper StringUtils)
+    target_link_libraries(FFMpegWrapper Datetime)
     target_link_libraries(FFMpegWrapper JSONUtils)
 	target_link_libraries(FFMpegWrapper CurlWrapper)
 	target_link_libraries(FFMpegWrapper ProcessUtility)

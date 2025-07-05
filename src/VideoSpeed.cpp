@@ -374,7 +374,7 @@ void FFMpegWrapper::videoSpeed(
 
 					ProcessUtility::forkAndExec(
 						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						&iReturnedStatus
+						iReturnedStatus
 					);
 					processId.reset();
 					if (iReturnedStatus != 0)

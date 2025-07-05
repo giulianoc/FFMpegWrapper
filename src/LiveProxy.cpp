@@ -421,7 +421,7 @@ void FFMpegWrapper::liveProxy2(
 
 			ProcessUtility::forkAndExec(
 				_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-				&iReturnedStatus
+				iReturnedStatus
 			);
 			processId.reset();
 

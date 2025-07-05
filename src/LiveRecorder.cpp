@@ -1582,7 +1582,7 @@ void FFMpegWrapper::liveRecorder(
 
 			ProcessUtility::forkAndExec(
 				_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
-				&iReturnedStatus
+				iReturnedStatus
 			);
 			*pChildPid = 0;
 
@@ -2583,7 +2583,7 @@ void FFMpegWrapper::liveRecorder2(
 
 			ProcessUtility::forkAndExec(
 				_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-				&iReturnedStatus
+				iReturnedStatus
 			);
 			processId.reset();
 
