@@ -10,6 +10,7 @@
  *
  * Created on February 18, 2018, 1:27 AM
  */
+#include "Datetime.h"
 #include "FFMpegEncodingParameters.h"
 #include "FFMpegWrapper.h"
 #include "JSONUtils.h"
@@ -116,20 +117,8 @@ void FFMpegWrapper::encodeContent(
 		);
 
 		{
-			// char sUtcTimestamp[64];
-			tm tmUtcTimestamp;
-			time_t utcTimestamp = chrono::system_clock::to_time_t(chrono::system_clock::now());
+			tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(chrono::system_clock::to_time_t(chrono::system_clock::now()));
 
-			localtime_r(&utcTimestamp, &tmUtcTimestamp);
-			/*
-			sprintf(
-				sUtcTimestamp, "%04d-%02d-%02d-%02d-%02d-%02d", tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday,
-				tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec
-			);
-
-			_outputFfmpegPathFileName =
-				std::format("{}/{}_{}_{}_{}.log", _ffmpegTempDir, "encode", _currentIngestionJobKey, _currentEncodingJobKey, sUtcTimestamp);
-				*/
 			_outputFfmpegPathFileName = std::format(
 				"{}/{}_{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "encode", _currentIngestionJobKey,
 				_currentEncodingJobKey, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour,

@@ -2152,10 +2152,8 @@ void FFMpegWrapper::liveRecorder2(
 		}
 
 		{
-			tm tmUtcTimestamp;
-			time_t utcTimestamp = chrono::system_clock::to_time_t(chrono::system_clock::now());
+			tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(chrono::system_clock::to_time_t(chrono::system_clock::now()));
 
-			localtime_r(&utcTimestamp, &tmUtcTimestamp);
 			_outputFfmpegPathFileName = std::format(
 				"{}/{}_{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "liveRecorder", _currentIngestionJobKey,
 				_currentEncodingJobKey, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour,

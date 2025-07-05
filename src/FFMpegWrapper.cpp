@@ -11,6 +11,7 @@
  * Created on February 18, 2018, 1:27 AM
  */
 #include "FFMpegWrapper.h"
+#include "Datetime.h"
 #include "JSONUtils.h"
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
@@ -203,21 +204,11 @@ void FFMpegWrapper::renameOutputFfmpegPathFileName(int64_t ingestionJobKey, int6
 	string debugOutputFfmpegPathFileName;
 	try
 	{
-		// char sNow[64];
-
-		time_t utcNow = chrono::system_clock::to_time_t(chrono::system_clock::now());
-		tm tmUtcNow;
-		localtime_r(&utcNow, &tmUtcNow);
-		/*
-		sprintf(
-			sNow, "%04d-%02d-%02d-%02d-%02d-%02d", tmUtcNow.tm_year + 1900, tmUtcNow.tm_mon + 1, tmUtcNow.tm_mday, tmUtcNow.tm_hour, tmUtcNow.tm_min,
-			tmUtcNow.tm_sec
-		);
-		*/
+		tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(chrono::system_clock::to_time_t(chrono::system_clock::now()));
 
 		debugOutputFfmpegPathFileName = std::format(
-			"{}.{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}", outputFfmpegPathFileName, tmUtcNow.tm_year + 1900, tmUtcNow.tm_mon + 1, tmUtcNow.tm_mday,
-			tmUtcNow.tm_hour, tmUtcNow.tm_min, tmUtcNow.tm_sec
+			"{}.{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}", outputFfmpegPathFileName, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1,
+			tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec
 		);
 
 		SPDLOG_INFO(
