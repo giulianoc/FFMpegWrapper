@@ -1943,6 +1943,17 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 				ofstream playlistListFile(endlessPlaylistListPathName.c_str(), ofstream::trunc);
 				if (!playlistListFile)
 				{
+#ifdef _WIN32
+					char buffer[256];
+					string errorMessage = std::format(
+						"Error creating ffmpegEndlessRecursivePlaylist file"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", _ffmpegEndlessRecursivePlaylist: {}"
+						", errno: {} ({})",
+						ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, errno, strerror_s(buffer, sizeof(buffer), errno)
+					);
+#else
 					string errorMessage = std::format(
 						"Error creating ffmpegEndlessRecursivePlaylist file"
 						", ingestionJobKey: {}"
@@ -1951,6 +1962,7 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 						", errno: {} ({})",
 						ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, errno, strerror(errno)
 					);
+#endif
 					SPDLOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
