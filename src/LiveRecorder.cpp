@@ -1994,7 +1994,7 @@ void FFMpegWrapper::liveRecorder2(
 
 	json framesToBeDetectedRoot,
 
-	pid_t *pChildPid, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
+	ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 )
 {
 	_currentApiName = APIName::LiveRecorder;
@@ -2584,10 +2584,10 @@ void FFMpegWrapper::liveRecorder2(
 			startFfmpegCommand = chrono::system_clock::now();
 
 			ProcessUtility::forkAndExec(
-				_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+				_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 				&iReturnedStatus
 			);
-			*pChildPid = 0;
+			processId.reset();
 
 			endFfmpegCommand = chrono::system_clock::now();
 
@@ -2813,7 +2813,7 @@ void FFMpegWrapper::liveRecorder2(
 	}
 	catch (runtime_error &e)
 	{
-		*pChildPid = 0;
+		processId.reset();
 
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;

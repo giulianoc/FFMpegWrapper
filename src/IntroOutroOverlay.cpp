@@ -26,7 +26,7 @@ void FFMpegWrapper::introOutroOverlay(
 
 	json encodingProfileDetailsRoot,
 
-	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 )
 {
 	int iReturnedStatus = 0;
@@ -397,10 +397,10 @@ void FFMpegWrapper::introOutroOverlay(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -433,7 +433,7 @@ void FFMpegWrapper::introOutroOverlay(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -625,7 +625,7 @@ void FFMpegWrapper::introOverlay(
 
 	json encodingProfileDetailsRoot,
 
-	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 )
 {
 	int iReturnedStatus = 0;
@@ -914,10 +914,10 @@ void FFMpegWrapper::introOverlay(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -950,7 +950,7 @@ void FFMpegWrapper::introOverlay(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -1142,7 +1142,7 @@ void FFMpegWrapper::outroOverlay(
 
 	json encodingProfileDetailsRoot,
 
-	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 )
 {
 	int iReturnedStatus = 0;
@@ -1418,10 +1418,10 @@ void FFMpegWrapper::outroOverlay(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -1454,7 +1454,7 @@ void FFMpegWrapper::outroOverlay(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;

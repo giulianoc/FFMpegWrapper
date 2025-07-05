@@ -17,7 +17,7 @@
 
 void FFMpegWrapper::generateFrameToIngest(
 	int64_t ingestionJobKey, string mmsAssetPathName, int64_t videoDurationInMilliSeconds, double startTimeInSeconds, string frameAssetPathName,
-	int imageWidth, int imageHeight, pid_t *pChildPid
+	int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId
 )
 {
 	_currentApiName = APIName::GenerateFrameToIngest;
@@ -117,10 +117,10 @@ void FFMpegWrapper::generateFrameToIngest(
 		bool redirectionStdError = true;
 
 		ProcessUtility::forkAndExec(
-			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 			&iReturnedStatus
 		);
-		*pChildPid = 0;
+		processId.reset();
 		if (iReturnedStatus != 0)
 		{
 			string errorMessage = std::format(
@@ -149,7 +149,7 @@ void FFMpegWrapper::generateFrameToIngest(
 	}
 	catch (runtime_error &e)
 	{
-		*pChildPid = 0;
+		processId.reset();
 
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;
@@ -199,7 +199,7 @@ void FFMpegWrapper::generateFrameToIngest(
 void FFMpegWrapper::generateFramesToIngest(
 	int64_t ingestionJobKey, int64_t encodingJobKey, string imagesDirectory, string imageBaseFileName, double startTimeInSeconds, int framesNumber,
 	string videoFilter, int periodInSeconds, bool mjpeg, int imageWidth, int imageHeight, string mmsAssetPathName,
-	int64_t videoDurationInMilliSeconds, pid_t *pChildPid
+	int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId
 )
 {
 	_currentApiName = APIName::GenerateFramesToIngest;
@@ -414,10 +414,10 @@ void FFMpegWrapper::generateFramesToIngest(
 		bool redirectionStdError = true;
 
 		ProcessUtility::forkAndExec(
-			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 			&iReturnedStatus
 		);
-		*pChildPid = 0;
+		processId.reset();
 		if (iReturnedStatus != 0)
 		{
 			string errorMessage = std::format(
@@ -450,7 +450,7 @@ void FFMpegWrapper::generateFramesToIngest(
 	}
 	catch (runtime_error &e)
 	{
-		*pChildPid = 0;
+		processId.reset();
 
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;

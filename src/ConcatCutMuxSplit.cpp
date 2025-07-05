@@ -757,7 +757,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 	// There is an option to encode only a little part of the video,
 	// see https://stackoverflow.com/questions/63548027/cut-a-video-in-between-key-frames-without-re-encoding-the-full-video-using-ffpme
 	int64_t encodingJobKey, json encodingProfileDetailsRoot, string startTime, string endTime, int framesNumber, string stagingEncodedAssetPathName,
-	pid_t *pChildPid
+	ProcessUtility::ProcessId &processId
 )
 {
 
@@ -1019,10 +1019,10 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 				bool redirectionStdError = true;
 
 				ProcessUtility::forkAndExec(
-					_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+					_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 					&iReturnedStatus
 				);
-				*pChildPid = 0;
+				processId.reset();
 				if (iReturnedStatus != 0)
 				{
 					string errorMessage = std::format(
@@ -1055,7 +1055,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 			}
 			catch (runtime_error &e)
 			{
-				*pChildPid = 0;
+				processId.reset();
 
 				string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 				string errorMessage;

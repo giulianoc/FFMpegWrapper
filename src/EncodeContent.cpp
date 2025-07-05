@@ -13,7 +13,6 @@
 #include "FFMpegEncodingParameters.h"
 #include "FFMpegWrapper.h"
 #include "JSONUtils.h"
-#include "ProcessUtility.h"
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
 
@@ -21,7 +20,7 @@ void FFMpegWrapper::encodeContent(
 	string mmsSourceAssetPathName, int64_t durationInMilliSeconds, string encodedStagingAssetPathName, json encodingProfileDetailsRoot,
 	bool isVideo, // if false it means is audio
 	json videoTracksRoot, json audioTracksRoot, int videoTrackIndexToBeUsed, int audioTrackIndexToBeUsed, json filtersRoot, int64_t physicalPathKey,
-	int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+	int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 )
 {
 	int iReturnedStatus = 0;
@@ -301,10 +300,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -339,7 +338,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -421,10 +420,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -459,7 +458,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -548,10 +547,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -586,7 +585,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -738,10 +737,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -775,7 +774,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -859,10 +858,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -897,7 +896,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -991,10 +990,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -1029,7 +1028,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -1171,10 +1170,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -1209,7 +1208,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -1293,10 +1292,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						string errorMessage = std::format(
@@ -1331,7 +1330,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -1456,10 +1455,10 @@ void FFMpegWrapper::encodeContent(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						SPDLOG_ERROR(
@@ -1496,7 +1495,7 @@ void FFMpegWrapper::encodeContent(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;

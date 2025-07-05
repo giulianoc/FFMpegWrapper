@@ -25,7 +25,7 @@ void FFMpegWrapper::liveGrid(
 
 	json outputsRoot,
 
-	pid_t *pChildPid
+	ProcessUtility::ProcessId &processId
 )
 {
 	vector<string> ffmpegArgumentList;
@@ -739,10 +739,10 @@ void FFMpegWrapper::liveGrid(
 		bool redirectionStdError = true;
 
 		ProcessUtility::forkAndExec(
-			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 			&iReturnedStatus
 		);
-		*pChildPid = 0;
+		processId.reset();
 		if (iReturnedStatus != 0)
 		{
 			string errorMessage = std::format(
@@ -807,7 +807,7 @@ void FFMpegWrapper::liveGrid(
 	}
 	catch (runtime_error &e)
 	{
-		*pChildPid = 0;
+		processId.reset();
 
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;

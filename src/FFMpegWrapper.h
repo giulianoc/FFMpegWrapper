@@ -14,6 +14,7 @@
 #ifndef FFMpegWrapper_h
 #define FFMpegWrapper_h
 
+#include "ProcessUtility.h"
 #include <chrono>
 #include <filesystem>
 #include <string>
@@ -94,21 +95,22 @@ class FFMpegWrapper
 		string mmsSourceAssetPathName, int64_t durationInMilliSeconds, string stagingEncodedAssetPathName, json encodingProfileDetailsRoot,
 		bool isVideo, // if false it means is audio
 		json videoTracksRoot, json audioTracksRoot, int videoTrackIndexToBeUsed, int audioTrackIndexToBeUsed, json filtersRoot,
-		int64_t physicalPathKey, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+		int64_t physicalPathKey, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 	);
 
 	void overlayImageOnVideo(
 		bool externalEncoder, string mmsSourceVideoAssetPathName, int64_t videoDurationInMilliSeconds, string mmsSourceImageAssetPathName,
 		string imagePosition_X_InPixel, string imagePosition_Y_InPixel,
 		// string encodedFileName,
-		string stagingEncodedAssetPathName, json encodingProfileDetailsRoot, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+		string stagingEncodedAssetPathName, json encodingProfileDetailsRoot, int64_t encodingJobKey, int64_t ingestionJobKey,
+		ProcessUtility::ProcessId &processId
 	);
 
 	void overlayTextOnVideo(
 		string mmsSourceVideoAssetPathName, int64_t videoDurationInMilliSeconds,
 
 		json drawTextDetailsRoot, json encodingProfileDetailsRoot, string stagingEncodedAssetPathName, int64_t encodingJobKey,
-		int64_t ingestionJobKey, pid_t *pChildPid
+		int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 	);
 
 	void videoSpeed(
@@ -118,14 +120,14 @@ class FFMpegWrapper
 
 		json encodingProfileDetailsRoot,
 
-		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 	);
 
 	void pictureInPicture(
 		string mmsMainVideoAssetPathName, int64_t mainVideoDurationInMilliSeconds, string mmsOverlayVideoAssetPathName,
 		int64_t overlayVideoDurationInMilliSeconds, bool soundOfMain, string overlayPosition_X_InPixel, string overlayPosition_Y_InPixel,
 		string overlay_Width_InPixel, string overlay_Height_InPixel, json encodingProfileDetailsRoot, string stagingEncodedAssetPathName,
-		int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+		int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 	);
 
 	void introOutroOverlay(
@@ -138,7 +140,7 @@ class FFMpegWrapper
 
 		json encodingProfileDetailsRoot,
 
-		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 	);
 
 	void introOverlay(
@@ -151,7 +153,7 @@ class FFMpegWrapper
 
 		json encodingProfileDetailsRoot,
 
-		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 	);
 
 	void outroOverlay(
@@ -164,14 +166,14 @@ class FFMpegWrapper
 
 		json encodingProfileDetailsRoot,
 
-		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 	);
 
 	void silentAudio(
 		string videoAssetPathName, int64_t videoDurationInMilliSeconds,
 		string addType, // entireTrack, begin, end
 		int seconds, json encodingProfileDetailsRoot, string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey,
-		pid_t *pChildPid
+		ProcessUtility::ProcessId &processId
 	);
 
 	double getEncodingProgress();
@@ -204,13 +206,13 @@ class FFMpegWrapper
 
 	void generateFrameToIngest(
 		int64_t ingestionJobKey, string mmsAssetPathName, int64_t videoDurationInMilliSeconds, double startTimeInSeconds, string frameAssetPathName,
-		int imageWidth, int imageHeight, pid_t *pChildPid
+		int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId
 	);
 
 	void generateFramesToIngest(
 		int64_t ingestionJobKey, int64_t encodingJobKey, string imageDirectory, string imageBaseFileName, double startTimeInSeconds, int framesNumber,
 		string videoFilter, int periodInSeconds, bool mjpeg, int imageWidth, int imageHeight, string mmsAssetPathName,
-		int64_t videoDurationInMilliSeconds, pid_t *pChildPid
+		int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId
 	);
 
 	void concat(int64_t ingestionJobKey, bool isVideo, vector<string> &sourcePhysicalPaths, string concatenatedMediaPathName);
@@ -223,7 +225,7 @@ class FFMpegWrapper
 		int64_t ingestionJobKey, int64_t encodingJobKey, float durationOfEachSlideInSeconds, string frameRateMode, json encodingProfileDetailsRoot,
 		vector<string> &imagesSourcePhysicalPaths, vector<string> &audiosSourcePhysicalPaths,
 		float shortestAudioDurationInSeconds, // the shortest duration among the audios
-		string encodedStagingAssetPathName, pid_t *pChildPid
+		string encodedStagingAssetPathName, ProcessUtility::ProcessId &processId
 	);
 
 	void cutWithoutEncoding(
@@ -239,7 +241,7 @@ class FFMpegWrapper
 		// If you re-encode your video when you cut/trim, then you get a frame-accurate cut
 		// because FFmpeg will re-encode the video and start with an I-frame.
 		int64_t encodingJobKey, json encodingProfileDetailsRoot, string startTime, string endTime, int framesNumber,
-		string stagingEncodedAssetPathName, pid_t *pChildPid
+		string stagingEncodedAssetPathName, ProcessUtility::ProcessId &processId
 	);
 
 	void extractTrackMediaToIngest(
@@ -285,12 +287,13 @@ class FFMpegWrapper
 
 		json picturePathNamesToBeDetectedRoot,
 
-		pid_t *pChildPid, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
+		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 	);
 
 	void liveProxy2(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
-		json *inputsRoot, json outputsRoot, pid_t *pChildPid, chrono::system_clock::time_point *pProxyStart, long *numberOfRestartBecauseOfFailure
+		json *inputsRoot, json outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
+		long *numberOfRestartBecauseOfFailure
 	);
 
 	void liveGrid(
@@ -302,7 +305,7 @@ class FFMpegWrapper
 
 		json outputsRoot,
 
-		pid_t *pChildPid
+		ProcessUtility::ProcessId &processId
 	);
 
 	void changeFileFormat(

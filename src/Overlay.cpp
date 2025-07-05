@@ -22,7 +22,7 @@
 void FFMpegWrapper::overlayImageOnVideo(
 	bool externalEncoder, string mmsSourceVideoAssetPathName, int64_t videoDurationInMilliSeconds, string mmsSourceImageAssetPathName,
 	string imagePosition_X_InPixel, string imagePosition_Y_InPixel, string stagingEncodedAssetPathName, json encodingProfileDetailsRoot,
-	int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+	int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 )
 {
 	int iReturnedStatus = 0;
@@ -262,10 +262,10 @@ void FFMpegWrapper::overlayImageOnVideo(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						SPDLOG_ERROR(
@@ -302,7 +302,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
@@ -477,7 +477,8 @@ void FFMpegWrapper::overlayTextOnVideo(
 
 	json drawTextDetailsRoot,
 
-	json encodingProfileDetailsRoot, string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+	json encodingProfileDetailsRoot, string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey,
+	ProcessUtility::ProcessId &processId
 )
 {
 	int iReturnedStatus = 0;
@@ -724,10 +725,10 @@ void FFMpegWrapper::overlayTextOnVideo(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						SPDLOG_ERROR(
@@ -763,7 +764,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;

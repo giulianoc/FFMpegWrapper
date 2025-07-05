@@ -21,7 +21,7 @@ void FFMpegWrapper::slideShow(
 	int64_t ingestionJobKey, int64_t encodingJobKey, float durationOfEachSlideInSeconds, string frameRateMode, json encodingProfileDetailsRoot,
 	vector<string> &imagesSourcePhysicalPaths, vector<string> &audiosSourcePhysicalPaths,
 	float shortestAudioDurationInSeconds, // the shortest duration among the audios
-	string encodedStagingAssetPathName, pid_t *pChildPid
+	string encodedStagingAssetPathName, ProcessUtility::ProcessId &processId
 )
 {
 	_currentApiName = APIName::SlideShow;
@@ -410,10 +410,10 @@ void FFMpegWrapper::slideShow(
 		bool redirectionStdError = true;
 
 		ProcessUtility::forkAndExec(
-			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 			&iReturnedStatus
 		);
-		*pChildPid = 0;
+		processId.reset();
 		if (iReturnedStatus != 0)
 		{
 			SPDLOG_ERROR(
@@ -441,7 +441,7 @@ void FFMpegWrapper::slideShow(
 	}
 	catch (runtime_error &e)
 	{
-		*pChildPid = 0;
+		processId.reset();
 
 		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;

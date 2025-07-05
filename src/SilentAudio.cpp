@@ -23,7 +23,7 @@ void FFMpegWrapper::silentAudio(
 
 	json encodingProfileDetailsRoot,
 
-	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, pid_t *pChildPid
+	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 )
 {
 	int iReturnedStatus = 0;
@@ -255,10 +255,10 @@ void FFMpegWrapper::silentAudio(
 					bool redirectionStdError = true;
 
 					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 						&iReturnedStatus
 					);
-					*pChildPid = 0;
+					processId.reset();
 					if (iReturnedStatus != 0)
 					{
 						SPDLOG_ERROR(
@@ -294,7 +294,7 @@ void FFMpegWrapper::silentAudio(
 				}
 				catch (runtime_error &e)
 				{
-					*pChildPid = 0;
+					processId.reset();
 
 					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;

@@ -24,7 +24,8 @@
 
 void FFMpegWrapper::liveProxy2(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
-	json *inputsRoot, json outputsRoot, pid_t *pChildPid, chrono::system_clock::time_point *pProxyStart, long *numberOfRestartBecauseOfFailure
+	json *inputsRoot, json outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
+	long *numberOfRestartBecauseOfFailure
 )
 {
 	_currentApiName = APIName::LiveProxy;
@@ -432,10 +433,10 @@ void FFMpegWrapper::liveProxy2(
 			bool redirectionStdError = true;
 
 			ProcessUtility::forkAndExec(
-				_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, pChildPid,
+				_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
 				&iReturnedStatus
 			);
-			*pChildPid = 0;
+			processId.reset();
 
 			endFfmpegCommand = chrono::system_clock::now();
 
@@ -564,7 +565,7 @@ void FFMpegWrapper::liveProxy2(
 		}
 		catch (runtime_error &e)
 		{
-			*pChildPid = 0;
+			processId.reset();
 
 			bool stoppedBySigQuitOrTerm = false;
 
