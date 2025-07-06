@@ -1859,28 +1859,6 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 		);
 		fs::remove_all(outputFfmpegPathFileName);
 	}
-	catch (runtime_error &e)
-	{
-		string errorMessage = std::format(
-			"getLiveStreamingInfo error"
-			", ingestionJobKey: {}"
-			", encodingJobKey: {}"
-			", e.what(): {}",
-			ingestionJobKey, encodingJobKey, e.what()
-		);
-		SPDLOG_ERROR(errorMessage);
-
-		SPDLOG_INFO(
-			"remove"
-			", ingestionJobKey: {}"
-			", encodingJobKey: {}"
-			", outputFfmpegPathFileName: {}",
-			ingestionJobKey, encodingJobKey, outputFfmpegPathFileName
-		);
-		fs::remove_all(outputFfmpegPathFileName);
-
-		throw e;
-	}
 	catch (exception &e)
 	{
 		string errorMessage = std::format(
@@ -1901,6 +1879,6 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 		);
 		fs::remove_all(outputFfmpegPathFileName);
 
-		throw e;
+		throw;
 	}
 }

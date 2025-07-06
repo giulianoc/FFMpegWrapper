@@ -91,28 +91,13 @@ void FFMpegWrapper::liveProxy2(
 			json inputRoot = (*inputsRoot)[inputIndex];
 
 			bool timePeriod = false;
-			string field = "timePeriod";
-			timePeriod = JSONUtils::asBool(inputRoot, field, false);
+			timePeriod = JSONUtils::asBool(inputRoot, "timePeriod", false);
 
 			int64_t utcProxyPeriodStart = -1;
-			field = "utcScheduleStart";
-			utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
-			// else
-			// {
-			// 	field = "utcProxyPeriodStart";
-			// 	if (JSONUtils::isMetadataPresent(inputRoot, field))
-			// 		utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
-			// }
+			utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, "utcScheduleStart", -1);
 
 			int64_t utcProxyPeriodEnd = -1;
-			field = "utcScheduleEnd";
-			utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
-			// else
-			// {
-			// 	field = "utcProxyPeriodEnd";
-			// 	if (JSONUtils::isMetadataPresent(inputRoot, field))
-			// 		utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
-			// }
+			utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, "utcScheduleEnd", -1);
 
 			if (!timePeriod || utcProxyPeriodStart == -1 || utcProxyPeriodEnd == -1)
 			{
@@ -144,21 +129,11 @@ void FFMpegWrapper::liveProxy2(
 
 				string field = "utcScheduleStart";
 				int64_t utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
-				// if (utcProxyPeriodStart == -1)
-				// {
-				// 	field = "utcProxyPeriodStart";
-				// 	utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
-				// }
 				if (utcFirstProxyPeriodStart == -1)
 					utcFirstProxyPeriodStart = utcProxyPeriodStart;
 
 				field = "utcScheduleEnd";
 				utcLastProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
-				// if (utcLastProxyPeriodEnd == -1)
-				// {
-				// 	field = "utcProxyPeriodEnd";
-				// 	utcLastProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
-				// }
 			}
 		}
 
@@ -896,19 +871,9 @@ int FFMpegWrapper::getNextLiveProxyInput(
 
 			string field = "utcScheduleStart";
 			int64_t utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
-			// if (utcProxyPeriodStart == -1)
-			// {
-			// 	field = "utcProxyPeriodStart";
-			// 	utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
-			// }
 
 			field = "utcScheduleEnd";
 			int64_t utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
-			// if (utcProxyPeriodEnd == -1)
-			// {
-			// 	field = "utcProxyPeriodEnd";
-			// 	utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
-			// }
 
 			SPDLOG_INFO(
 				"getNextLiveProxyInput"
@@ -1038,25 +1003,12 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 	string field = "timePeriod";
 	timePeriod = JSONUtils::asBool(inputRoot, field, false);
 
-	// int64_t utcProxyPeriodStart = -1;
 	field = "utcScheduleStart";
 	utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
-	// else
-	// {
-	// 	field = "utcProxyPeriodStart";
-	// 	if (JSONUtils::isMetadataPresent(inputRoot, field))
-	// 		utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
-	// }
 
 	int64_t utcProxyPeriodEnd = -1;
 	field = "utcScheduleEnd";
 	utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
-	// else
-	// {
-	// 	field = "utcProxyPeriodEnd";
-	// 	if (JSONUtils::isMetadataPresent(inputRoot, field))
-	// 		utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
-	// }
 
 	//	"streamInput": { "captureAudioDeviceNumber": -1, "captureChannelsNumber": -1, "captureFrameRate": -1, "captureHeight": -1,
 	//"captureVideoDeviceNumber": -1, "captureVideoInputFormat": "", "captureWidth": -1, "confKey": 2464, "configurationLabel":
@@ -1628,9 +1580,8 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 		field = "directURLInput";
 		json directURLInputRoot = inputRoot[field];
 
-		string url;
-		field = "url";
-		url = JSONUtils::asString(directURLInputRoot, field, "");
+		string inputFormat = JSONUtils::asString(directURLInputRoot, "inputFormat", "");
+		string url = JSONUtils::asString(directURLInputRoot, "url", "");
 
 		SPDLOG_INFO(
 			"liveProxy, url"
@@ -1639,8 +1590,8 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 			", timePeriod: {}"
 			", utcProxyPeriodStart: {}"
 			", utcProxyPeriodEnd: {}"
-			", url: {}",
-			ingestionJobKey, encodingJobKey, timePeriod, utcProxyPeriodStart, utcProxyPeriodEnd, url
+			", inputFormat: {}",
+			", url: {}", ingestionJobKey, encodingJobKey, timePeriod, utcProxyPeriodStart, utcProxyPeriodEnd, inputFormat, url
 		);
 
 		/* 2023-03-26: vedi commento sopra in questo metodo
@@ -1704,6 +1655,11 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 			ffmpegInputArgumentList.push_back("-nostdin");
 			ffmpegInputArgumentList.push_back("-re");
 			{
+				if (!inputFormat.empty())
+				{
+					ffmpegInputArgumentList.push_back("-f");
+					ffmpegInputArgumentList.push_back(inputFormat);
+				}
 				ffmpegInputArgumentList.push_back("-i");
 				ffmpegInputArgumentList.push_back(url);
 			}

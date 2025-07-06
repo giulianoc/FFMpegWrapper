@@ -18,31 +18,30 @@
 
 FFMpegWrapper::FFMpegWrapper(json configuration)
 {
-	_ffmpegPath = JSONUtils::asString(configuration["ffmpeg"], "path", "");
-	_ffmpegTempDir = JSONUtils::asString(configuration["ffmpeg"], "tempDir", "");
-	_ffmpegEndlessRecursivePlaylistDir = JSONUtils::asString(configuration["ffmpeg"], "endlessRecursivePlaylistDir", "");
-	_ffmpegTtfFontDir = JSONUtils::asString(configuration["ffmpeg"], "ttfFontDir", "");
+	_ffmpegPath = JSONUtils::asString(configuration["ffmpeg"], "path", ".");
+	SPDLOG_DEBUG(
+		"Configuration item"
+		", ffmpeg->path: {}",
+		_ffmpegPath
+	);
+	_ffmpegTempDir = JSONUtils::asString(configuration["ffmpeg"], "tempDir", ".");
+	_ffmpegEndlessRecursivePlaylistDir = JSONUtils::asString(configuration["ffmpeg"], "endlessRecursivePlaylistDir", ".");
+	_ffmpegTtfFontDir = JSONUtils::asString(configuration["ffmpeg"], "ttfFontDir", ".");
 
-	_youTubeDlPath = JSONUtils::asString(configuration["youTubeDl"], "path", "");
-	SPDLOG_INFO(
+	_youTubeDlPath = JSONUtils::asString(configuration["youTubeDl"], "path", ".");
+	SPDLOG_DEBUG(
 		"Configuration item"
 		", youTubeDl->path: {}",
 		_youTubeDlPath
 	);
-	_pythonPathName = JSONUtils::asString(configuration["youTubeDl"], "pythonPathName", "");
-	SPDLOG_INFO(
+	_pythonPathName = JSONUtils::asString(configuration["youTubeDl"], "pythonPathName", ".");
+	SPDLOG_DEBUG(
 		"Configuration item"
 		", youTubeDl->pythonPathName: {}",
 		_pythonPathName
 	);
 
-	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::asInt(configuration["storage"], "waitingNFSSync_maxMillisecondsToWait", 60000);
-	/*
-	info(__FILEREF__ + "Configuration item"
-		+ ", storage->waitingNFSSync_attemptNumber: "
-		+ to_string(_waitingNFSSync_attemptNumber)
-	);
-	*/
+	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::asInt(configuration["storage"], "waitingNFSSync_maxMillisecondsToWait", 150000);
 	_waitingNFSSync_milliSecondsWaitingBetweenChecks =
 		JSONUtils::asInt(configuration["storage"], "waitingNFSSync_milliSecondsWaitingBetweenChecks", 100);
 	/*
