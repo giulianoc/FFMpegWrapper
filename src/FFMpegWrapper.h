@@ -320,7 +320,7 @@ class FFMpegWrapper
 
 	pair<string, string> retrieveStreamingYouTubeURL(int64_t ingestionJobKey, string youTubeURL);
 	string getDrawTextTemporaryPathName(int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex = -1);
-	void retrieveLocalInputDevices(vector<pair<int, string>> &videoLocalInputDevices, vector<pair<int, string>> &audioLocalInputDevices);
+	void retrieveLocalInputDevices(vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices);
 
 	static bool isNumber(int64_t ingestionJobKey, string number);
 	static pair<double, long> timeToSeconds(int64_t ingestionJobKey, string time);

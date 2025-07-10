@@ -16,7 +16,9 @@
 #include <fstream>
 #include <regex>
 
-void FFMpegWrapper::retrieveLocalInputDevices(vector<pair<int, string>> &videoLocalInputDevices, vector<pair<int, string>> &audioLocalInputDevices)
+void FFMpegWrapper::retrieveLocalInputDevices(
+	vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices
+)
 {
 	SPDLOG_INFO("Received retrieveLocalInputDevices");
 
@@ -29,17 +31,14 @@ void FFMpegWrapper::retrieveLocalInputDevices(vector<pair<int, string>> &videoLo
 		{
 			outputFfmpegPathFileName = _ffmpegTempDir + "/" + "inputDevices.log";
 
-			string framework;
 #ifdef _WIN32
-			framework = "gdigrab";
+			ffmpegExecuteCommand = std::format("{}/ffmpeg -list_devices true -f dshow -i dummy > {} 2>&1", _ffmpegPath, outputFfmpegPathFileName);
 #elif defined(__APPLE__)
-			framework = "avfoundation";
+			ffmpegExecuteCommand =
+				std::format("{}/ffmpeg -f avfoundation -list_devices true -i \"\" > {} 2>&1", _ffmpegPath, outputFfmpegPathFileName);
 #elif defined(__linux__)
 			framework = "x11grab";
 #endif
-
-			ffmpegExecuteCommand =
-				std::format("{}/ffmpeg -f {} -list_devices true -i \"\" > {} 2>&1", _ffmpegPath, framework, outputFfmpegPathFileName);
 
 			chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
@@ -115,6 +114,24 @@ void FFMpegWrapper::retrieveLocalInputDevices(vector<pair<int, string>> &videoLo
 
 			ifstream ifPathFileName(outputFfmpegPathFileName);
 			string line;
+#ifdef _WIN32
+			regex videoRegex("\"([^\"]+)\" \\(video\\)");
+			regex audioRegex("\"([^\"]+)\" \\(audio\\)");
+			while (getline(ifPathFileName, line))
+			{
+				// ...
+				// [dshow @ 000002068dcfe7c0] "OBS Virtual Camera" (video)
+				// [dshow @ 000002068dcfe7c0]   Alternative name
+				// "@device_sw_{860BB310-5D01-11D0-BD3B-00A0C911CE86}\{A3FCE0F5-3493-419F-958A-ABA1250EC20B}" [dshow @ 000002068dcfe7c0] Could not
+				// enumerate audio only devices (or none found). Error opening input file dummy.
+				// ...
+				smatch match;
+				if (regex_search(line, match, videoRegex))
+					videoLocalInputDevices.emplace_back(match[1], match[1]);
+				else if (regex_search(line, match, audioRegex))
+					audioLocalInputDevices.emplace_back(match[1], match[1]);
+			}
+#elif defined(__APPLE__)
 			bool isVideoSection = false;
 			bool isAudioSection = false;
 			regex videoRegex(R"(\[(\d+)\]\s+(.*))");
@@ -146,7 +163,7 @@ void FFMpegWrapper::retrieveLocalInputDevices(vector<pair<int, string>> &videoLo
 					smatch match;
 					if (regex_search(line, match, videoRegex) && match.size() >= 3)
 					{
-						int index = stoi(match[1]);
+						string index = match[1];
 						string deviceName = match[2];
 						if (isVideoSection)
 							videoLocalInputDevices.emplace_back(index, deviceName);
@@ -160,6 +177,8 @@ void FFMpegWrapper::retrieveLocalInputDevices(vector<pair<int, string>> &videoLo
 					}
 				}
 			}
+#elif defined(__linux__)
+#endif
 
 			SPDLOG_INFO(
 				"remove"
