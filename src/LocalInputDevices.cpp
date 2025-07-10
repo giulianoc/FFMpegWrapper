@@ -112,13 +112,16 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 				throw FFMpegEncodingStatusNotAvailable();
 			}
 
+			SPDLOG_INFO("ifstream");
 			ifstream ifPathFileName(outputFfmpegPathFileName);
 			string line;
 #ifdef _WIN32
 			regex videoRegex("\"([^\"]+)\" \\(video\\)");
 			regex audioRegex("\"([^\"]+)\" \\(audio\\)");
+			SPDLOG_INFO("while");
 			while (getline(ifPathFileName, line))
 			{
+				SPDLOG_INFO("line: {}", line);
 				// ...
 				// [dshow @ 000002068dcfe7c0] "OBS Virtual Camera" (video)
 				// [dshow @ 000002068dcfe7c0]   Alternative name
