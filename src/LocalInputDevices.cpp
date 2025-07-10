@@ -183,12 +183,16 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 #elif defined(__linux__)
 #endif
 
+#ifdef _WIN32
+			// Windows non permette la rimozione del file
+#else
 			SPDLOG_INFO(
 				"remove"
 				", outputFfmpegPathFileName: {}",
 				outputFfmpegPathFileName
 			);
 			fs::remove_all(outputFfmpegPathFileName);
+#endif
 		}
 		catch (exception &e)
 		{
@@ -199,12 +203,16 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 			);
 			SPDLOG_ERROR(errorMessage);
 
+#ifdef _WIN32
+			// Windows non permette la rimozione del file
+#else
 			SPDLOG_INFO(
 				"remove"
 				", outputFfmpegPathFileName: {}",
 				outputFfmpegPathFileName
 			);
 			fs::remove_all(outputFfmpegPathFileName);
+#endif
 
 			throw;
 		}
