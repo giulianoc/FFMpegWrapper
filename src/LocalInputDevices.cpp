@@ -112,16 +112,13 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 				throw FFMpegEncodingStatusNotAvailable();
 			}
 
-			SPDLOG_INFO("ifstream");
 			ifstream ifPathFileName(outputFfmpegPathFileName);
 			string line;
 #ifdef _WIN32
 			regex videoRegex("\"([^\"]+)\" \\(video\\)");
 			regex audioRegex("\"([^\"]+)\" \\(audio\\)");
-			SPDLOG_INFO("while");
 			while (getline(ifPathFileName, line))
 			{
-				SPDLOG_INFO("line: {}", line);
 				// ...
 				// [dshow @ 000002068dcfe7c0] "OBS Virtual Camera" (video)
 				// [dshow @ 000002068dcfe7c0]   Alternative name
@@ -130,9 +127,9 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 				// ...
 				smatch match;
 				if (regex_search(line, match, videoRegex))
-					videoLocalInputDevices.emplace_back(match[1], match[1]);
+					videoLocalInputDevices.emplace_back(match[1], match[1]); // first deviceFFMpeg, second deviceLabel
 				else if (regex_search(line, match, audioRegex))
-					audioLocalInputDevices.emplace_back(match[1], match[1]);
+					audioLocalInputDevices.emplace_back(match[1], match[1]); // first deviceFFMpeg, second deviceLabel
 			}
 #elif defined(__APPLE__)
 			bool isVideoSection = false;
@@ -166,12 +163,12 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 					smatch match;
 					if (regex_search(line, match, videoRegex) && match.size() >= 3)
 					{
-						string index = match[1];
-						string deviceName = match[2];
+						string deviceFFMpeg = match[1];
+						string deviceLabel = match[2];
 						if (isVideoSection)
-							videoLocalInputDevices.emplace_back(index, deviceName);
+							videoLocalInputDevices.emplace_back(deviceFFMpeg, deviceLabel);
 						else
-							audioLocalInputDevices.emplace_back(index, deviceName);
+							audioLocalInputDevices.emplace_back(deviceFFMpeg, deviceLabel);
 					}
 					else
 					{
