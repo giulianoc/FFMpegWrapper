@@ -1580,6 +1580,7 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 		field = "directURLInput";
 		json directURLInputRoot = inputRoot[field];
 
+		string otherInputOptions = JSONUtils::asString(directURLInputRoot, "otherInputOptions");
 		string inputFormat = JSONUtils::asString(directURLInputRoot, "inputFormat", "");
 		string url = JSONUtils::asString(directURLInputRoot, "url", "");
 
@@ -1660,6 +1661,8 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 					ffmpegInputArgumentList.push_back("-f");
 					ffmpegInputArgumentList.push_back(inputFormat);
 				}
+				if (!otherInputOptions.empty())
+					FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
 				ffmpegInputArgumentList.push_back("-i");
 				ffmpegInputArgumentList.push_back(url);
 			}

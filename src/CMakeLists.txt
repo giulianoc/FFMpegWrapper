@@ -25,6 +25,7 @@ set(SOURCES
     EncodeContent.cpp
     Overlay.cpp
     IntroOutroOverlay.cpp
+    LocalInputDevices.cpp
     VideoSpeed.cpp
     PictureInPicture.cpp
     SilentAudio.cpp
