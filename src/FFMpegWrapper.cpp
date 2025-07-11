@@ -73,7 +73,14 @@ FFMpegWrapper::FFMpegWrapper(json configuration)
 
 FFMpegWrapper::~FFMpegWrapper() {}
 
-bool FFMpegWrapper::ffmpegExecutableExist() { return fs::exists(std::format("{}/ffmpeg", _ffmpegPath)); }
+bool FFMpegWrapper::ffmpegExecutableExist()
+{
+#ifdef _WIN32
+	return fs::exists(std::format("{}/ffmpeg.exe", _ffmpegPath));
+#else
+	return fs::exists(std::format("{}/ffmpeg", _ffmpegPath));
+#endif
+}
 
 void FFMpegWrapper::encodingVideoCodecValidation(string codec)
 {
