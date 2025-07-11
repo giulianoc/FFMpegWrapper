@@ -26,7 +26,7 @@
 void FFMpegWrapper::liveProxy2(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 	json *inputsRoot, json outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
-	long *numberOfRestartBecauseOfFailure
+	long *numberOfRestartBecauseOfFailure, bool keepOutputLog
 )
 {
 	_currentApiName = APIName::LiveProxy;
@@ -599,18 +599,21 @@ void FFMpegWrapper::liveProxy2(
 			}
 			SPDLOG_ERROR(errorMessage);
 
-			/*
-			info(__FILEREF__ + "Remove"
-				+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-				+ ", encodingJobKey: " + to_string(encodingJobKey)
-				+ ", currentInputIndex: " + to_string(currentInputIndex)
-				+ ", currentNumberOfRepeatingSameInput: "
-					+ to_string(currentNumberOfRepeatingSameInput)
-				+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName);
-			bool exceptionInCaseOfError = false;
-			fs::remove_all(_outputFfmpegPathFileName, exceptionInCaseOfError);
-			*/
-			renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
+			if (keepOutputLog)
+				renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
+			else
+			{
+				SPDLOG_INFO(
+					"Remove"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", currentInputIndex: {}"
+					", currentNumberOfRepeatingSameInput: {}"
+					", _outputFfmpegPathFileName: {}",
+					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName
+				);
+				fs::remove_all(_outputFfmpegPathFileName);
+			}
 
 			if (endlessPlaylistListPathName != "" && fs::exists(endlessPlaylistListPathName))
 			{
@@ -830,18 +833,21 @@ void FFMpegWrapper::liveProxy2(
 			}
 		}
 
-		/*
-		info(__FILEREF__ + "Remove"
-			+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-			+ ", encodingJobKey: " + to_string(encodingJobKey)
-			+ ", currentInputIndex: " + to_string(currentInputIndex)
-			+ ", currentNumberOfRepeatingSameInput: "
-				+ to_string(currentNumberOfRepeatingSameInput)
-			+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName);
-		bool exceptionInCaseOfError = false;
-		fs::remove_all(_outputFfmpegPathFileName, exceptionInCaseOfError);
-		*/
-		renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
+		if (keepOutputLog)
+			renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
+		else
+		{
+			SPDLOG_INFO(
+				"Remove"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", currentInputIndex: {}"
+				", currentNumberOfRepeatingSameInput: {}"
+				", _outputFfmpegPathFileName: {}",
+				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName
+			);
+			fs::remove_all(_outputFfmpegPathFileName);
+		}
 	}
 }
 

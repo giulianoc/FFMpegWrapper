@@ -293,7 +293,7 @@ class FFMpegWrapper
 	void liveProxy2(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 		json *inputsRoot, json outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
-		long *numberOfRestartBecauseOfFailure
+		long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
 	);
 
 	void liveGrid(
