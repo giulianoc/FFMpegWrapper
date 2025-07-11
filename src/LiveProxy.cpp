@@ -1656,13 +1656,13 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 			ffmpegInputArgumentList.push_back("-nostdin");
 			ffmpegInputArgumentList.push_back("-re");
 			{
+				if (!otherInputOptions.empty())
+					FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
 				if (!inputFormat.empty())
 				{
 					ffmpegInputArgumentList.push_back("-f");
 					ffmpegInputArgumentList.push_back(inputFormat);
 				}
-				if (!otherInputOptions.empty())
-					FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
 				ffmpegInputArgumentList.push_back("-i");
 				ffmpegInputArgumentList.push_back(url);
 			}
