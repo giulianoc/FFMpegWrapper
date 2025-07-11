@@ -73,6 +73,8 @@ FFMpegWrapper::FFMpegWrapper(json configuration)
 
 FFMpegWrapper::~FFMpegWrapper() {}
 
+bool FFMpegWrapper::ffmpegExecutableExist() { return fs::exists(std::format("{}/ffmpeg", _ffmpegPath)); }
+
 void FFMpegWrapper::encodingVideoCodecValidation(string codec)
 {
 	if (codec != "libx264" && codec != "libvpx" && codec != "rawvideo" && codec != "mpeg4" && codec != "xvid")
