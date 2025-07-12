@@ -37,7 +37,7 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 			ffmpegExecuteCommand =
 				std::format("{}/ffmpeg -f avfoundation -list_devices true -i \"\" > {} 2>&1", _ffmpegPath, outputFfmpegPathFileName);
 #elif defined(__linux__)
-			framework = "x11grab";
+			ffmpegExecuteCommand = std::format("{}/ffmpeg -f x11grab -list_devices true -i \"\" > {} 2>&1", _ffmpegPath, outputFfmpegPathFileName);
 #endif
 
 			chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
