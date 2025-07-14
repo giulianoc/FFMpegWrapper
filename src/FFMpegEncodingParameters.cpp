@@ -1888,7 +1888,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					// bufSize
 					string ffmpegVideoBufSize;
 					{
-						field = "KBufferSize";
+						field = "kBufferSize";
 						if (JSONUtils::isMetadataPresent(bitRateInfo, field))
 						{
 							int bufferSize = JSONUtils::asInt(bitRateInfo, field, 0);
