@@ -1999,7 +1999,7 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 
 							CurlWrapper::downloadFile(
 								sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
-								std::format(", ingestionJobKey: {}", ingestionJobKey)
+								std::format(", ingestionJobKey: {}", ingestionJobKey), 120 /* timeoutInSeconds */, 1 /* maxRetryNumber */
 							);
 						}
 						// playlist and dowloaded files will be removed by the calling FFMpeg::liveProxy2 method
