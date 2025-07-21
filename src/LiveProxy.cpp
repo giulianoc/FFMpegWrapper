@@ -1992,15 +1992,30 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 						}
 						else
 						{
-							FFMpegProgressData progressData;
-							progressData._ingestionJobKey = ingestionJobKey;
-							progressData._lastTimeProgressUpdate = chrono::system_clock::now();
-							progressData._lastPercentageUpdated = -1.0;
+							try
+							{
+								FFMpegProgressData progressData;
+								progressData._ingestionJobKey = ingestionJobKey;
+								progressData._lastTimeProgressUpdate = chrono::system_clock::now();
+								progressData._lastPercentageUpdated = -1.0;
 
-							CurlWrapper::downloadFile(
-								sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
-								std::format(", ingestionJobKey: {}", ingestionJobKey), 120 /* timeoutInSeconds */, 1 /* maxRetryNumber */
-							);
+								CurlWrapper::downloadFile(
+									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
+									std::format(", ingestionJobKey: {}", ingestionJobKey), 120 /* timeoutInSeconds */, 1 /* maxRetryNumber */
+								);
+							}
+							catch (exception &e)
+							{
+								SPDLOG_ERROR(
+									"CurlWrapper::downloadFile failed"
+									", ingestionJobKey: {}"
+									", sourcePhysicalReference: {}"
+									", exception: {}",
+									ingestionJobKey, sourcePhysicalReference, e.what()
+								);
+
+								continue;
+							}
 						}
 						// playlist and dowloaded files will be removed by the calling FFMpeg::liveProxy2 method
 						playlistListFile << "file '" << destBinaryFileName << "'" << endl;
