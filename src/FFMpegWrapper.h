@@ -178,6 +178,7 @@ class FFMpegWrapper
 
 	double getEncodingProgress();
 
+	time_t getOutputFFMpegFileLastModificationTime();
 	bool nonMonotonousDTSInOutputLog();
 	bool forbiddenErrorInOutputLog();
 	// bool areRealTimeInfoChanged(int maxMilliSecondsToWait);
@@ -247,27 +248,6 @@ class FFMpegWrapper
 	void extractTrackMediaToIngest(
 		int64_t ingestionJobKey, string sourcePhysicalPath, vector<pair<string, int>> &tracksToBeExtracted, string extractTrackMediaPathName
 	);
-
-	/*
-	void liveRecorder(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string segmentListPathName, string recordedFileNamePrefix,
-
-		string otherInputOptions,
-
-		string streamSourceType, string liveURL, int listenTimeoutInSeconds, int captureLive_videoDeviceNumber, string captureLive_videoInputFormat,
-		int captureLive_frameRate, int captureLive_width, int captureLive_height, int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
-
-		string userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
-
-		int segmentDurationInSeconds, string outputFileFormat, string segmenterType,
-
-		json outputsRoot,
-
-		json picturePathNamesToBeDetectedRoot,
-
-		pid_t *pChildPid, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
-	);
-	*/
 
 	void liveRecorder2(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string segmentListPathName, string recordedFileNamePrefix,

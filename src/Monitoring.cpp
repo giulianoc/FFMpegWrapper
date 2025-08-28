@@ -406,6 +406,68 @@ bool FFMpegWrapper::forbiddenErrorInOutputLog()
 	}
 }
 
+time_t FFMpegWrapper::getOutputFFMpegFileLastModificationTime()
+{
+	try
+	{
+		if (!fs::exists(_outputFfmpegPathFileName.c_str()))
+		{
+			SPDLOG_INFO(
+				"getOutputFFMpegFileLastModificationTime: Encoding status not available"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", _outputFfmpegPathFileName: {}"
+				", _currentMMSSourceAssetPathName: {}"
+				", _currentStagingEncodedAssetPathName: {}",
+				_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
+				_currentStagingEncodedAssetPathName
+			);
+
+			throw FFMpegEncodingStatusNotAvailable();
+		}
+
+		// last_write_time ritorna un file_time_type, che usa un clock diverso da system_clock. Per questo serve la conversione.
+		auto ftime = fs::last_write_time(_outputFfmpegPathFileName);
+
+		// Converti in time_t (secondi da epoch)
+		auto sctp = chrono::time_point_cast<chrono::system_clock::duration>(ftime - fs::file_time_type::clock::now() + chrono::system_clock::now());
+
+		return chrono::system_clock::to_time_t(sctp);
+	}
+	catch (FFMpegEncodingStatusNotAvailable &e)
+	{
+		SPDLOG_WARN(
+			"getOutputFFMpegFileLastModificationTime failed"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", _outputFfmpegPathFileName: {}"
+			", _currentMMSSourceAssetPathName: {}"
+			", _currentStagingEncodedAssetPathName: {}"
+			", e.what: {}",
+			_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
+			_currentStagingEncodedAssetPathName, e.what()
+		);
+
+		throw e;
+	}
+	catch (exception &e)
+	{
+		SPDLOG_ERROR(
+			"getOutputFFMpegFileLastModificationTime failed"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", _outputFfmpegPathFileName: {}"
+			", _currentMMSSourceAssetPathName: {}"
+			", _currentStagingEncodedAssetPathName: {}"
+			", e.what: {}",
+			_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
+			_currentStagingEncodedAssetPathName, e.what()
+		);
+
+		throw;
+	}
+}
+
 tuple<long, long, double, double, int> FFMpegWrapper::getRealTimeInfoByOutputLog()
 {
 	// frame= 2315 fps= 98 q=27.0 q=28.0 size=    6144kB time=00:01:32.35 bitrate= 545.0kbits/s speed=3.93x
@@ -747,9 +809,10 @@ tuple<long, long, double, double, int> FFMpegWrapper::getRealTimeInfoByOutputLog
 			", encodingJobKey: {}"
 			", _outputFfmpegPathFileName: {}"
 			", _currentMMSSourceAssetPathName: {}"
-			", _currentStagingEncodedAssetPathName: {}",
+			", _currentStagingEncodedAssetPathName: {}"
+			", e.what: {}",
 			_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
-			_currentStagingEncodedAssetPathName
+			_currentStagingEncodedAssetPathName, e.what()
 		);
 
 		throw e;
@@ -762,12 +825,13 @@ tuple<long, long, double, double, int> FFMpegWrapper::getRealTimeInfoByOutputLog
 			", encodingJobKey: {}"
 			", _outputFfmpegPathFileName: {}"
 			", _currentMMSSourceAssetPathName: {}"
-			", _currentStagingEncodedAssetPathName: {}",
+			", _currentStagingEncodedAssetPathName: {}"
+			", e.what: {}",
 			_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
-			_currentStagingEncodedAssetPathName
+			_currentStagingEncodedAssetPathName, e.what()
 		);
 
-		throw e;
+		throw;
 	}
 
 	return make_tuple(frame, size, timeInMilliSeconds, bitRate, timestampDiscontinuityCount);
