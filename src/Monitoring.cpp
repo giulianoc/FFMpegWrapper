@@ -13,7 +13,9 @@
 #include "FFMpegWrapper.h"
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
+#include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <regex>
 
@@ -454,6 +456,64 @@ time_t FFMpegWrapper::getOutputFFMpegFileLastModificationTime()
 	{
 		SPDLOG_ERROR(
 			"getOutputFFMpegFileLastModificationTime failed"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", _outputFfmpegPathFileName: {}"
+			", _currentMMSSourceAssetPathName: {}"
+			", _currentStagingEncodedAssetPathName: {}"
+			", e.what: {}",
+			_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
+			_currentStagingEncodedAssetPathName, e.what()
+		);
+
+		throw;
+	}
+}
+
+uintmax_t FFMpegWrapper::getOutputFFMpegFileSize()
+{
+	try
+	{
+		if (!fs::exists(_outputFfmpegPathFileName.c_str()))
+		{
+			SPDLOG_INFO(
+				"getOutputFFMpegFileSize: Encoding status not available"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", _outputFfmpegPathFileName: {}"
+				", _currentMMSSourceAssetPathName: {}"
+				", _currentStagingEncodedAssetPathName: {}",
+				_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
+				_currentStagingEncodedAssetPathName
+			);
+
+			throw FFMpegEncodingStatusNotAvailable();
+		}
+
+		auto size = fs::file_size(_outputFfmpegPathFileName);
+
+		return size;
+	}
+	catch (FFMpegEncodingStatusNotAvailable &e)
+	{
+		SPDLOG_WARN(
+			"getOutputFFMpegFileSize failed"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", _outputFfmpegPathFileName: {}"
+			", _currentMMSSourceAssetPathName: {}"
+			", _currentStagingEncodedAssetPathName: {}"
+			", e.what: {}",
+			_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
+			_currentStagingEncodedAssetPathName, e.what()
+		);
+
+		throw e;
+	}
+	catch (exception &e)
+	{
+		SPDLOG_ERROR(
+			"getOutputFFMpegFileSize failed"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
 			", _outputFfmpegPathFileName: {}"

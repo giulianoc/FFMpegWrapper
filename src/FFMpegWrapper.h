@@ -16,6 +16,7 @@
 
 #include "ProcessUtility.h"
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #ifndef SPDLOG_ACTIVE_LEVEL
@@ -179,6 +180,7 @@ class FFMpegWrapper
 	double getEncodingProgress();
 
 	time_t getOutputFFMpegFileLastModificationTime();
+	uintmax_t getOutputFFMpegFileSize();
 	bool nonMonotonousDTSInOutputLog();
 	bool forbiddenErrorInOutputLog();
 	// bool areRealTimeInfoChanged(int maxMilliSecondsToWait);
