@@ -2377,7 +2377,7 @@ void FFMpegWrapper::liveRecorder2(
 		if (utcTimeOverlay)
 		{
 			{
-				FFMpegFilters ffmpegFilters(_ffmpegTtfFontDir);
+				FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey, -1);
 
 				json filtersRoot;
 				json videoFiltersRoot = json::array();

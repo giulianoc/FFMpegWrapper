@@ -281,7 +281,7 @@ void FFMpegWrapper::generateFramesToIngest(
 			localImageFileName = imageBaseFileName + ".jpg";
 	}
 
-	FFMpegFilters ffmpegFilters(_ffmpegTtfFontDir);
+	FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey, -1);
 
 	string videoFilterParameters;
 	if (videoFilter == "PeriodicFrame")

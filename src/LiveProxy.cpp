@@ -2387,8 +2387,6 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		ingestionJobKey, encodingJobKey, JSONUtils::toString(outputsRoot)
 	);
 
-	FFMpegFilters ffmpegFilters(_ffmpegTtfFontDir);
-
 	// 2023-01-01:
 	//		In genere i parametri del 'draw text' vengono inizializzati all'interno di outputRoot.
 	//		Nel caso di un Broadcast (Live Channel), all'interno del json dell'encodingJob, inputsRoot
@@ -2431,6 +2429,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 	for (int outputIndex = 0; outputIndex < outputsRoot.size(); outputIndex++)
 	{
+		FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey, outputIndex);
+
 		json outputRoot = outputsRoot[outputIndex];
 
 		string outputType = JSONUtils::asString(outputRoot, "outputType", "");
@@ -2459,40 +2459,6 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			ingestionJobKey, encodingJobKey, JSONUtils::toString(outputRoot["filters"]), JSONUtils::toString(inputFiltersRoot),
 			JSONUtils::toString(filtersRoot)
 		);
-
-		// in caso di drawtext filter, set textFilePathName sicuramente se è presente reloadAtFrameInterval
-		// Inoltre in caso di caratteri speciali come ', bisogna usare il file
-		if (filtersRoot != nullptr)
-		{
-			if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
-			{
-				json videoFiltersRoot = filtersRoot["video"];
-				for (int filterIndex = 0; filterIndex < videoFiltersRoot.size(); filterIndex++)
-				{
-					json videoFilterRoot = videoFiltersRoot[filterIndex];
-					if (JSONUtils::isMetadataPresent(videoFilterRoot, "type") && videoFilterRoot["type"] == "drawtext")
-					{
-						int reloadAtFrameInterval = JSONUtils::asInt(videoFilterRoot, "reloadAtFrameInterval", -1);
-						string overlayText = JSONUtils::asString(videoFilterRoot, "text", "");
-						if (reloadAtFrameInterval > 0 ||
-							// caratteri dove non si puo usare escape
-							overlayText.find("'") != string::npos)
-						{
-							string textTemporaryFileName = getDrawTextTemporaryPathName(ingestionJobKey, encodingJobKey, outputIndex);
-							{
-								ofstream of(textTemporaryFileName, ofstream::trunc);
-								of << overlayText;
-								of.flush();
-							}
-
-							videoFilterRoot["textFilePathName"] = textTemporaryFileName;
-							videoFiltersRoot[filterIndex] = videoFilterRoot;
-							filtersRoot["video"] = videoFiltersRoot;
-						}
-					}
-				}
-			}
-		}
 
 		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", nullptr);
 		/*

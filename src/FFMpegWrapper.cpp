@@ -460,11 +460,3 @@ string FFMpegWrapper::centsOfSecondsToTime(int64_t ingestionJobKey, long centsOf
 		throw runtime_error(errorMessage);
 	}
 }
-
-string FFMpegWrapper::getDrawTextTemporaryPathName(int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
-{
-	if (outputIndex != -1)
-		return std::format("{}/{}_{}_{}.overlayText", _ffmpegTempDir, ingestionJobKey, encodingJobKey, outputIndex);
-	else
-		return std::format("{}/{}_{}.overlayText", _ffmpegTempDir, ingestionJobKey, encodingJobKey);
-}

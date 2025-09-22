@@ -32,7 +32,7 @@ using namespace nlohmann::literals;
 class FFMpegFilters
 {
   public:
-	FFMpegFilters(string ffmpegTtfFontDir);
+	FFMpegFilters(string ffmpegTempDir, string ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex = -1);
 
 	~FFMpegFilters();
 
@@ -47,8 +47,15 @@ class FFMpegFilters
 
 	json mergeFilters(json filters_1Root, json filters_2Root);
 
+	static string getDrawTextTemporaryPathName(string ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex);
+
   private:
+	string _ffmpegTempDir;
 	string _ffmpegTtfFontDir;
+
+	int64_t _ingestionJobKey;
+	int64_t _encodingJobKey;
+	int _outputIndex;
 };
 
 #endif

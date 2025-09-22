@@ -627,6 +627,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 		}
 
 		{
+			/*
 			string text = JSONUtils::asString(drawTextDetailsRoot, "text", "");
 
 			string textTemporaryFileName = getDrawTextTemporaryPathName(_currentIngestionJobKey, _currentEncodingJobKey);
@@ -643,14 +644,15 @@ void FFMpegWrapper::overlayTextOnVideo(
 				", textTemporaryFileName: {}",
 				ingestionJobKey, encodingJobKey, textTemporaryFileName
 			);
+			*/
 
 			string ffmpegDrawTextFilter;
 			{
 				json filterRoot = drawTextDetailsRoot;
 				filterRoot["type"] = "drawtext";
-				filterRoot["textFilePathName"] = textTemporaryFileName;
+				// filterRoot["textFilePathName"] = textTemporaryFileName;
 
-				FFMpegFilters ffmpegFilters(_ffmpegTtfFontDir);
+				FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey);
 				ffmpegDrawTextFilter = ffmpegFilters.getFilter(filterRoot, -1);
 			}
 			/*
@@ -772,6 +774,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 						);
 					SPDLOG_ERROR(errorMessage);
 
+					/*
 					SPDLOG_INFO(
 						"remove"
 						", ingestionJobKey: {}"
@@ -780,6 +783,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 						ingestionJobKey, encodingJobKey, textTemporaryFileName
 					);
 					fs::remove_all(textTemporaryFileName);
+					*/
 
 					SPDLOG_INFO(
 						"remove"
@@ -796,6 +800,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 						throw e;
 				}
 
+				/*
 				SPDLOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
@@ -804,6 +809,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 					ingestionJobKey, encodingJobKey, textTemporaryFileName
 				);
 				fs::remove_all(textTemporaryFileName);
+				*/
 
 				SPDLOG_INFO(
 					"remove"

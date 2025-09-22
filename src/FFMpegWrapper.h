@@ -88,6 +88,8 @@ struct EncodingIsAlreadyRunning : public exception
 class FFMpegWrapper
 {
   public:
+	string _ffmpegTempDir;
+
 	FFMpegWrapper(json configuration);
 
 	~FFMpegWrapper();
@@ -301,7 +303,6 @@ class FFMpegWrapper
 	static void encodingVideoCodecValidation(string codec);
 
 	pair<string, string> retrieveStreamingYouTubeURL(int64_t ingestionJobKey, string youTubeURL);
-	string getDrawTextTemporaryPathName(int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex = -1);
 	void retrieveLocalInputDevices(vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices);
 	bool ffmpegExecutableExist();
 
@@ -463,7 +464,6 @@ class FFMpegWrapper
 	}
 
 	string _ffmpegPath;
-	string _ffmpegTempDir;
 	string _ffmpegEndlessRecursivePlaylistDir;
 	string _ffmpegTtfFontDir;
 	int _charsToBeReadFromFfmpegErrorOutput;

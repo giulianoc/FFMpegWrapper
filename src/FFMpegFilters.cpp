@@ -4,7 +4,11 @@
 #include <fstream>
 #include <regex>
 
-FFMpegFilters::FFMpegFilters(string ffmpegTtfFontDir) { _ffmpegTtfFontDir = ffmpegTtfFontDir; }
+FFMpegFilters::FFMpegFilters(string ffmpegTempDir, string ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
+	: _ffmpegTempDir(ffmpegTempDir), _ffmpegTtfFontDir(ffmpegTtfFontDir), _ingestionJobKey(ingestionJobKey), _encodingJobKey(encodingJobKey),
+	  _outputIndex(outputIndex)
+{
+}
 
 FFMpegFilters::~FFMpegFilters() {}
 
@@ -190,7 +194,6 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 	else if (type == "drawtext")
 	{
 		string text = JSONUtils::asString(filterRoot, "text", "");
-		string textFilePathName = JSONUtils::asString(filterRoot, "textFilePathName", "");
 		int reloadAtFrameInterval = JSONUtils::asInt(filterRoot, "reloadAtFrameInterval", -1);
 		string textPosition_X_InPixel = JSONUtils::asString(filterRoot, "textPosition_X_InPixel", "");
 		string textPosition_Y_InPixel = JSONUtils::asString(filterRoot, "textPosition_Y_InPixel", "");
@@ -205,10 +208,17 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 		int boxPercentageOpacity = JSONUtils::asInt(filterRoot, "boxPercentageOpacity", -1);
 		int boxBorderW = JSONUtils::asInt(filterRoot, "boxBorderW", 0);
 
+		string textFilePathName;
 		{
-			// management of the text, many processing is in case of a countdown
-			string ffmpegText = text;
+			// serve un file se
+			// - è presente reloadAtFrameInterval
+			// - sono presenti caratteri speciali come '
+			if (reloadAtFrameInterval > 0 ||
+				// caratteri dove non si puo usare escape
+				text.find("'") != string::npos)
+				textFilePathName = getDrawTextTemporaryPathName(_ffmpegTempDir, _ingestionJobKey, _encodingJobKey, _outputIndex);
 
+			/*
 			if (textFilePathName != "")
 			{
 				ifstream ifPathFileName(textFilePathName);
@@ -243,13 +253,14 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 					);
 				}
 			}
+			*/
 
 			string escape = "\\";
 			if (textFilePathName != "")
 				escape = ""; // in case of file, there is no need of escape
 
-			ffmpegText = regex_replace(ffmpegText, regex(":"), escape + ":");
-			ffmpegText = regex_replace(ffmpegText, regex("'"), escape + "'");
+			text = regex_replace(text, regex(":"), escape + ":");
+			text = regex_replace(text, regex("'"), escape + "'");
 
 			if (streamingDurationInSeconds != -1)
 			{
@@ -265,34 +276,34 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 				//
 
 				{
-					ffmpegText = regex_replace(
-						ffmpegText, regex("days_counter"),
-						"%{eif" + escape + ":trunc((countDownDurationInSecs-t)/86400)" + escape + ":d" + escape + ":2}"
+					text = regex_replace(
+						text, regex("days_counter"), "%{eif" + escape + ":trunc((countDownDurationInSecs-t)/86400)" + escape + ":d" + escape + ":2}"
 					);
-					ffmpegText = regex_replace(
-						ffmpegText, regex("hours_counter"),
+					text = regex_replace(
+						text, regex("hours_counter"),
 						"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
 					);
-					ffmpegText = regex_replace(
-						ffmpegText, regex("mins_counter"),
+					text = regex_replace(
+						text, regex("mins_counter"),
 						"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/60),60))" + escape + ":d" + escape + ":2}"
 					);
-					ffmpegText = regex_replace(
-						ffmpegText, regex("secs_counter"),
+					text = regex_replace(
+						text, regex("secs_counter"),
 						"%{eif" + escape + ":trunc(mod(countDownDurationInSecs-t" + escape + ",60))" + escape + ":d" + escape + ":2}"
 					);
-					ffmpegText = regex_replace(
-						ffmpegText, regex("cents_counter"),
+					text = regex_replace(
+						text, regex("cents_counter"),
 						"%{eif" + escape + ":(mod(countDownDurationInSecs-t" + escape + ",1)*pow(10,2))" + escape + ":d" + escape + ":2}"
 					);
-					ffmpegText = regex_replace(ffmpegText, regex("countDownDurationInSecs"), to_string(streamingDurationInSeconds));
+					text = regex_replace(text, regex("countDownDurationInSecs"), to_string(streamingDurationInSeconds));
 				}
 			}
 
 			if (textFilePathName != "")
 			{
+				// questo file dovrà essere rimosso dallo script di retention
 				ofstream of(textFilePathName, ofstream::trunc);
-				of << ffmpegText;
+				of << text;
 				of.flush();
 			}
 
@@ -395,7 +406,7 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 					filter += (":reload=" + to_string(reloadAtFrameInterval));
 			}
 			else
-				filter = std::format("drawtext=text='{}'", ffmpegText);
+				filter = std::format("drawtext=text='{}'", text);
 			if (textPosition_X_InPixel != "")
 				filter += (":x=" + ffmpegTextPosition_X_InPixel);
 			if (textPosition_Y_InPixel != "")
@@ -643,4 +654,12 @@ json FFMpegFilters::mergeFilters(json filters_1Root, json filters_2Root)
 	}
 
 	return mergedFiltersRoot;
+}
+
+string FFMpegFilters::getDrawTextTemporaryPathName(string ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
+{
+	if (outputIndex != -1)
+		return std::format("{}/{}_{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey, outputIndex);
+	else
+		return std::format("{}/{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey);
 }

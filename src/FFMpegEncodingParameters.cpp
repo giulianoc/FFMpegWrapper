@@ -151,7 +151,7 @@ void FFMpegEncodingParameters::applyEncoding(
 			throw runtime_error(errorMessage);
 		}
 
-		FFMpegFilters ffmpegFilters(_ffmpegTtfFontDir);
+		FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, _ingestionJobKey, _encodingJobKey, -1);
 
 		if (_httpStreamingFileFormat != "")
 		{
