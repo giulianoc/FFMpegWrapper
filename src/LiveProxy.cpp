@@ -2460,7 +2460,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			JSONUtils::toString(filtersRoot)
 		);
 
-		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", nullptr);
+		json j = nullptr;
+		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", j);
 		/*
 		json encodingProfileDetailsRoot = nullptr;
 		if (JSONUtils::isMetadataPresent(outputRoot, "encodingProfileDetails"))
