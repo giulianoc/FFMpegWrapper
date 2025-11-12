@@ -40,49 +40,49 @@ using json = nlohmann::json;
 using orderd_json = nlohmann::ordered_json;
 using namespace nlohmann::literals;
 
-struct FFMpegEncodingStatusNotAvailable : public exception
+struct FFMpegEncodingStatusNotAvailable final : public exception
 {
-	char const *what() const throw() { return "Encoding status not available"; };
+	[[nodiscard]] char const *what() const noexcept override { return "Encoding status not available"; };
 };
 
-struct FFMpegSizeOrFrameInfoNotAvailable : public exception
+struct FFMpegSizeOrFrameInfoNotAvailable final : public exception
 {
-	char const *what() const throw() { return "SizeOrFrame Info not available"; };
+	[[nodiscard]] char const *what() const noexcept override { return "SizeOrFrame Info not available"; };
 };
 
-struct FFMpegEncodingKilledByUser : public exception
+struct FFMpegEncodingKilledByUser final : public exception
 {
-	char const *what() const throw() { return "Encoding was killed by the User"; };
+	[[nodiscard]] char const *what() const noexcept override { return "Encoding was killed by the User"; };
 };
 
-struct FFMpegURLForbidden : public exception
+struct FFMpegURLForbidden final : public exception
 {
-	char const *what() const throw() { return "URL Forbidden"; };
+	[[nodiscard]] char const *what() const throw() override { return "URL Forbidden"; };
 };
 
-struct FFMpegURLNotFound : public exception
+struct FFMpegURLNotFound final : public exception
 {
-	char const *what() const throw() { return "URL Not Found"; };
+	[[nodiscard]] char const *what() const noexcept override { return "URL Not Found"; };
 };
 
-struct NoEncodingJobKeyFound : public exception
+struct NoEncodingJobKeyFound final : public exception
 {
-	char const *what() const throw() { return "No encoding job key found"; };
+	[[nodiscard]] char const *what() const noexcept override { return "No encoding job key found"; };
 };
 
-struct NoEncodingAvailable : public exception
+struct NoEncodingAvailable final : public exception
 {
-	char const *what() const throw() { return "No encoding available"; };
+	[[nodiscard]] char const *what() const noexcept override { return "No encoding available"; };
 };
 
-struct MaxConcurrentJobsReached : public exception
+struct MaxConcurrentJobsReached final : public exception
 {
-	char const *what() const throw() { return "Encoder reached the max number of concurrent jobs"; };
+	[[nodiscard]] char const *what() const noexcept override { return "Encoder reached the max number of concurrent jobs"; };
 };
 
-struct EncodingIsAlreadyRunning : public exception
+struct EncodingIsAlreadyRunning final : public exception
 {
-	char const *what() const throw() { return "Encoding is already running"; };
+	[[nodiscard]] char const *what() const noexcept override { return "Encoding is already running"; };
 };
 
 class FFMpegWrapper
@@ -90,7 +90,7 @@ class FFMpegWrapper
   public:
 	string _ffmpegTempDir;
 
-	FFMpegWrapper(json configuration);
+	explicit FFMpegWrapper(json configuration);
 
 	~FFMpegWrapper();
 
