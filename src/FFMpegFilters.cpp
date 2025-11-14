@@ -1,19 +1,22 @@
 
 #include "FFMpegFilters.h"
 #include "JSONUtils.h"
-#include <fstream>
-#include <regex>
+#include "StringUtils.h"
 
-FFMpegFilters::FFMpegFilters(string ffmpegTempDir, string ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
-	: _ffmpegTempDir(ffmpegTempDir), _ffmpegTtfFontDir(ffmpegTtfFontDir), _ingestionJobKey(ingestionJobKey), _encodingJobKey(encodingJobKey),
+#include <fstream>
+#include <utility>
+
+FFMpegFilters::FFMpegFilters(string  ffmpegTempDir, string  ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
+	: _ffmpegTempDir(std::move(ffmpegTempDir)), _ffmpegTtfFontDir(std::move(ffmpegTtfFontDir)), _ingestionJobKey(ingestionJobKey), _encodingJobKey(encodingJobKey),
 	  _outputIndex(outputIndex)
 {
 }
 
-FFMpegFilters::~FFMpegFilters() {}
+FFMpegFilters::~FFMpegFilters() = default;
 
 tuple<string, string, string>
-FFMpegFilters::addFilters(json filtersRoot, string ffmpegVideoResolutionParameter, string ffmpegDrawTextFilter, int64_t streamingDurationInSeconds)
+FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter,
+	int64_t streamingDurationInSeconds)
 {
 	string videoFilters = addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, ffmpegDrawTextFilter, streamingDurationInSeconds);
 	string audioFilters = addAudioFilters(filtersRoot, streamingDurationInSeconds);
@@ -28,7 +31,7 @@ FFMpegFilters::addFilters(json filtersRoot, string ffmpegVideoResolutionParamete
 				json filterRoot = filtersRoot["complex"][filterIndex];
 
 				string filter = getFilter(filterRoot, streamingDurationInSeconds);
-				if (complexFilters != "")
+				if (!complexFilters.empty())
 					complexFilters += ",";
 				complexFilters += filter;
 			}
@@ -36,12 +39,12 @@ FFMpegFilters::addFilters(json filtersRoot, string ffmpegVideoResolutionParamete
 	}
 
 	// Simple and complex filtering cannot be used together for the same stream
-	if (complexFilters != "")
+	if (!complexFilters.empty())
 	{
-		if (audioFilters != "")
-			complexFilters = audioFilters + "," + complexFilters;
-		if (videoFilters != "")
-			complexFilters = videoFilters + "," + complexFilters;
+		if (!audioFilters.empty())
+			complexFilters = std::format("{},{}", audioFilters, complexFilters);
+		if (!videoFilters.empty())
+			complexFilters = std::format("{},{}", videoFilters, complexFilters);
 		videoFilters = "";
 		audioFilters = "";
 	}
@@ -50,20 +53,20 @@ FFMpegFilters::addFilters(json filtersRoot, string ffmpegVideoResolutionParamete
 }
 
 string FFMpegFilters::addVideoFilters(
-	json filtersRoot, string ffmpegVideoResolutionParameter, string ffmpegDrawTextFilter, int64_t streamingDurationInSeconds
-)
+	json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds
+) const
 {
 	string videoFilters;
 
-	if (ffmpegVideoResolutionParameter != "")
+	if (!ffmpegVideoResolutionParameter.empty())
 	{
-		if (videoFilters != "")
+		if (!videoFilters.empty())
 			videoFilters += ",";
 		videoFilters += ffmpegVideoResolutionParameter;
 	}
-	if (ffmpegDrawTextFilter != "")
+	if (!ffmpegDrawTextFilter.empty())
 	{
-		if (videoFilters != "")
+		if (!videoFilters.empty())
 			videoFilters += ",";
 		videoFilters += ffmpegDrawTextFilter;
 	}
@@ -77,7 +80,7 @@ string FFMpegFilters::addVideoFilters(
 				json filterRoot = filtersRoot["video"][filterIndex];
 
 				string filter = getFilter(filterRoot, streamingDurationInSeconds);
-				if (videoFilters != "")
+				if (!videoFilters.empty())
 					videoFilters += ",";
 				videoFilters += filter;
 			}
@@ -87,7 +90,7 @@ string FFMpegFilters::addVideoFilters(
 	return videoFilters;
 }
 
-string FFMpegFilters::addAudioFilters(json filtersRoot, int64_t streamingDurationInSeconds)
+string FFMpegFilters::addAudioFilters(const json& filtersRoot, const int64_t streamingDurationInSeconds) const
 {
 	string audioFilters;
 
@@ -95,12 +98,10 @@ string FFMpegFilters::addAudioFilters(json filtersRoot, int64_t streamingDuratio
 	{
 		if (JSONUtils::isMetadataPresent(filtersRoot, "audio"))
 		{
-			for (int filterIndex = 0; filterIndex < filtersRoot["audio"].size(); filterIndex++)
+			for (const auto& filterRoot : filtersRoot["audio"])
 			{
-				json filterRoot = filtersRoot["audio"][filterIndex];
-
-				string filter = getFilter(filterRoot, streamingDurationInSeconds);
-				if (audioFilters != "")
+				const string filter = getFilter(filterRoot, streamingDurationInSeconds);
+				if (!audioFilters.empty())
 					audioFilters += ",";
 				audioFilters += filter;
 			}
@@ -110,7 +111,7 @@ string FFMpegFilters::addAudioFilters(json filtersRoot, int64_t streamingDuratio
 	return audioFilters;
 }
 
-string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeconds)
+string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDurationInSeconds) const
 {
 	string filter;
 
@@ -194,6 +195,9 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 	else if (type == "drawtext")
 	{
 		string text = JSONUtils::asString(filterRoot, "text", "");
+		// timecode: none, editorial, pts
+		string timecode = JSONUtils::asString(filterRoot, "timecode", "none");
+		int32_t ptsTimecodeRate = JSONUtils::asInt(filterRoot, "ptsTimecodeRate", 25);
 		int reloadAtFrameInterval = JSONUtils::asInt(filterRoot, "reloadAtFrameInterval", -1);
 		string textPosition_X_InPixel = JSONUtils::asString(filterRoot, "textPosition_X_InPixel", "");
 		string textPosition_Y_InPixel = JSONUtils::asString(filterRoot, "textPosition_Y_InPixel", "");
@@ -208,59 +212,56 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 		int boxPercentageOpacity = JSONUtils::asInt(filterRoot, "boxPercentageOpacity", -1);
 		int boxBorderW = JSONUtils::asInt(filterRoot, "boxBorderW", 0);
 
-		string textFilePathName;
+		/* TIMECODE
+		1) editorialTimecode: è un’informazione “editoriale”, non tecnica per la riproduzione. Questo timecode NON è usato internamente
+			dal player o dal decoder video. E' usato in ambito broadcast, editing e post-produzione.
+			Formato tipico SMPTE: HH:MM:SS:FF, FF = frame number (dipende dal frame rate)
+			Indica un orario leggibile (es. 10:03:05:12) che rappresenta la posizione temporale del frame all’interno di un contenuto.
+			Si trova nel file o nel flusso:
+			- come metadata del flusso video (tag timecode=10:03:05:00);
+			- o incorporato nel segnale SDI (VITC/LTC);
+			- oppure codificato come stream separato (es. timecode stream)
+		2) ptsTimecode: è il timecode tecnico basato sui PTS (Presentation Time Stamp) del flusso video. Questo timecode è usato
+			dal player o dal decoder video per la riproduzione. Indica quando un frame (video o audio) deve essere mostrato o riprodotto.
+			Si trova nel transport stream (es. MPEG-TS) o nel container (es. MP4) — per ogni pacchetto o frame.
+			Serve a:
+			- Mantenere la sincronia tra audio e video.
+			- Ricostruire la temporizzazione corretta in decodifica.
+			- Fare seeking e tagli precisi nei file.
+		3) DTS (Decoding Time Stamp) è un altro tipo di timestamp usato per indicare quando un frame deve essere decodificato.
+			Non sempre è uguale al PTS, specialmente nei flussi con B-frames. Infatti serve soprattutto per codec con B-frame (bidirezionali),
+			dove l’ordine di decodifica ≠ ordine di presentazione.
+
+		Scenario AWS con MediaLive e timecode insertion PIC_TIMING_SEI
+			Se il flusso in input contiene il timecode nel SEI pic_timing, AWS con Media Live è in grado di leggerlo e usarlo per l’inserimento
+			del timecode nel video in output.
+			FFMpeg invece non puo leggerlo direttamente in drawtext perchè drawtext può leggere solo:
+			- metadata del container
+			- metadata del frame (se FFmpeg li mappa)
+			- variabili interne (pts, t, n, ecc.)
+			- SMPTE timecode presente come metadata timecode
+			- un file esterno
+			- variabili LTC/ATC tramite asetpts
+		Ma il SEI pic_timing di solito non viene esposto come metadata timecode.
+		*/
+
 		{
+			string textFilePathName;
 			// serve un file se
 			// - è presente reloadAtFrameInterval
 			// - sono presenti caratteri speciali come '
 			if (reloadAtFrameInterval > 0 ||
 				// caratteri dove non si puo usare escape
-				text.find("'") != string::npos)
+				text.find('\'') != string::npos)
 				textFilePathName = getDrawTextTemporaryPathName(_ffmpegTempDir, _ingestionJobKey, _encodingJobKey, _outputIndex);
 
-			/*
-			if (textFilePathName != "")
-			{
-				ifstream ifPathFileName(textFilePathName);
-				if (ifPathFileName)
-				{
-					// get size/length of file:
-					ifPathFileName.seekg(0, ifPathFileName.end);
-					int fileSize = ifPathFileName.tellg();
-					ifPathFileName.seekg(0, ifPathFileName.beg);
+			// in case of file, there is no need of escape
+			string escape = textFilePathName.empty() ? "\\" : "";
 
-					char *buffer = new char[fileSize];
-					ifPathFileName.read(buffer, fileSize);
-					if (ifPathFileName)
-					{
-						// all characters read successfully
-						ffmpegText.assign(buffer, fileSize);
-					}
-					else
-					{
-						// error: only is.gcount() could be read";
-						ffmpegText.assign(buffer, ifPathFileName.gcount());
-					}
-					ifPathFileName.close();
-					delete[] buffer;
-				}
-				else
-				{
-					SPDLOG_ERROR(
-						"ffmpeg: drawtext file cannot be read"
-						", textFilePathName: {}",
-						textFilePathName
-					);
-				}
-			}
-			*/
-
-			string escape = "\\";
-			if (textFilePathName != "")
-				escape = ""; // in case of file, there is no need of escape
-
-			text = regex_replace(text, regex(":"), escape + ":");
-			text = regex_replace(text, regex("'"), escape + "'");
+			// text = regex_replace(text, regex(":"), escape + ":");
+			text = StringUtils::replaceAll(text, ":", std::format("{}:", escape));
+			// text = regex_replace(text, regex("'"), escape + "'");
+			text = StringUtils::replaceAll(text, "'", std::format("{}'", escape));
 
 			if (streamingDurationInSeconds != -1)
 			{
@@ -276,30 +277,60 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 				//
 
 				{
-					text = regex_replace(
-						text, regex("days_counter"), "%{eif" + escape + ":trunc((countDownDurationInSecs-t)/86400)" + escape + ":d" + escape + ":2}"
+					// text = regex_replace(
+					// 	text, regex("days_counter"), "%{eif" + escape + ":trunc((countDownDurationInSecs-t)/86400)" + escape + ":d" + escape + ":2}"
+					// );
+					text = StringUtils::replaceAll(text, "days_counter",
+						"%{eif" + escape + ":trunc((countDownDurationInSecs-t)/86400)" + escape + ":d" + escape + ":2}"
 					);
-					text = regex_replace(
-						text, regex("hours_counter"),
+					// text = regex_replace(
+					// 	text, regex("hours_counter"),
+					// 	"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
+					// );
+					text = StringUtils::replaceAll(text, "hours_counter",
 						"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
 					);
-					text = regex_replace(
-						text, regex("mins_counter"),
+					// text = regex_replace(
+					// 	text, regex("hours_counter"),
+					// 	"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
+					// );
+					text = StringUtils::replaceAll(text, "hours_counter",
+						"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
+					);
+					// text = regex_replace(
+					// 	text, regex("mins_counter"),
+					// 	"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/60),60))" + escape + ":d" + escape + ":2}"
+					// );
+					text = StringUtils::replaceAll(text, "mins_counter",
 						"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/60),60))" + escape + ":d" + escape + ":2}"
 					);
-					text = regex_replace(
-						text, regex("secs_counter"),
+					// text = regex_replace(
+					// 	text, regex("secs_counter"),
+					// 	"%{eif" + escape + ":trunc(mod(countDownDurationInSecs-t" + escape + ",60))" + escape + ":d" + escape + ":2}"
+					// );
+					text = StringUtils::replaceAll(text, "secs_counter",
 						"%{eif" + escape + ":trunc(mod(countDownDurationInSecs-t" + escape + ",60))" + escape + ":d" + escape + ":2}"
 					);
-					text = regex_replace(
-						text, regex("cents_counter"),
+					// text = regex_replace(
+					// 	text, regex("cents_counter"),
+					// 	"%{eif" + escape + ":(mod(countDownDurationInSecs-t" + escape + ",1)*pow(10,2))" + escape + ":d" + escape + ":2}"
+					// );
+					text = StringUtils::replaceAll(text, "cents_counter",
 						"%{eif" + escape + ":(mod(countDownDurationInSecs-t" + escape + ",1)*pow(10,2))" + escape + ":d" + escape + ":2}"
 					);
-					text = regex_replace(text, regex("countDownDurationInSecs"), to_string(streamingDurationInSeconds));
+					// text = regex_replace(text, regex("countDownDurationInSecs"), to_string(streamingDurationInSeconds));
+					text = StringUtils::replaceAll(text, "countDownDurationInSecs", std::format("{}", streamingDurationInSeconds));
 				}
 			}
 
-			if (textFilePathName != "")
+			if (timecode == "editorialTimecode" && text.find(std::format("%{{metadata{}:timecode}}", escape)) == string::npos)
+			{
+				if (!text.empty())
+					text += " ";
+				text += std::format("%{{metadata{}:timecode}}", escape);
+			}
+
+			if (!textFilePathName.empty())
 			{
 				// questo file dovrà essere rimosso dallo script di retention
 				ofstream of(textFilePathName, ofstream::trunc);
@@ -319,7 +350,7 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 			*/
 			string ffmpegTextPosition_X_InPixel;
 			if (textPosition_X_InPixel == "left")
-				ffmpegTextPosition_X_InPixel = 20;
+				ffmpegTextPosition_X_InPixel = "20";
 			else if (textPosition_X_InPixel == "center")
 				ffmpegTextPosition_X_InPixel = "(w - text_w)/2";
 			else if (textPosition_X_InPixel == "right")
@@ -359,10 +390,14 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 				ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 210) * mod(t\\, 210))";
 			else
 			{
-				ffmpegTextPosition_X_InPixel = regex_replace(textPosition_X_InPixel, regex("video_width"), "w");
-				ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("text_width"), "text_w"); // text_w or tw
-				ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("line_width"), "line_w");
-				ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("timestampInSeconds"), "t");
+				// ffmpegTextPosition_X_InPixel = regex_replace(textPosition_X_InPixel, regex("video_width"), "w");
+				ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(textPosition_X_InPixel, "video_width", "w");
+				// ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("text_width"), "text_w"); // text_w or tw
+				ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "text_width", "text_w"); // text_w or tw
+				// ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("line_width"), "line_w");
+				ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "line_width", "line_w");
+				// ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("timestampInSeconds"), "t");
+				ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "timestampInSeconds", "t");
 			}
 
 			string ffmpegTextPosition_Y_InPixel;
@@ -393,29 +428,39 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 				ffmpegTextPosition_Y_InPixel = "mod(t * 100\\, h)";
 			else
 			{
-				ffmpegTextPosition_Y_InPixel = regex_replace(textPosition_Y_InPixel, regex("video_height"), "h");
-				ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("text_height"), "text_h");
-				ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("line_height"), "line_h");
-				ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("timestampInSeconds"), "t");
+				// ffmpegTextPosition_Y_InPixel = regex_replace(textPosition_Y_InPixel, regex("video_height"), "h");
+				ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(textPosition_Y_InPixel, "video_height", "h");
+				// ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("text_height"), "text_h");
+				ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "text_height", "text_h");
+				// ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("line_height"), "line_h");
+				ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "line_height", "line_h");
+				// ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("timestampInSeconds"), "t");
+				ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "timestampInSeconds", "t");
 			}
 
-			if (textFilePathName != "")
-			{
-				filter = string("drawtext=textfile='") + textFilePathName + "'";
-				if (reloadAtFrameInterval > 0)
-					filter += (":reload=" + to_string(reloadAtFrameInterval));
-			}
+			// non è possibile avere text e timecode insieme
+			if (timecode == "ptsTimecode")
+				filter = std::format("drawtext=timecode='t':timecode_rate={}", ptsTimecodeRate);
 			else
-				filter = std::format("drawtext=text='{}'", text);
-			if (textPosition_X_InPixel != "")
+			{
+				if (!textFilePathName.empty())
+				{
+					filter = std::format("drawtext=textfile='{}'", textFilePathName);
+					if (reloadAtFrameInterval > 0)
+						filter += std::format(":reload={}", reloadAtFrameInterval);
+				}
+				else
+					filter = std::format("drawtext=text='{}'", text);
+			}
+			if (!textPosition_X_InPixel.empty())
 				filter += (":x=" + ffmpegTextPosition_X_InPixel);
-			if (textPosition_Y_InPixel != "")
+			if (!textPosition_Y_InPixel.empty())
 				filter += (":y=" + ffmpegTextPosition_Y_InPixel);
-			if (fontType != "")
+			if (!fontType.empty())
 				filter += (":fontfile='" + _ffmpegTtfFontDir + "/" + fontType + "'");
 			if (fontSize != -1)
 				filter += (":fontsize=" + to_string(fontSize));
-			if (fontColor != "")
+			if (!fontColor.empty())
 			{
 				filter += (":fontcolor=" + fontColor);
 				if (textPercentageOpacity != -1)
@@ -436,7 +481,7 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 			{
 				filter += (":box=1");
 
-				if (boxColor != "")
+				if (!boxColor.empty())
 				{
 					filter += (":boxcolor=" + boxColor);
 					if (boxPercentageOpacity != -1)
@@ -481,15 +526,17 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 
 		string ffmpegImagePosition_X_InPixel;
 		if (imagePosition_X_InPixel == "left")
-			ffmpegImagePosition_X_InPixel = 20;
+			ffmpegImagePosition_X_InPixel = "20";
 		else if (imagePosition_X_InPixel == "center")
 			ffmpegImagePosition_X_InPixel = "(main_w - overlay_w)/2";
 		else if (imagePosition_X_InPixel == "right")
 			ffmpegImagePosition_X_InPixel = "main_w - (overlay_w + 20)";
 		else
 		{
-			ffmpegImagePosition_X_InPixel = regex_replace(imagePosition_X_InPixel, regex("video_width"), "main_w");
-			ffmpegImagePosition_X_InPixel = regex_replace(ffmpegImagePosition_X_InPixel, regex("image_width"), "overlay_w");
+			// ffmpegImagePosition_X_InPixel = regex_replace(imagePosition_X_InPixel, regex("video_width"), "main_w");
+			ffmpegImagePosition_X_InPixel = StringUtils::replaceAll(imagePosition_X_InPixel, "video_width", "main_w");
+			// ffmpegImagePosition_X_InPixel = regex_replace(ffmpegImagePosition_X_InPixel, regex("image_width"), "overlay_w");
+			ffmpegImagePosition_X_InPixel = StringUtils::replaceAll(ffmpegImagePosition_X_InPixel, "image_width", "overlay_w");
 		}
 
 		string ffmpegImagePosition_Y_InPixel;
@@ -501,8 +548,10 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 			ffmpegImagePosition_Y_InPixel = "20";
 		else
 		{
-			ffmpegImagePosition_Y_InPixel = regex_replace(imagePosition_Y_InPixel, regex("video_height"), "main_h");
-			ffmpegImagePosition_Y_InPixel = regex_replace(ffmpegImagePosition_Y_InPixel, regex("image_height"), "overlay_h");
+			// ffmpegImagePosition_Y_InPixel = regex_replace(imagePosition_Y_InPixel, regex("video_height"), "main_h");
+			ffmpegImagePosition_Y_InPixel = StringUtils::replaceAll(imagePosition_Y_InPixel, "video_height", "main_h");
+			// ffmpegImagePosition_Y_InPixel = regex_replace(ffmpegImagePosition_Y_InPixel, regex("image_height"), "overlay_h");
+			ffmpegImagePosition_Y_InPixel = StringUtils::replaceAll(ffmpegImagePosition_Y_InPixel, "image_height", "overlay_h");
 		}
 
 		// overlay=x=main_w-overlay_w-10:y=main_h-overlay_h-10
@@ -515,9 +564,10 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 		if (streamingDurationInSeconds >= duration)
 		{
 			// fade=type=in:duration=3,fade=type=out:duration=3:start_time=27
-			filter =
-				("fade=type=in:duration=" + to_string(duration) + ",fade=type=out:duration=" + to_string(duration) +
-				 ":start_time=" + to_string(streamingDurationInSeconds - duration));
+			filter = std::format("fade=type=in:duration={},fade=type=out:duration={}:start_time={}",
+				duration, duration, streamingDurationInSeconds - duration);
+				// ("fade=type=in:duration=" + to_string(duration) + ",fade=type=out:duration=" + to_string(duration) +
+				//  ":start_time=" + to_string(streamingDurationInSeconds - duration));
 		}
 		else
 		{
@@ -534,14 +584,14 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 		int framesNumber = JSONUtils::asInt(filterRoot, "framesNumber", 25);
 		int periodInSeconds = JSONUtils::asInt(filterRoot, "periodInSeconds", 1);
 
-		filter = "fps=" + to_string(framesNumber) + "/" + to_string(periodInSeconds);
+		filter = std::format("fps={}/{}", framesNumber, periodInSeconds);
 	}
 	else if (type == "freezedetect")
 	{
 		int noiseInDb = JSONUtils::asInt(filterRoot, "noiseInDb", -60);
 		int duration = JSONUtils::asInt(filterRoot, "duration", 2);
 
-		filter = ("freezedetect=noise=" + to_string(noiseInDb) + "dB:duration=" + to_string(duration));
+		filter = std::format("freezedetect=noise={}dB:duration={}", noiseInDb, duration);
 	}
 	else if (type == "metadata")
 	{
@@ -561,7 +611,7 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 			// double between 0 and 1. 0.5: 50% of changes
 			double changePercentage = JSONUtils::asDouble(filterRoot, "changePercentage", 0.5);
 
-			filter = "select='eq(scene," + to_string(changePercentage) + ")'";
+			filter = std::format("select='eq(scene,{})'", changePercentage);
 		}
 		else
 		{
@@ -571,8 +621,8 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 			throw runtime_error(errorMessage);
 		}
 
-		if (fpsMode != "")
-			filter += (" -fps_mode " + fpsMode);
+		if (!fpsMode.empty())
+			filter += std::format(" -fps_mode {}", fpsMode);
 	}
 	else if (type == "showinfo")
 	{
@@ -588,7 +638,7 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 	{
 		double factor = JSONUtils::asDouble(filterRoot, "factor", 5.0);
 
-		filter = ("volume=" + to_string(factor));
+		filter = std::format("volume={}", factor);
 	}
 	else
 	{
@@ -605,7 +655,7 @@ string FFMpegFilters::getFilter(json filterRoot, int64_t streamingDurationInSeco
 	return filter;
 }
 
-json FFMpegFilters::mergeFilters(json filters_1Root, json filters_2Root)
+json FFMpegFilters::mergeFilters(const json& filters_1Root, const json& filters_2Root)
 {
 
 	json mergedFiltersRoot = nullptr;
@@ -656,7 +706,7 @@ json FFMpegFilters::mergeFilters(json filters_1Root, json filters_2Root)
 	return mergedFiltersRoot;
 }
 
-string FFMpegFilters::getDrawTextTemporaryPathName(string ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
+string FFMpegFilters::getDrawTextTemporaryPathName(const string& ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
 {
 	if (outputIndex != -1)
 		return std::format("{}/{}_{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey, outputIndex);

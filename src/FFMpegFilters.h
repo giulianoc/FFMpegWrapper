@@ -11,23 +11,17 @@
  * Created on February 18, 2018, 1:27 AM
  */
 
-#ifndef FFMpegFilters_h
-#define FFMpegFilters_h
+#pragma once
 
 #include <chrono>
-#include <filesystem>
+#include "JSONUtils.h"
 #include <string>
 #ifndef SPDLOG_ACTIVE_LEVEL
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
-#include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
 using namespace std;
-
-using json = nlohmann::json;
-using orderd_json = nlohmann::ordered_json;
-using namespace nlohmann::literals;
 
 class FFMpegFilters
 {
@@ -37,17 +31,17 @@ class FFMpegFilters
 	~FFMpegFilters();
 
 	tuple<string, string, string>
-	addFilters(json filtersRoot, string ffmpegVideoResolutionParameter, string ffmpegDrawTextFilter, int64_t streamingDurationInSeconds);
+	addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds);
 
-	string addVideoFilters(json filtersRoot, string ffmpegVideoResolutionParameter, string ffmpegDrawTextFilter, int64_t streamingDurationInSeconds);
+	string addVideoFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds) const;
 
-	string addAudioFilters(json filtersRoot, int64_t streamingDurationInSeconds);
+	string addAudioFilters(const json &filtersRoot, int64_t streamingDurationInSeconds) const;
 
-	string getFilter(json filtersRoot, int64_t streamingDurationInSeconds);
+	string getFilter(const json& filtersRoot, int64_t streamingDurationInSeconds) const;
 
-	json mergeFilters(json filters_1Root, json filters_2Root);
+	static json mergeFilters(const json &filters_1Root, const json &filters_2Root);
 
-	static string getDrawTextTemporaryPathName(string ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex);
+	static string getDrawTextTemporaryPathName(const string &ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex);
 
   private:
 	string _ffmpegTempDir;
@@ -57,5 +51,3 @@ class FFMpegFilters
 	int64_t _encodingJobKey;
 	int _outputIndex;
 };
-
-#endif
