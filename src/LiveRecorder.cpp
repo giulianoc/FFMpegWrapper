@@ -1965,32 +1965,32 @@ void FFMpegWrapper::liveRecorder(
 */
 
 void FFMpegWrapper::liveRecorder2(
-	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string segmentListPathName, string recordedFileNamePrefix,
+	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string& segmentListPathName, const string& recordedFileNamePrefix,
 
-	string otherInputOptions,
+	const string& otherInputOptions,
 
 	// if streamSourceType is IP_PUSH means the liveURL should be like
 	//		rtmp://<local transcoder IP to bind>:<port>
 	//		listening for an incoming connection
 	// else if streamSourceType is CaptureLive, liveURL is not used
 	// else means the liveURL is "any thing" referring a stream
-	string streamSourceType, // IP_PULL, TV, IP_PUSH, CaptureLive
+	const string& streamSourceType, // IP_PULL, TV, IP_PUSH, CaptureLive
 	string liveURL,
 	// Used only in case streamSourceType is IP_PUSH, Maximum time to wait for the incoming connection
 	int pushListenTimeout,
 
 	// parameters used only in case streamSourceType is CaptureLive
-	int captureLive_videoDeviceNumber, string captureLive_videoInputFormat, int captureLive_frameRate, int captureLive_width, int captureLive_height,
+	int captureLive_videoDeviceNumber, const string& captureLive_videoInputFormat, int captureLive_frameRate, int captureLive_width, int captureLive_height,
 	int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
 
 	bool utcTimeOverlay,
 
-	string userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
+	const string& userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
 
-	int segmentDurationInSeconds, string outputFileFormat,
-	string segmenterType, // streamSegmenter or hlsSegmenter
+	int segmentDurationInSeconds, const string& outputFileFormat,
+	const string& segmenterType, // streamSegmenter or hlsSegmenter
 
-	json outputsRoot,
+	const json& outputsRoot,
 
 	json framesToBeDetectedRoot,
 
@@ -2228,24 +2228,24 @@ void FFMpegWrapper::liveRecorder2(
 			}
 		}
 
-		ffmpegArgumentList.push_back("ffmpeg");
+		ffmpegArgumentList.emplace_back("ffmpeg");
 		// FFMpegEncodingParameters::addToArguments("-loglevel repeat+level+trace", ffmpegArgumentList);
 		if (userAgentToBeUsed)
 		{
-			ffmpegArgumentList.push_back("-user_agent");
+			ffmpegArgumentList.emplace_back("-user_agent");
 			ffmpegArgumentList.push_back(userAgent);
 		}
 
-		if (otherInputOptions != "")
+		if (!otherInputOptions.empty())
 			FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegArgumentList);
 
-		if (framesToBeDetectedRoot != nullptr && framesToBeDetectedRoot.size() > 0)
+		if (framesToBeDetectedRoot != nullptr && !framesToBeDetectedRoot.empty())
 		{
 			// 2022-05-28; in caso di framedetection, we will "fix" PTS
 			//	otherwise the one logged seems are not correct.
 			//	Using +genpts are OK
-			ffmpegArgumentList.push_back("-fflags");
-			ffmpegArgumentList.push_back("+genpts");
+			ffmpegArgumentList.emplace_back("-fflags");
+			ffmpegArgumentList.emplace_back("+genpts");
 		}
 
 		if (streamSourceType == "IP_PUSH")
@@ -2253,13 +2253,13 @@ void FFMpegWrapper::liveRecorder2(
 			// listen/timeout depend on the protocol (https://ffmpeg.org/ffmpeg-protocols.html)
 			if (liveURL.find("http://") != string::npos || liveURL.find("rtmp://") != string::npos)
 			{
-				ffmpegArgumentList.push_back("-listen");
-				ffmpegArgumentList.push_back("1");
+				ffmpegArgumentList.emplace_back("-listen");
+				ffmpegArgumentList.emplace_back("1");
 				if (localPushListenTimeout > 0)
 				{
 					// no timeout means it will listen infinitely
-					ffmpegArgumentList.push_back("-timeout");
-					ffmpegArgumentList.push_back(to_string(localPushListenTimeout));
+					ffmpegArgumentList.emplace_back("-timeout");
+					ffmpegArgumentList.push_back(std::format("{}", localPushListenTimeout));
 				}
 			}
 			else if (liveURL.find("udp://") != string::npos)
@@ -2282,12 +2282,12 @@ void FFMpegWrapper::liveRecorder2(
 				);
 			}
 
-			ffmpegArgumentList.push_back("-i");
+			ffmpegArgumentList.emplace_back("-i");
 			ffmpegArgumentList.push_back(liveURL);
 		}
 		else if (streamSourceType == "IP_PULL" || streamSourceType == "TV")
 		{
-			ffmpegArgumentList.push_back("-i");
+			ffmpegArgumentList.emplace_back("-i");
 			ffmpegArgumentList.push_back(liveURL);
 		}
 		else if (streamSourceType == "CaptureLive")
@@ -2295,49 +2295,49 @@ void FFMpegWrapper::liveRecorder2(
 			// video
 			{
 				// -f v4l2 -framerate 25 -video_size 640x480 -i /dev/video0
-				ffmpegArgumentList.push_back("-f");
-				ffmpegArgumentList.push_back("v4l2");
+				ffmpegArgumentList.emplace_back("-f");
+				ffmpegArgumentList.emplace_back("v4l2");
 
-				ffmpegArgumentList.push_back("-thread_queue_size");
-				ffmpegArgumentList.push_back("4096");
+				ffmpegArgumentList.emplace_back("-thread_queue_size");
+				ffmpegArgumentList.emplace_back("4096");
 
-				if (captureLive_videoInputFormat != "")
+				if (!captureLive_videoInputFormat.empty())
 				{
-					ffmpegArgumentList.push_back("-input_format");
+					ffmpegArgumentList.emplace_back("-input_format");
 					ffmpegArgumentList.push_back(captureLive_videoInputFormat);
 				}
 
 				if (captureLive_frameRate != -1)
 				{
-					ffmpegArgumentList.push_back("-framerate");
+					ffmpegArgumentList.emplace_back("-framerate");
 					ffmpegArgumentList.push_back(to_string(captureLive_frameRate));
 				}
 
 				if (captureLive_width != -1 && captureLive_height != -1)
 				{
-					ffmpegArgumentList.push_back("-video_size");
+					ffmpegArgumentList.emplace_back("-video_size");
 					ffmpegArgumentList.push_back(to_string(captureLive_width) + "x" + to_string(captureLive_height));
 				}
 
-				ffmpegArgumentList.push_back("-i");
+				ffmpegArgumentList.emplace_back("-i");
 				ffmpegArgumentList.push_back(string("/dev/video") + to_string(captureLive_videoDeviceNumber));
 			}
 
 			// audio
 			{
-				ffmpegArgumentList.push_back("-f");
-				ffmpegArgumentList.push_back("alsa");
+				ffmpegArgumentList.emplace_back("-f");
+				ffmpegArgumentList.emplace_back("alsa");
 
-				ffmpegArgumentList.push_back("-thread_queue_size");
-				ffmpegArgumentList.push_back("2048");
+				ffmpegArgumentList.emplace_back("-thread_queue_size");
+				ffmpegArgumentList.emplace_back("2048");
 
 				if (captureLive_channelsNumber != -1)
 				{
-					ffmpegArgumentList.push_back("-ac");
+					ffmpegArgumentList.emplace_back("-ac");
 					ffmpegArgumentList.push_back(to_string(captureLive_channelsNumber));
 				}
 
-				ffmpegArgumentList.push_back("-i");
+				ffmpegArgumentList.emplace_back("-i");
 				ffmpegArgumentList.push_back(string("hw:") + to_string(captureLive_audioDeviceNumber));
 			}
 		}
@@ -2345,23 +2345,23 @@ void FFMpegWrapper::liveRecorder2(
 		// to detect a frame we have to:
 		// 1. add -r 1 -loop 1 -i <picture path name of the frame to be detected>
 		// 2. add: -filter_complex "[0:v][1:v]blend=difference:shortest=1,blackframe=99:32[f]" -map "[f]" -f null -
-		if (framesToBeDetectedRoot != nullptr && framesToBeDetectedRoot.size() > 0)
+		if (framesToBeDetectedRoot != nullptr && !framesToBeDetectedRoot.empty())
 		{
 			for (int pictureIndex = 0; pictureIndex < framesToBeDetectedRoot.size(); pictureIndex++)
 			{
-				json frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
+				const json& frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
 
 				if (JSONUtils::isMetadataPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
 					string picturePathName = JSONUtils::asString(frameToBeDetectedRoot, "picturePathName", "");
 
-					ffmpegArgumentList.push_back("-r");
-					ffmpegArgumentList.push_back("1");
+					ffmpegArgumentList.emplace_back("-r");
+					ffmpegArgumentList.emplace_back("1");
 
-					ffmpegArgumentList.push_back("-loop");
-					ffmpegArgumentList.push_back("1");
+					ffmpegArgumentList.emplace_back("-loop");
+					ffmpegArgumentList.emplace_back("1");
 
-					ffmpegArgumentList.push_back("-i");
+					ffmpegArgumentList.emplace_back("-i");
 					ffmpegArgumentList.push_back(picturePathName);
 				}
 			}
@@ -2369,7 +2369,7 @@ void FFMpegWrapper::liveRecorder2(
 
 		int streamingDurationIndex;
 		{
-			ffmpegArgumentList.push_back("-t");
+			ffmpegArgumentList.emplace_back("-t");
 			streamingDurationIndex = ffmpegArgumentList.size();
 			ffmpegArgumentList.push_back(to_string(streamingDuration));
 		}
@@ -2389,7 +2389,8 @@ void FFMpegWrapper::liveRecorder2(
 
 					// drawTextFilterRoot["text"] = "time: %{localtime:%Y-%m-%d %H.%M.%S}";
 					// drawTextFilterRoot["text"] = "time: %{pts:localtime}";
-					drawTextFilterRoot["text"] = std::format("time: %{{pts:gmtime:{}}}", utcTime);
+					// drawTextFilterRoot["text"] = std::format("time: %{{pts:gmtime:{}}}", utcTime);
+					drawTextFilterRoot["timecode"] = "ptsTimestamp";
 					drawTextFilterRoot["textPosition_X_InPixel"] = "center";
 					drawTextFilterRoot["textPosition_Y_InPixel"] = "center";
 					drawTextFilterRoot["fontType"] = "OpenSans-ExtraBold.ttf";
@@ -2406,74 +2407,74 @@ void FFMpegWrapper::liveRecorder2(
 
 				string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, "", "", -1);
 
-				ffmpegArgumentList.push_back("-filter:v");
+				ffmpegArgumentList.emplace_back("-filter:v");
 				ffmpegArgumentList.push_back(videoFilters);
 			}
 
 			// usiamo un codec di default
 			{
-				ffmpegArgumentList.push_back("-codec:v");
-				ffmpegArgumentList.push_back("libx264");
-				ffmpegArgumentList.push_back("-acodec");
-				ffmpegArgumentList.push_back("aac");
+				ffmpegArgumentList.emplace_back("-codec:v");
+				ffmpegArgumentList.emplace_back("libx264");
+				ffmpegArgumentList.emplace_back("-acodec");
+				ffmpegArgumentList.emplace_back("aac");
 			}
 		}
 		else
 		{
 			// this is to get all video tracks
-			ffmpegArgumentList.push_back("-map");
-			ffmpegArgumentList.push_back("0:v");
+			ffmpegArgumentList.emplace_back("-map");
+			ffmpegArgumentList.emplace_back("0:v");
 
-			ffmpegArgumentList.push_back("-c:v");
-			ffmpegArgumentList.push_back("copy");
+			ffmpegArgumentList.emplace_back("-c:v");
+			ffmpegArgumentList.emplace_back("copy");
 
 			// this is to get all audio tracks
-			ffmpegArgumentList.push_back("-map");
-			ffmpegArgumentList.push_back("0:a");
+			ffmpegArgumentList.emplace_back("-map");
+			ffmpegArgumentList.emplace_back("0:a");
 
-			ffmpegArgumentList.push_back("-c:a");
-			ffmpegArgumentList.push_back("copy");
+			ffmpegArgumentList.emplace_back("-c:a");
+			ffmpegArgumentList.emplace_back("copy");
 		}
 
 		if (segmenterType == "streamSegmenter")
 		{
-			ffmpegArgumentList.push_back("-f");
-			ffmpegArgumentList.push_back("segment");
-			ffmpegArgumentList.push_back("-segment_list");
+			ffmpegArgumentList.emplace_back("-f");
+			ffmpegArgumentList.emplace_back("segment");
+			ffmpegArgumentList.emplace_back("-segment_list");
 			ffmpegArgumentList.push_back(segmentListPathName);
-			ffmpegArgumentList.push_back("-segment_time");
+			ffmpegArgumentList.emplace_back("-segment_time");
 			ffmpegArgumentList.push_back(to_string(segmentDurationInSeconds));
-			ffmpegArgumentList.push_back("-segment_atclocktime");
-			ffmpegArgumentList.push_back("1");
-			ffmpegArgumentList.push_back("-strftime");
-			ffmpegArgumentList.push_back("1");
+			ffmpegArgumentList.emplace_back("-segment_atclocktime");
+			ffmpegArgumentList.emplace_back("1");
+			ffmpegArgumentList.emplace_back("-strftime");
+			ffmpegArgumentList.emplace_back("1");
 			ffmpegArgumentList.push_back(segmentListPath + "/" + recordedFileNameTemplate);
 		}
 		else // if (segmenterType == "hlsSegmenter")
 		{
-			ffmpegArgumentList.push_back("-hls_flags");
-			ffmpegArgumentList.push_back("append_list");
-			ffmpegArgumentList.push_back("-hls_time");
+			ffmpegArgumentList.emplace_back("-hls_flags");
+			ffmpegArgumentList.emplace_back("append_list");
+			ffmpegArgumentList.emplace_back("-hls_time");
 			ffmpegArgumentList.push_back(to_string(segmentDurationInSeconds));
-			ffmpegArgumentList.push_back("-hls_list_size");
-			ffmpegArgumentList.push_back("10");
+			ffmpegArgumentList.emplace_back("-hls_list_size");
+			ffmpegArgumentList.emplace_back("10");
 
 			// Segment files removed from the playlist are deleted after a period of time
 			// equal to the duration of the segment plus the duration of the playlist
-			ffmpegArgumentList.push_back("-hls_flags");
-			ffmpegArgumentList.push_back("delete_segments");
+			ffmpegArgumentList.emplace_back("-hls_flags");
+			ffmpegArgumentList.emplace_back("delete_segments");
 
 			// Set the number of unreferenced segments to keep on disk
 			// before 'hls_flags delete_segments' deletes them. Increase this to allow continue clients
 			// to download segments which were recently referenced in the playlist.
 			// Default value is 1, meaning segments older than hls_list_size+1 will be deleted.
-			ffmpegArgumentList.push_back("-hls_delete_threshold");
+			ffmpegArgumentList.emplace_back("-hls_delete_threshold");
 			ffmpegArgumentList.push_back(to_string(1));
 
-			ffmpegArgumentList.push_back("-hls_flags");
-			ffmpegArgumentList.push_back("program_date_time");
+			ffmpegArgumentList.emplace_back("-hls_flags");
+			ffmpegArgumentList.emplace_back("program_date_time");
 
-			ffmpegArgumentList.push_back("-hls_segment_filename");
+			ffmpegArgumentList.emplace_back("-hls_segment_filename");
 			ffmpegArgumentList.push_back(segmentListPath + "/" + recordedFileNameTemplate);
 
 			// Start the playlist sequence number (#EXT-X-MEDIA-SEQUENCE) based on the current
@@ -2487,8 +2488,8 @@ void FFMpegWrapper::liveRecorder2(
 			// ffmpegArgumentList.push_back("-start_number");
 			// ffmpegArgumentList.push_back(to_string(10));
 
-			ffmpegArgumentList.push_back("-f");
-			ffmpegArgumentList.push_back("hls");
+			ffmpegArgumentList.emplace_back("-f");
+			ffmpegArgumentList.emplace_back("hls");
 			ffmpegArgumentList.push_back(segmentListPathName);
 		}
 
@@ -2508,17 +2509,17 @@ void FFMpegWrapper::liveRecorder2(
 		);
 
 		// 2. add: -filter_complex "[0:v][1:v]blend=difference:shortest=1,blackframe=99:32[f]" -map "[f]" -f null -
-		if (framesToBeDetectedRoot != nullptr && framesToBeDetectedRoot.size() > 0)
+		if (framesToBeDetectedRoot != nullptr && !framesToBeDetectedRoot.empty())
 		{
 			for (int pictureIndex = 0; pictureIndex < framesToBeDetectedRoot.size(); pictureIndex++)
 			{
-				json frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
+				const json& frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
 
 				if (JSONUtils::isMetadataPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
 					bool videoFrameToBeCropped = JSONUtils::asBool(frameToBeDetectedRoot, "videoFrameToBeCropped", false);
 
-					ffmpegArgumentList.push_back("-filter_complex");
+					ffmpegArgumentList.emplace_back("-filter_complex");
 
 					int amount = JSONUtils::asInt(frameToBeDetectedRoot, "amount", 99);
 					int threshold = JSONUtils::asInt(frameToBeDetectedRoot, "threshold", 32);
@@ -2545,13 +2546,13 @@ void FFMpegWrapper::liveRecorder2(
 					}
 					ffmpegArgumentList.push_back(filter);
 
-					ffmpegArgumentList.push_back("-map");
+					ffmpegArgumentList.emplace_back("-map");
 					ffmpegArgumentList.push_back("[differenceOut_" + to_string(pictureIndex + 1) + "]");
 
-					ffmpegArgumentList.push_back("-f");
-					ffmpegArgumentList.push_back("null");
+					ffmpegArgumentList.emplace_back("-f");
+					ffmpegArgumentList.emplace_back("null");
 
-					ffmpegArgumentList.push_back("-");
+					ffmpegArgumentList.emplace_back("-");
 				}
 			}
 		}
@@ -2703,18 +2704,6 @@ void FFMpegWrapper::liveRecorder2(
 		{
 			outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
 		}
-		catch (runtime_error &e)
-		{
-			SPDLOG_ERROR(
-				"outputsRootToFfmpeg_clean failed"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, e.what()
-			);
-
-			// throw e;
-		}
 		catch (exception &e)
 		{
 			SPDLOG_ERROR(
@@ -2725,12 +2714,12 @@ void FFMpegWrapper::liveRecorder2(
 				ingestionJobKey, encodingJobKey, e.what()
 			);
 
-			// throw e;
+			// throw;
 		}
 
 		// if (segmenterType == "streamSegmenter" || segmenterType == "hlsSegmenter")
 		{
-			if (segmentListPath != "" && fs::exists(segmentListPath))
+			if (!segmentListPath.empty() && fs::exists(segmentListPath))
 			{
 				try
 				{
@@ -2743,19 +2732,6 @@ void FFMpegWrapper::liveRecorder2(
 					);
 					fs::remove_all(segmentListPath);
 				}
-				catch (runtime_error &e)
-				{
-					SPDLOG_ERROR(
-						"remove directory failed"
-						", ingestionJobKey: {}"
-						", encodingJobKey: {}"
-						", segmentListPath: {}"
-						", e.what(): {}",
-						ingestionJobKey, encodingJobKey, segmentListPath, e.what()
-					);
-
-					// throw e;
-				}
 				catch (exception &e)
 				{
 					SPDLOG_ERROR(
@@ -2767,7 +2743,7 @@ void FFMpegWrapper::liveRecorder2(
 						ingestionJobKey, encodingJobKey, segmentListPath, e.what()
 					);
 
-					// throw e;
+					// throw;
 				}
 			}
 		}
@@ -2809,7 +2785,7 @@ void FFMpegWrapper::liveRecorder2(
 		}
 		*/
 	}
-	catch (runtime_error &e)
+	catch (exception &e)
 	{
 		processId.reset();
 
@@ -2839,48 +2815,6 @@ void FFMpegWrapper::liveRecorder2(
 			);
 		SPDLOG_ERROR(errorMessage);
 
-		// copy ffmpeg log file
-		/*
-		{
-			char		sEndFfmpegCommand [64];
-
-			time_t	utcEndFfmpegCommand = chrono::system_clock::to_time_t(
-				chrono::system_clock::now());
-			tm		tmUtcEndFfmpegCommand;
-			localtime_r (&utcEndFfmpegCommand, &tmUtcEndFfmpegCommand);
-			sprintf (sEndFfmpegCommand, "%04d-%02d-%02d-%02d-%02d-%02d",
-				tmUtcEndFfmpegCommand. tm_year + 1900,
-				tmUtcEndFfmpegCommand. tm_mon + 1,
-				tmUtcEndFfmpegCommand. tm_mday,
-				tmUtcEndFfmpegCommand. tm_hour,
-				tmUtcEndFfmpegCommand. tm_min,
-				tmUtcEndFfmpegCommand. tm_sec);
-
-			string debugOutputFfmpegPathFileName =
-				_ffmpegTempDir + "/"
-				+ to_string(ingestionJobKey) + "_"
-				+ to_string(encodingJobKey) + "_"
-				+ sEndFfmpegCommand
-				+ ".liveRecorder.log.debug"
-			;
-
-			info(__FILEREF__ + "Coping"
-				+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-				+ ", encodingJobKey: " + to_string(encodingJobKey)
-				+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName
-				+ ", debugOutputFfmpegPathFileName: " + debugOutputFfmpegPathFileName
-				);
-			fs::copy(_outputFfmpegPathFileName, debugOutputFfmpegPathFileName);
-		}
-		*/
-
-		/*
-		info(__FILEREF__ + "Remove"
-			+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-			+ ", encodingJobKey: " + to_string(encodingJobKey)
-			+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName);
-		fs::remove_all(_outputFfmpegPathFileName, exceptionInCaseOfError);
-		*/
 		renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 
 		SPDLOG_INFO(
@@ -2896,18 +2830,6 @@ void FFMpegWrapper::liveRecorder2(
 		{
 			outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
 		}
-		catch (runtime_error &e)
-		{
-			SPDLOG_ERROR(
-				"outputsRootToFfmpeg_clean failed"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, e.what()
-			);
-
-			// throw e;
-		}
 		catch (exception &e)
 		{
 			SPDLOG_ERROR(
@@ -2918,50 +2840,34 @@ void FFMpegWrapper::liveRecorder2(
 				ingestionJobKey, encodingJobKey, e.what()
 			);
 
-			// throw e;
+			// throw;
 		}
 
-		// if (segmenterType == "streamSegmenter" || segmenterType == "hlsSegmenter")
+		if (!segmentListPath.empty() && fs::exists(segmentListPath))
 		{
-			if (segmentListPath != "" && fs::exists(segmentListPath))
+			try
 			{
-				try
-				{
-					SPDLOG_INFO(
-						"removeDirectory"
-						", ingestionJobKey: {}"
-						", encodingJobKey: {}"
-						", segmentListPath: {}",
-						ingestionJobKey, encodingJobKey, segmentListPath
-					);
-					fs::remove_all(segmentListPath);
-				}
-				catch (runtime_error &e)
-				{
-					SPDLOG_ERROR(
-						"remove directory failed"
-						", ingestionJobKey: {}"
-						", encodingJobKey: {}"
-						", segmentListPath: {}"
-						", e.what(): {}",
-						ingestionJobKey, encodingJobKey, segmentListPath, e.what()
-					);
+				SPDLOG_INFO(
+					"removeDirectory"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", segmentListPath: {}",
+					ingestionJobKey, encodingJobKey, segmentListPath
+				);
+				fs::remove_all(segmentListPath);
+			}
+			catch (exception &ex)
+			{
+				SPDLOG_ERROR(
+					"remove directory failed"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", segmentListPath: {}"
+					", e.what(): {}",
+					ingestionJobKey, encodingJobKey, segmentListPath, ex.what()
+				);
 
-					// throw e;
-				}
-				catch (exception &e)
-				{
-					SPDLOG_ERROR(
-						"remove directory failed"
-						", ingestionJobKey: {}"
-						", encodingJobKey: {}"
-						", segmentListPath: {}"
-						", e.what(): {}",
-						ingestionJobKey, encodingJobKey, segmentListPath, e.what()
-					);
-
-					// throw e;
-				}
+				// throw;
 			}
 		}
 
@@ -2972,16 +2878,8 @@ void FFMpegWrapper::liveRecorder2(
 		else if (lastPartOfFfmpegOutputFile.find("404 Not Found") != string::npos)
 			throw FFMpegURLNotFound();
 		else
-			throw e;
+			throw;
 	}
 
-	/*
-	info(__FILEREF__ + "Remove"
-		+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-		+ ", encodingJobKey: " + to_string(encodingJobKey)
-		+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName);
-	bool exceptionInCaseOfError = false;
-	fs::remove_all(_outputFfmpegPathFileName, exceptionInCaseOfError);
-	*/
 	renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 }

@@ -254,22 +254,24 @@ class FFMpegWrapper
 	);
 
 	void liveRecorder2(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string segmentListPathName, string recordedFileNamePrefix,
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string &segmentListPathName,
+		const string &recordedFileNamePrefix,
 
-		string otherInputOptions,
+		const string &otherInputOptions,
 
-		string streamSourceType, string liveURL, int listenTimeoutInSeconds, int captureLive_videoDeviceNumber, string captureLive_videoInputFormat,
-		int captureLive_frameRate, int captureLive_width, int captureLive_height, int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
+		const string &streamSourceType, string liveURL, int pushListenTimeout, int captureLive_videoDeviceNumber,
+		const string &captureLive_videoInputFormat, int captureLive_frameRate, int captureLive_width, int captureLive_height,
+		int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
 
 		bool utcTimeOverlay,
 
-		string userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
+		const string &userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
 
-		int segmentDurationInSeconds, string outputFileFormat, string segmenterType,
+		int segmentDurationInSeconds, const string &outputFileFormat, const string &segmenterType,
 
-		json outputsRoot,
+		const json &outputsRoot,
 
-		json picturePathNamesToBeDetectedRoot,
+		json framesToBeDetectedRoot,
 
 		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 	);
