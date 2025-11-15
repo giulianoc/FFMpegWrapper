@@ -197,7 +197,6 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 		string text = JSONUtils::asString(filterRoot, "text", "");
 		// timecode: none, editorial, pts
 		string timecode = JSONUtils::asString(filterRoot, "timecode", "none");
-		int32_t ptsTimecodeRate = JSONUtils::asInt(filterRoot, "ptsTimecodeRate", 25);
 		int reloadAtFrameInterval = JSONUtils::asInt(filterRoot, "reloadAtFrameInterval", -1);
 		string textPosition_X_InPixel = JSONUtils::asString(filterRoot, "textPosition_X_InPixel", "");
 		string textPosition_Y_InPixel = JSONUtils::asString(filterRoot, "textPosition_Y_InPixel", "");
@@ -329,6 +328,12 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 					text += " ";
 				text += std::format("%{{metadata{}:timecode}}", escape);
 			}
+			else if (timecode == "ptsTimecode" && text.find(std::format("%{{pts{}:", escape)) == string::npos)
+			{
+				if (!text.empty())
+					text += " ";
+				text += std::format("%{{pts{}:hms}}", escape);
+			}
 
 			if (!textFilePathName.empty())
 			{
@@ -438,10 +443,6 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 				ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "timestampInSeconds", "t");
 			}
 
-			// non è possibile avere text e timecode insieme
-			if (timecode == "ptsTimecode")
-				filter = std::format("drawtext=timecode='t':timecode_rate={}", ptsTimecodeRate);
-			else
 			{
 				if (!textFilePathName.empty())
 				{
