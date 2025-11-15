@@ -2376,29 +2376,13 @@ void FFMpegWrapper::liveRecorder2(
 
 		if (utcTimeOverlay)
 		{
-			/* aggiunto in MMSEngineProcessor_LiveRecorder
 			{
 				FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey, -1);
 
 				json filtersRoot;
 				json videoFiltersRoot = json::array();
 
-				json drawTextFilterRoot;
-				drawTextFilterRoot["type"] = "drawtext";
-				{
-					drawTextFilterRoot["timecode"] = "ptsTimecode";
-					drawTextFilterRoot["textPosition_X_InPixel"] = "center";
-					drawTextFilterRoot["textPosition_Y_InPixel"] = "center";
-					drawTextFilterRoot["fontType"] = "OpenSans-ExtraBold.ttf";
-					drawTextFilterRoot["fontSize"] = 48;
-					drawTextFilterRoot["fontColor"] = "orange";
-					drawTextFilterRoot["textPercentageOpacity"] = 100;
-					drawTextFilterRoot["shadowX"] = 0;
-					drawTextFilterRoot["shadowY"] = 0;
-					drawTextFilterRoot["boxEnable"] = false;
-				}
-
-				videoFiltersRoot.push_back(drawTextFilterRoot);
+				videoFiltersRoot.push_back(FFMpegFilters::createTimecodeDrawTextFilter());
 				filtersRoot["video"] = videoFiltersRoot;
 
 				string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, "", "", -1);
@@ -2406,7 +2390,6 @@ void FFMpegWrapper::liveRecorder2(
 				ffmpegArgumentList.emplace_back("-filter:v");
 				ffmpegArgumentList.push_back(videoFilters);
 			}
-			*/
 
 			// usiamo un codec di default
 			{

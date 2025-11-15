@@ -16,7 +16,7 @@ FFMpegFilters::~FFMpegFilters() = default;
 
 tuple<string, string, string>
 FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter,
-	int64_t streamingDurationInSeconds)
+	int64_t streamingDurationInSeconds) const
 {
 	string videoFilters = addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, ffmpegDrawTextFilter, streamingDurationInSeconds);
 	string audioFilters = addAudioFilters(filtersRoot, streamingDurationInSeconds);
@@ -717,4 +717,24 @@ string FFMpegFilters::getDrawTextTemporaryPathName(const string& ffmpegTempDir, 
 		return std::format("{}/{}_{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey, outputIndex);
 	else
 		return std::format("{}/{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey);
+}
+
+json FFMpegFilters::createTimecodeDrawTextFilter()
+{
+	json drawTextFilterRoot;
+	drawTextFilterRoot["type"] = "drawtext";
+	{
+		drawTextFilterRoot["timecode"] = "ptsTimecode";
+		drawTextFilterRoot["textPosition_X_InPixel"] = "center";
+		drawTextFilterRoot["textPosition_Y_InPixel"] = "center";
+		drawTextFilterRoot["fontType"] = "OpenSans-ExtraBold.ttf";
+		drawTextFilterRoot["fontSize"] = 48;
+		drawTextFilterRoot["fontColor"] = "orange";
+		drawTextFilterRoot["textPercentageOpacity"] = 100;
+		drawTextFilterRoot["shadowX"] = 0;
+		drawTextFilterRoot["shadowY"] = 0;
+		drawTextFilterRoot["boxEnable"] = false;
+	}
+
+	return drawTextFilterRoot;
 }

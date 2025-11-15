@@ -31,17 +31,18 @@ class FFMpegFilters
 	~FFMpegFilters();
 
 	tuple<string, string, string>
-	addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds);
+	addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds) const;
 
-	string addVideoFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds) const;
+	[[nodiscard]] string addVideoFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds) const;
 
-	string addAudioFilters(const json &filtersRoot, int64_t streamingDurationInSeconds) const;
+	[[nodiscard]] string addAudioFilters(const json &filtersRoot, int64_t streamingDurationInSeconds) const;
 
-	string getFilter(const json& filtersRoot, int64_t streamingDurationInSeconds) const;
+	[[nodiscard]] string getFilter(const json& filtersRoot, int64_t streamingDurationInSeconds) const;
 
 	static json mergeFilters(const json &filters_1Root, const json &filters_2Root);
 
 	static string getDrawTextTemporaryPathName(const string &ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex);
+	static json createTimecodeDrawTextFilter();
 
   private:
 	string _ffmpegTempDir;
