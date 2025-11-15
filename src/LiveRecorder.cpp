@@ -2390,7 +2390,7 @@ void FFMpegWrapper::liveRecorder2(
 					// drawTextFilterRoot["text"] = "time: %{localtime:%Y-%m-%d %H.%M.%S}";
 					// drawTextFilterRoot["text"] = "time: %{pts:localtime}";
 					// drawTextFilterRoot["text"] = std::format("time: %{{pts:gmtime:{}}}", utcTime);
-					drawTextFilterRoot["timecode"] = "ptsTimestamp";
+					drawTextFilterRoot["timecode"] = "ptsTimecode";
 					drawTextFilterRoot["textPosition_X_InPixel"] = "center";
 					drawTextFilterRoot["textPosition_Y_InPixel"] = "center";
 					drawTextFilterRoot["fontType"] = "OpenSans-ExtraBold.ttf";
