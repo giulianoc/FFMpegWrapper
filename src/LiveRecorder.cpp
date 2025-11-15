@@ -2209,7 +2209,7 @@ void FFMpegWrapper::liveRecorder2(
 
 		// user agent is an HTTP header and can be used only in case of http request
 		bool userAgentToBeUsed = false;
-		if (streamSourceType == "IP_PULL" && userAgent != "")
+		if (streamSourceType == "IP_PULL" && !userAgent.empty())
 		{
 			string httpPrefix = "http"; // it includes also https
 			if (liveURL.size() >= httpPrefix.size() && liveURL.compare(0, httpPrefix.size(), httpPrefix) == 0)
@@ -2376,6 +2376,7 @@ void FFMpegWrapper::liveRecorder2(
 
 		if (utcTimeOverlay)
 		{
+			/* aggiunto in MMSEngineProcessor_LiveRecorder
 			{
 				FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey, -1);
 
@@ -2385,11 +2386,6 @@ void FFMpegWrapper::liveRecorder2(
 				json drawTextFilterRoot;
 				drawTextFilterRoot["type"] = "drawtext";
 				{
-					time_t utcTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
-
-					// drawTextFilterRoot["text"] = "time: %{localtime:%Y-%m-%d %H.%M.%S}";
-					// drawTextFilterRoot["text"] = "time: %{pts:localtime}";
-					// drawTextFilterRoot["text"] = std::format("time: %{{pts:gmtime:{}}}", utcTime);
 					drawTextFilterRoot["timecode"] = "ptsTimecode";
 					drawTextFilterRoot["textPosition_X_InPixel"] = "center";
 					drawTextFilterRoot["textPosition_Y_InPixel"] = "center";
@@ -2410,6 +2406,7 @@ void FFMpegWrapper::liveRecorder2(
 				ffmpegArgumentList.emplace_back("-filter:v");
 				ffmpegArgumentList.push_back(videoFilters);
 			}
+			*/
 
 			// usiamo un codec di default
 			{

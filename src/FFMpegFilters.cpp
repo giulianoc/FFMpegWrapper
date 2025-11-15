@@ -332,6 +332,10 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 			{
 				if (!text.empty())
 					text += " ";
+				// text += "time: %{localtime:%Y-%m-%d %H.%M.%S}";
+				// text += "time: %{pts:localtime}";
+				// time_t utcTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
+				// text += std::format("time: %{{pts:gmtime:{}}}", utcTime);
 				text += std::format("%{{pts{}:hms}}", escape);
 			}
 
