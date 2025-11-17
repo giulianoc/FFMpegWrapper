@@ -41,7 +41,7 @@ set(SOURCES
     StreamingToFile.cpp
     Incrontab.cpp
     Youtube.cpp)
-set(HEADERS FFMpegFilters.h FFMpegEncodingParameters.h FFmpegEngine.h FFMpegWrapper.h)
+set(HEADERS FFMpegFilters.h FFMpegEncodingParameters.h FFMpegEngine.h FFMpegWrapper.h)
 
 find_program(LSB_RELEASE_EXEC lsb_release)
 execute_process(
