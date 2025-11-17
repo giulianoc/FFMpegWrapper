@@ -48,7 +48,9 @@ public:
         Output& withVideoCodec(string_view c) { _videoCodec = string(c); return *this; }
         Output& withAudioCodec(string_view c) { _audioCodec = string(c); return *this; }
         Output& addVideoFilter(string_view f) { _videoFilters.emplace_back(f); return *this; }
+    	size_t videoFilterSize() const { return _videoFilters.size(); }
         Output& addAudioFilter(string_view f) { _audioFilters.emplace_back(f); return *this; }
+    	size_t audioFilterSize() const { return _audioFilters.size(); }
         Output& addArg(const string_view& parameter);
      	Output& addArgs(const string& parameters);
     	void buildArgs(vector<string>& args) const;

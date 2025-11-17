@@ -3376,7 +3376,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else
 		{
-			if (otherOutputOptions.find("-filter:v") == string::npos)
+			if (output.videoFilterSize() == 0 && otherOutputOptions.find("-filter:v") == string::npos)
 			{
 				// it is not possible to have -c:v copy and -filter:v toghether
 				// ffmpegOutputArgumentList.push_back("-c:v");
@@ -3450,7 +3450,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else
 		{
-			if (otherOutputOptions.find("-filter:a") == string::npos)
+			if (output.audioFilterSize() == 0 && otherOutputOptions.find("-filter:a") == string::npos)
 			{
 				// it is not possible to have -c:a copy and -filter:a toghether
 				// ffmpegOutputArgumentList.push_back("-c:a");
