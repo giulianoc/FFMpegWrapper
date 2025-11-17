@@ -1,6 +1,8 @@
 
 #include "FFMpegEngine.h"
 
+#include "StringUtils.h"
+
 #include <chrono>
 #include <cstring>
 #include <fstream>
@@ -11,7 +13,8 @@
 
 FFMpegEngine::Input& FFMpegEngine::Input::addArg(const string_view& parameter)
 {
-	_args.emplace_back(parameter);
+	if (!StringUtils::trim(parameter).empty())
+		_args.emplace_back(StringUtils::trim(parameter));
 	return *this;
 }
 
@@ -49,7 +52,8 @@ string FFMpegEngine::Input::toSingleLine() const
 
 FFMpegEngine::Output& FFMpegEngine::Output::addArg(const string_view& parameter)
 {
-	_extraArgs.emplace_back(parameter);
+	if (!StringUtils::trim(parameter).empty())
+		_extraArgs.emplace_back(StringUtils::trim(parameter));
 	return *this;
 }
 
@@ -117,8 +121,9 @@ string FFMpegEngine::Output::toSingleLine() const
 
 // ---------------- builder methods ----------------
 
-FFMpegEngine& FFMpegEngine::addGlobalArg(const string_view& a) {
-    _globalArgs.emplace_back(a);
+FFMpegEngine& FFMpegEngine::addGlobalArg(const string_view& arg) {
+	if (!StringUtils::trim(arg).empty())
+	    _globalArgs.emplace_back(StringUtils::trim(arg));
     return *this;
 }
 
@@ -131,7 +136,8 @@ FFMpegEngine& FFMpegEngine::addGlobalArgs(const string& parameters)
 }
 
 FFMpegEngine& FFMpegEngine::setUserAgent(const string_view& ua) {
-	_userAgent = string(ua);
+	if (!StringUtils::trim(ua).empty())
+		_userAgent = string(StringUtils::trim(ua));
 	return *this;
 }
 
@@ -156,7 +162,8 @@ FFMpegEngine::Output& FFMpegEngine::addOutput() {
 }
 
 FFMpegEngine& FFMpegEngine::addFilterComplex(const string_view& fc) {
-    _filterComplex.emplace_back(fc);
+	if (!StringUtils::trim(fc).empty())
+	    _filterComplex.emplace_back(StringUtils::trim(fc));
     return *this;
 }
 
