@@ -14,6 +14,7 @@
 #ifndef FFMpegWrapper_h
 #define FFMpegWrapper_h
 
+#include "FFMpegEngine.h"
 #include "ProcessUtility.h"
 #include <chrono>
 #include <cstdint>
@@ -548,9 +549,12 @@ class FFMpegWrapper
 	void outputsRootToFfmpeg(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string otherOutputOptionsBecauseOfMaxWidth,
 		json inputDrawTextDetailsRoot,
-		// vector<tuple<int, int64_t, string, string, int, int, string, long>>& inputVideoTracks,
-		// vector<tuple<int, int64_t, string, long, int, long, string>>& inputAudioTracks,
 		long streamingDurationInSeconds, json outputsRoot, vector<string> &ffmpegOutputArgumentList
+	);
+	void outputsRootToFfmpeg(
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string otherOutputOptionsBecauseOfMaxWidth,
+		json inputDrawTextDetailsRoot,
+		long streamingDurationInSeconds, json outputsRoot, FFMpegEngine& ffMpegEngine
 	);
 	void outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, json outputsRoot, bool externalEncoder);
 

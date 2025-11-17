@@ -3434,6 +3434,13 @@ void FFMpegWrapper::liveRecorder(
 			outputsRoot, ffmpegArgumentList
 		);
 		*/
+		outputsRootToFfmpeg(
+			ingestionJobKey, encodingJobKey, externalEncoder,
+			"",		 // otherOutputOptionsBecauseOfMaxWidth,
+			nullptr, // inputDrawTextDetailsRoot,
+			-1,		 // streamingDurationInSeconds,
+			outputsRoot, ffmpegEngine
+		);
 
 		// 2. add: -filter_complex "[0:v][1:v]blend=difference:shortest=1,blackframe=99:32[f]" -map "[f]" -f null -
 		if (framesToBeDetectedRoot != nullptr && !framesToBeDetectedRoot.empty())

@@ -3051,6 +3051,808 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 	}
 }
 
+// il metodo outputsRootToFfmpeg_clean pulisce eventuali directory/files creati da outputsRootToFfmpeg
+void FFMpegWrapper::outputsRootToFfmpeg(
+	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string otherOutputOptionsBecauseOfMaxWidth, json inputFiltersRoot,
+	long streamingDurationInSeconds, json outputsRoot,
+
+	/*
+	// vengono usati i due vector seguenti nel caso abbiamo una lista di maps (video and audio)
+	// a cui applicare i parametri di encoding
+	// Esempio nel caso del liveGrid abbiamo qualcosa tipo:
+	// -map "[0r+1r]" -codec:v libx264 -b:v 800k -preset veryfast -hls_time 10 -hls_list_size 4....
+	// -map 0:a -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 4 ...
+	// -map 1:a -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 4 ...
+	// -map 2:a -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 4 ...
+	// ...
+	vector<string> videoMaps,
+	vector<string> audioMaps,
+	*/
+
+	FFMpegEngine& ffMpegEngine
+)
+{
+
+	SPDLOG_INFO(
+		"Received outputsRootToFfmpeg"
+		", ingestionJobKey: {}"
+		", encodingJobKey: {}"
+		", outputsRoot: {}",
+		ingestionJobKey, encodingJobKey, JSONUtils::toString(outputsRoot)
+	);
+
+	// 2023-01-01:
+	//		In genere i parametri del 'draw text' vengono inizializzati all'interno di outputRoot.
+	//		Nel caso di un Broadcast (Live Channel), all'interno del json dell'encodingJob, inputsRoot
+	//		rappresenta l'intera playlist del live channel
+	//		(dalle ore A alle ora B contenuto 1, dalle ora C alle ore D contentuto 2, ...).
+	//		mentre  outputRoot è comune a tutta la playlist,
+	//		Nello scenario in cui serve un drawTextDetails solamente per un inputRoot, non è possibile
+	//		utilizzare outputRoot altrimenti avremmo il draw text anche per gli altri item della playlist.
+	//		In particolare, il parametro inputDrawTextDetailsRoot arriva inizializzato solamente se
+	//		siamo nello scenario di un solo inputRoot che richiede il suo drawtext.
+	//		Per questo motivo, il prossimo if, gestisce il caso di drawTextDetails solo per un input root,
+	// 2024-05-17: non serve piu, la regola ora è che se abbiamo un inputFilters questo ha la precedenza sull'outputFilters
+	/*
+	string ffmpegDrawTextFilter;
+	if (inputFiltersRoot != nullptr)
+	{
+		{
+			string text = JSONUtils::asString(inputFiltersRoot, "text", "");
+
+			string textTemporaryFileName = getDrawTextTemporaryPathName(ingestionJobKey, encodingJobKey);
+			{
+				ofstream of(textTemporaryFileName, ofstream::trunc);
+				of << text;
+				of.flush();
+			}
+
+			info(
+				__FILEREF__ + "outputsRootToFfmpeg (inputRoot): added text into a temporary file" + ", ingestionJobKey: " +
+				to_string(ingestionJobKey) + ", encodingJobKey: " + to_string(encodingJobKey) + ", textTemporaryFileName: " +
+	textTemporaryFileName
+			);
+
+			json filterRoot = inputDrawTextDetailsRoot;
+			filterRoot["type"] = "drawtext";
+			filterRoot["textFilePathName"] = textTemporaryFileName;
+			ffmpegDrawTextFilter = ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds);
+		}
+	}
+	*/
+
+	for (int outputIndex = 0; outputIndex < outputsRoot.size(); outputIndex++)
+	{
+		FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey, outputIndex);
+
+		json outputRoot = outputsRoot[outputIndex];
+
+		string outputType = JSONUtils::asString(outputRoot, "outputType", "");
+
+		string inputVideoMap = JSONUtils::asString(outputRoot, "inputVideoMap", "");
+		string inputAudioMap = JSONUtils::asString(outputRoot, "inputAudioMap", "");
+
+		// 2024-05-17: inputFiltersRoot se presente si aggiunge al filtersRoot dell'output,
+		// 	Scenario di un Broadcast (Live Channel).
+		// 	All'interno del json dell'encodingJob, inputsRoot rappresenta l'intera playlist del live channel
+		//    (dalle ore A alle ora B contenuto 1, dalle ora C alle ore D contentuto 2, ...).
+		//    mentre  outputRoot è comune a tutta la playlist,
+		//    Nello scenario in cui serve un drawTextDetails solamente per un inputRoot, non è possibile
+		//    utilizzare outputRoot altrimenti avremmo il draw text anche per gli altri item della playlist.
+		//    In particolare, il parametro inputFiltersRoot arriva inizializzato solamente se
+		//    siamo nello scenario di un solo inputRoot che richiede il suo drawtext.
+		//    Per questo motivo, il prossimo if, gestisce il caso di drawTextDetails solo per un input root
+		json filtersRoot = ffmpegFilters.mergeFilters(outputRoot["filters"], inputFiltersRoot);
+		SPDLOG_INFO(
+			"mergeFilters"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", outputRoot[filters]: {}"
+			", inputFiltersRoot: {}"
+			", filtersRoot: {}",
+			ingestionJobKey, encodingJobKey, JSONUtils::toString(outputRoot["filters"]), JSONUtils::toString(inputFiltersRoot),
+			JSONUtils::toString(filtersRoot)
+		);
+
+		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", json(nullptr));
+		/*
+		json encodingProfileDetailsRoot = nullptr;
+		if (JSONUtils::isMetadataPresent(outputRoot, "encodingProfileDetails"))
+			encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
+		*/
+
+		string otherOutputOptions = JSONUtils::asString(outputRoot, "otherOutputOptions", "");
+
+		string encodingProfileContentType = JSONUtils::asString(outputRoot, "encodingProfileContentType", "Video");
+		bool isVideo = encodingProfileContentType == "Video" ? true : false;
+
+		string httpStreamingFileFormat;
+		string ffmpegHttpStreamingParameter = "";
+
+		string ffmpegFileFormatParameter = "";
+
+		string ffmpegVideoCodecParameter = "";
+		string ffmpegVideoProfileParameter = "";
+		string ffmpegVideoResolutionParameter = "";
+		int videoBitRateInKbps = -1;
+		string ffmpegVideoBitRateParameter = "";
+		string ffmpegVideoOtherParameters = "";
+		string ffmpegVideoMaxRateParameter = "";
+		string ffmpegVideoBufSizeParameter = "";
+		string ffmpegVideoFrameRateParameter = "";
+		string ffmpegVideoKeyFramesRateParameter = "";
+		bool twoPasses;
+		vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
+
+		string ffmpegAudioCodecParameter = "";
+		string ffmpegAudioBitRateParameter = "";
+		string ffmpegAudioOtherParameters = "";
+		string ffmpegAudioChannelsParameter = "";
+		string ffmpegAudioSampleRateParameter = "";
+		vector<string> audioBitRatesInfo;
+
+		if (encodingProfileDetailsRoot != nullptr)
+		{
+			try
+			{
+				FFMpegEncodingParameters::settingFfmpegParameters(
+					encodingProfileDetailsRoot, isVideo,
+
+					httpStreamingFileFormat, ffmpegHttpStreamingParameter,
+
+					ffmpegFileFormatParameter,
+
+					ffmpegVideoCodecParameter, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses, ffmpegVideoFrameRateParameter,
+					ffmpegVideoKeyFramesRateParameter, videoBitRatesInfo,
+
+					ffmpegAudioCodecParameter, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter, ffmpegAudioSampleRateParameter,
+					audioBitRatesInfo
+				);
+
+				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];
+				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter,
+					ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+
+				ffmpegAudioBitRateParameter = audioBitRatesInfo[0];
+
+				/*
+				if (httpStreamingFileFormat != "")
+				{
+					string errorMessage = __FILEREF__ + "in case of proxy it is not possible to have an httpStreaming encoding"
+						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
+						+ ", encodingJobKey: " + to_string(encodingJobKey)
+					;
+					SPDLOG_ERROR(errorMessage);
+
+					throw runtime_error(errorMessage);
+				}
+				else */
+				if (twoPasses)
+				{
+					/*
+					string errorMessage = __FILEREF__ + "in case of proxy it is not possible to have a two passes encoding"
+						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
+						+ ", encodingJobKey: " + to_string(encodingJobKey)
+					;
+					SPDLOG_ERROR(errorMessage);
+
+					throw runtime_error(errorMessage);
+					*/
+					twoPasses = false;
+
+					string errorMessage = std::format(
+						"in case of proxy it is not possible to have a two passes encoding. Change it to false"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", twoPasses: {}",
+						ingestionJobKey, encodingJobKey, twoPasses
+					);
+					SPDLOG_WARN(errorMessage);
+				}
+			}
+			catch (runtime_error &e)
+			{
+				string errorMessage = std::format(
+					"encodingProfileParameter retrieving failed"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", e.what(): {}",
+					ingestionJobKey, encodingJobKey, e.what()
+				);
+				SPDLOG_ERROR(errorMessage);
+
+				throw e;
+			}
+		}
+
+		// se abbiamo overlay, necessariamente serve un profilo di encoding
+		// questo controllo sarebbe in generale, cioé se abbiamo alcuni filtri in particolare dovremmo avere un profilo di encoding
+		/*
+		if (ffmpegDrawTextFilter != "" && encodingProfileDetailsRoot == nullptr)
+		{
+			string errorMessage = std::format(
+				"text-overlay requires an encoding profile"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", outputIndex: {}",
+				ingestionJobKey, encodingJobKey, outputIndex
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+		*/
+
+		string videoFilters;
+		string audioFilters;
+		string complexFilters;
+		if (filtersRoot != nullptr)
+			tie(videoFilters, audioFilters, complexFilters) =
+				ffmpegFilters.addFilters(filtersRoot, ffmpegVideoResolutionParameter, "", streamingDurationInSeconds);
+
+		bool threadsParameterToBeAdded = false;
+
+		auto& output = ffMpegEngine.addOutput();
+
+		// video (parametri di encoding)
+		if (inputVideoMap != "" && inputVideoMap != "default")
+		{
+			/*
+			ffmpegOutputArgumentList.push_back("-map");
+			if (inputVideoMap == "all video tracks")
+				ffmpegOutputArgumentList.push_back("0:v");
+			else if (inputVideoMap == "first video track")
+				ffmpegOutputArgumentList.push_back("0:v:0");
+			else if (inputVideoMap == "second video track")
+				ffmpegOutputArgumentList.push_back("0:v:1");
+			else if (inputVideoMap == "third video track")
+				ffmpegOutputArgumentList.push_back("0:v:2");
+			else
+				ffmpegOutputArgumentList.push_back(inputVideoMap);
+			*/
+			if (inputVideoMap == "all video tracks")
+				output.map("0:v");
+			else if (inputVideoMap == "first video track")
+				output.map("0:v:0");
+			else if (inputVideoMap == "second video track")
+				output.map("0:v:1");
+			else if (inputVideoMap == "third video track")
+				output.map("0:v:2");
+			else
+				output.map(inputVideoMap);
+		}
+
+		// if (videoFilters != "")
+		// {
+		// 	ffmpegOutputArgumentList.push_back("-filter:v");
+		// 	ffmpegOutputArgumentList.push_back(videoFilters);
+		// }
+		{
+			if (!ffmpegVideoResolutionParameter.empty())
+				output.addVideoFilter(ffmpegVideoResolutionParameter);
+			if (filtersRoot != nullptr)
+			{
+				if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
+				{
+					for (const auto& filterRoot : filtersRoot["video"])
+						output.addVideoFilter(ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds));
+				}
+			}
+		}
+
+		// if (complexFilters != "")
+		// {
+		// 	ffmpegOutputArgumentList.push_back("-filter_complex");
+		// 	ffmpegOutputArgumentList.push_back(complexFilters);
+		// }
+		ffMpegEngine.addFilterComplex(complexFilters);
+
+		if (encodingProfileDetailsRoot != nullptr)
+		{
+			threadsParameterToBeAdded = true;
+
+			{
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegOutputArgumentList);
+				output.withVideoCodec(ffmpegVideoCodecParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegVideoProfileParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegVideoBitRateParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegVideoOtherParameters);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegVideoMaxRateParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegVideoBufSizeParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegVideoFrameRateParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegVideoKeyFramesRateParameter);
+				// ffmpegVideoResolutionParameter is -vf scale=w=1280:h=720
+				// Since we cannot have more than one -vf (otherwise ffmpeg will use
+				// only the last one), in case we have ffmpegDrawTextFilter,
+				// we will append it here
+			}
+		}
+		else
+		{
+			if (otherOutputOptions.find("-filter:v") == string::npos)
+			{
+				// it is not possible to have -c:v copy and -filter:v toghether
+				// ffmpegOutputArgumentList.push_back("-c:v");
+				// ffmpegOutputArgumentList.push_back("copy");
+				output.withVideoCodec("copy");
+			}
+		}
+
+		// audio (parametri di encoding)
+		if (inputAudioMap != "" && inputAudioMap != "default")
+		{
+			/*
+			ffmpegOutputArgumentList.push_back("-map");
+			if (inputAudioMap == "all audio tracks")
+				ffmpegOutputArgumentList.push_back("0:a");
+			else if (inputAudioMap == "first audio track")
+				ffmpegOutputArgumentList.push_back("0:a:0");
+			else if (inputAudioMap == "second audio track")
+				ffmpegOutputArgumentList.push_back("0:a:1");
+			else if (inputAudioMap == "third audio track")
+				ffmpegOutputArgumentList.push_back("0:a:2");
+			else
+				ffmpegOutputArgumentList.push_back(inputAudioMap);
+			*/
+
+			if (inputAudioMap == "all audio tracks")
+				output.map("0:a");
+			else if (inputAudioMap == "first audio track")
+				output.map("0:a:0");
+			else if (inputAudioMap == "second audio track")
+				output.map("0:a:1");
+			else if (inputAudioMap == "third audio track")
+				output.map("0:a:2");
+			else
+				output.map(inputAudioMap);
+		}
+
+		// if (audioFilters != "")
+		// {
+		// 	ffmpegOutputArgumentList.push_back("-filter:a");
+		// 	ffmpegOutputArgumentList.push_back(audioFilters);
+		// }
+		{
+			if (filtersRoot != nullptr)
+			{
+				if (JSONUtils::isMetadataPresent(filtersRoot, "audio"))
+				{
+					for (const auto& filterRoot : filtersRoot["audio"])
+						output.addAudioFilter(ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds));
+				}
+			}
+		}
+
+		if (encodingProfileDetailsRoot != nullptr)
+		{
+			threadsParameterToBeAdded = true;
+
+			{
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegOutputArgumentList);
+				output.withAudioCodec(ffmpegAudioCodecParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegAudioBitRateParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegAudioOtherParameters);
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioChannelsParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegAudioChannelsParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioSampleRateParameter, ffmpegOutputArgumentList);
+				output.addArgs(ffmpegAudioSampleRateParameter);
+
+			}
+		}
+		else
+		{
+			if (otherOutputOptions.find("-filter:a") == string::npos)
+			{
+				// it is not possible to have -c:a copy and -filter:a toghether
+				// ffmpegOutputArgumentList.push_back("-c:a");
+				// ffmpegOutputArgumentList.push_back("copy");
+				output.withAudioCodec("copy");
+			}
+		}
+
+		if (threadsParameterToBeAdded)
+		{
+			// ffmpegOutputArgumentList.push_back("-threads");
+			// ffmpegOutputArgumentList.push_back("0");
+			output.addArgs("-threads 0");
+		}
+
+		// output file
+		if (outputType == "CDN_AWS" || outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
+		{
+			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
+			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
+			if (rtmpUrl == "" && srtUrl == "")
+			{
+				string errorMessage = std::format(
+					"rtmpUrl/srtUrl cannot be empty"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", outputRoot: {}",
+					ingestionJobKey, encodingJobKey, JSONUtils::toString(outputRoot)
+				);
+				SPDLOG_ERROR(errorMessage);
+
+				throw runtime_error(errorMessage);
+			}
+
+			// otherOutputOptions
+			{
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
+				// else
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
+				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				else
+					output.addArgs(otherOutputOptions);
+			}
+
+			// 2023-01-14
+			// the aac_adtstoasc filter is needed only in case of an AAC input, otherwise
+			// it will generate an error
+			// Questo filtro è sempre stato aggiunto. Ora abbiamo il caso di un codec audio mp2 che
+			// genera un errore.
+			// Per essere conservativo ed evitare problemi, il controllo sotto viene fatto in 'logica negata'.
+			// cioè invece di abilitare il filtro per i codec aac, lo disabilitiamo per il codec mp2
+			// 2023-01-15
+			// Il problema 'sopra' che, a seguito del codec mp2 veniva generato un errore,
+			// è stato risolto aggiungendo un encoding in uscita.
+			// Per questo motivo sotto viene commentato
+
+			// 2023-04-06: La logica negata è sbagliata, perchè il filtro aac_adtstoasc funziona solamente
+			//	con aac. Infatti ora ho trovato un caso di mp3 che non funziona con aac_adtstoasc
+			{
+				/*
+				bool aacFilterToBeAdded = true;
+				for(tuple<int, int64_t, string, long, int, long, string> inputAudioTrack: inputAudioTracks)
+				{
+					// trackIndex, audioDurationInMilliSeconds, audioCodecName,
+					// audioSampleRate, audioChannels, audioBitRate, language));
+					string audioCodecName;
+
+					tie(ignore, ignore, audioCodecName, ignore, ignore, ignore, ignore) = inputAudioTrack;
+
+					string audioCodecNameLowerCase;
+					audioCodecNameLowerCase.resize(audioCodecName.size());
+					transform(audioCodecName.begin(), audioCodecName.end(), audioCodecNameLowerCase.begin(),
+						[](unsigned char c){return tolower(c); } );
+
+					if (audioCodecNameLowerCase.find("mp2") != string::npos
+					)
+						aacFilterToBeAdded = false;
+
+					info(__FILEREF__ + "aac check"
+						+ ", audioCodecName: " + audioCodecName
+						+ ", aacFilterToBeAdded: " + to_string(aacFilterToBeAdded)
+					);
+				}
+
+				if (aacFilterToBeAdded)
+				*/
+				if (rtmpUrl != "")
+				{
+					// ffmpegOutputArgumentList.push_back("-bsf:a");
+					// ffmpegOutputArgumentList.push_back("aac_adtstoasc");
+					output.addArgs("-bsf:a aac_adtstoasc");
+				}
+			}
+
+			// 2020-08-13: commented bacause -c:v copy is already present
+			// ffmpegArgumentList.push_back("-vcodec");
+			// ffmpegArgumentList.push_back("copy");
+
+			// right now it is fixed flv, it means cdnURL will be like "rtmp://...."
+			// ffmpegOutputArgumentList.push_back("-f");
+			if (rtmpUrl != "")
+			{
+				// ffmpegOutputArgumentList.push_back("flv");
+				output.addArgs("-f flv");
+				// ffmpegOutputArgumentList.push_back(rtmpUrl);
+				output.setPath(rtmpUrl);
+			}
+			else
+			{
+				// ffmpegOutputArgumentList.push_back("mpegts");
+				output.addArgs("-f mpegts");
+				// ffmpegOutputArgumentList.push_back(srtUrl);
+				output.setPath(srtUrl);
+			}
+		}
+		else if (outputType == "SRT_Channel")
+		{
+			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
+			if (srtUrl == "")
+			{
+				string errorMessage = std::format(
+					"srtUrl cannot be empty"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", rtmpUrl: {}",
+					ingestionJobKey, encodingJobKey, srtUrl
+				);
+				SPDLOG_ERROR(errorMessage);
+
+				throw runtime_error(errorMessage);
+			}
+
+			// otherOutputOptions
+			{
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
+				// else
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
+				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				else
+					output.addArgs(otherOutputOptions);
+			}
+
+			// ffmpegOutputArgumentList.push_back("-f");
+			// ffmpegOutputArgumentList.push_back("mpegts");
+			output.addArgs("-f mpegts");
+			// ffmpegOutputArgumentList.push_back(srtUrl);
+			output.setPath(srtUrl);
+		}
+		else if (outputType == "HLS_Channel")
+		{
+			string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
+			string manifestFileName = JSONUtils::asString(outputRoot, "manifestFileName", "");
+			int segmentDurationInSeconds = JSONUtils::asInt(outputRoot, "segmentDurationInSeconds", 10);
+			int playlistEntriesNumber = JSONUtils::asInt(outputRoot, "playlistEntriesNumber", 5);
+
+			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
+
+			SPDLOG_INFO(
+				"Checking manifestDirectoryPath directory"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", manifestDirectoryPath: {}",
+				ingestionJobKey, encodingJobKey, manifestDirectoryPath
+			);
+
+			// directory is created by EncoderVideoAudioProxy using MMSStorage::getStagingAssetPathName
+			// I saw just once that the directory was not created and the liveencoder remains in the loop
+			// where:
+			//	1. the encoder returns an error because of the missing directory
+			//	2. EncoderVideoAudioProxy calls again the encoder
+			// So, for this reason, the below check is done
+			if (!fs::exists(manifestDirectoryPath))
+			{
+				SPDLOG_WARN(
+					"manifestDirectoryPath does not exist!!! It will be created"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", manifestDirectoryPath: {}",
+					ingestionJobKey, encodingJobKey, manifestDirectoryPath
+				);
+
+				SPDLOG_INFO(
+					"Create directory"
+					", manifestDirectoryPath: {}",
+					manifestDirectoryPath
+				);
+				fs::create_directories(manifestDirectoryPath);
+				fs::permissions(
+					manifestDirectoryPath,
+					fs::perms::owner_read | fs::perms::owner_write | fs::perms::owner_exec | fs::perms::group_read | fs::perms::group_exec |
+						fs::perms::others_read | fs::perms::others_exec,
+					fs::perm_options::replace
+				);
+			}
+
+			if (externalEncoder && manifestDirectoryPath != "")
+				addToIncrontab(ingestionJobKey, encodingJobKey, manifestDirectoryPath);
+
+			// if (outputType == "HLS")
+			{
+				// ffmpegOutputArgumentList.push_back("-hls_flags");
+				// ffmpegOutputArgumentList.push_back("append_list");
+				output.addArgs("-hls_flags append_list");
+				// ffmpegOutputArgumentList.push_back("-hls_time");
+				// ffmpegOutputArgumentList.push_back(to_string(segmentDurationInSeconds));
+				output.addArgs(std::format("-hls_time {}", segmentDurationInSeconds));
+				// ffmpegOutputArgumentList.push_back("-hls_list_size");
+				// ffmpegOutputArgumentList.push_back(to_string(playlistEntriesNumber));
+				output.addArgs(std::format("-hls_list_size {}", playlistEntriesNumber));
+
+				// Segment files removed from the playlist are deleted after a period of time
+				// equal to the duration of the segment plus the duration of the playlist
+				// ffmpegOutputArgumentList.push_back("-hls_flags");
+				// ffmpegOutputArgumentList.push_back("delete_segments");
+				output.addArgs("-hls_flags delete_segments");
+
+				// Set the number of unreferenced segments to keep on disk
+				// before 'hls_flags delete_segments' deletes them. Increase this to allow continue clients
+				// to download segments which were recently referenced in the playlist.
+				// Default value is 1, meaning segments older than hls_list_size+1 will be deleted.
+				// ffmpegOutputArgumentList.push_back("-hls_delete_threshold");
+				// ffmpegOutputArgumentList.push_back(to_string(1));
+				output.addArgs("-hls_delete_threshold 1");
+
+				// Start the playlist sequence number (#EXT-X-MEDIA-SEQUENCE) based on the current
+				// date/time as YYYYmmddHHMMSS. e.g. 20161231235759
+				// 2020-07-11: For the Live-Grid task, without -hls_start_number_source we have video-audio out of sync
+				// 2020-07-19: commented, if it is needed just test it
+				// ffmpegArgumentList.push_back("-hls_start_number_source");
+				// ffmpegArgumentList.push_back("datetime");
+
+				// 2020-07-19: commented, if it is needed just test it
+				// ffmpegArgumentList.push_back("-start_number");
+				// ffmpegArgumentList.push_back(to_string(10));
+			}
+			/*
+			else if (outputType == "DASH")
+			{
+				ffmpegOutputArgumentList.push_back("-seg_duration");
+				ffmpegOutputArgumentList.push_back(to_string(segmentDurationInSeconds));
+				ffmpegOutputArgumentList.push_back("-window_size");
+				ffmpegOutputArgumentList.push_back(to_string(playlistEntriesNumber));
+
+				// it is important to specify -init_seg_name because those files
+				// will not be removed in EncoderVideoAudioProxy.cpp
+				ffmpegOutputArgumentList.push_back("-init_seg_name");
+				ffmpegOutputArgumentList.push_back("init-stream$RepresentationID$.$ext$");
+
+				// the only difference with the ffmpeg default is that default is $Number%05d$
+				// We had to change it to $Number%01d$ because otherwise the generated file containing
+				// 00001 00002 ... but the videojs player generates file name like 1 2 ...
+				// and the streaming was not working
+				ffmpegOutputArgumentList.push_back("-media_seg_name");
+				ffmpegOutputArgumentList.push_back("chunk-stream$RepresentationID$-$Number%01d$.$ext$");
+			}
+			*/
+
+			// otherOutputOptions
+			// 2023-12-06: ho dovuto spostare otherOutputOptions qui perchè, nel caso del monitorHLS del LiveRecording,
+			// viene aggiunto "-hls_flags program_date_time", per avere #EXT-X-PROGRAM-DATE-TIME: nell'm3u8 e,
+			// se aggiunto prima, non funziona (EXT-X-PROGRAM-DATE-TIME non viene aggiunto nell'm3u8).
+			// EXT-X-PROGRAM-DATE-TIME è importante per avere i campi utcEndTimeInMilliSecs e utcStartTimeInMilliSecs
+			// inizializzati correttamente nello userData del media item virtual VOD generato
+			{
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
+				// else
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
+				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				else
+					output.addArgs(otherOutputOptions);
+			}
+
+			// ffmpegOutputArgumentList.push_back("-f");
+			// ffmpegOutputArgumentList.push_back("hls");
+			output.addArgs("-f hls");
+			// ffmpegOutputArgumentList.push_back(manifestFilePathName);
+			output.setPath(manifestFilePathName);
+		}
+		else if (outputType == "UDP_Stream")
+		{
+			string udpUrl = JSONUtils::asString(outputRoot, "udpUrl", "");
+
+			if (udpUrl == "")
+			{
+				string errorMessage = std::format(
+					"udpUrl cannot be empty"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", udpUrl: {}",
+					ingestionJobKey, encodingJobKey, udpUrl
+				);
+				SPDLOG_ERROR(errorMessage);
+
+				throw runtime_error(errorMessage);
+			}
+
+			// otherOutputOptions
+			{
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
+				// else
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
+				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				else
+					output.addArgs(otherOutputOptions);
+			}
+
+			// ffmpegOutputArgumentList.push_back("-f");
+			// ffmpegOutputArgumentList.push_back("mpegts");
+			output.addArgs("-f mpegts");
+			// ffmpegOutputArgumentList.push_back(udpUrl);
+			output.setPath(udpUrl);
+		}
+		else if (outputType == "NONE")
+		{
+			// otherOutputOptions
+			{
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
+				// else
+				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
+				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				else
+					output.addArgs(otherOutputOptions);
+			}
+
+			tuple<string, string, string> allFilters = ffmpegFilters.addFilters(filtersRoot, "", "", -1);
+
+			string videoFilters;
+			string audioFilters;
+			string complexFilters;
+			tie(videoFilters, audioFilters, complexFilters) = allFilters;
+
+			// if (videoFilters != "")
+			// {
+			// 	ffmpegOutputArgumentList.push_back("-filter:v");
+			// 	ffmpegOutputArgumentList.push_back(videoFilters);
+			// }
+			{
+				if (filtersRoot != nullptr)
+				{
+					if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
+					{
+						for (const auto& filterRoot : filtersRoot["video"])
+							output.addVideoFilter(ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds));
+					}
+				}
+			}
+
+			// if (audioFilters != "")
+			// {
+			// 	ffmpegOutputArgumentList.push_back("-filter:a");
+			// 	ffmpegOutputArgumentList.push_back(audioFilters);
+			// }
+			{
+				if (filtersRoot != nullptr)
+				{
+					if (JSONUtils::isMetadataPresent(filtersRoot, "audio"))
+					{
+						for (const auto& filterRoot : filtersRoot["audio"])
+							output.addAudioFilter(ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds));
+					}
+				}
+			}
+
+			if (complexFilters != "")
+			{
+				// ffmpegOutputArgumentList.push_back("-filter_complex");
+				// ffmpegOutputArgumentList.push_back(complexFilters);
+				ffMpegEngine.addFilterComplex(complexFilters);
+			}
+
+			// ffmpegOutputArgumentList.push_back("-f");
+			// ffmpegOutputArgumentList.push_back("null");
+			output.addArgs("-f null");
+			// ffmpegOutputArgumentList.push_back("-");
+			output.addArgs("-");
+		}
+		else
+		{
+			string errorMessage = std::format(
+				"liveProxy. Wrong output type"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", outputType: {}",
+				ingestionJobKey, encodingJobKey, outputType
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+	}
+}
+
 void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, json outputsRoot, bool externalEncoder)
 {
 
