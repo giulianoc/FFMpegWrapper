@@ -36,7 +36,9 @@ public:
 		Input& setDurationSeconds(const int32_t durationSeconds) { _durationSeconds = durationSeconds; return *this; }
 		Input& addArg(const string_view& parameter);
     	Input& addArgs(const string& parameters);
-    };
+		void buildArgs(vector<string> &args) const;
+		[[nodiscard]] string toSingleLine() const;
+	};
 
     class Output {
     	friend FFMpegEngine;
@@ -59,6 +61,8 @@ public:
         Output& addAudioFilter(string_view f) { _audioFilters.emplace_back(f); return *this; }
         Output& addArg(const string_view& parameter);
      	Output& addArgs(const string& parameters);
+    	void buildArgs(vector<string>& args) const;
+		[[nodiscard]] string toSingleLine() const;
    };
 
     FFMpegEngine() = default;
@@ -94,8 +98,9 @@ public:
 
     // duration for percent calculation (ms). If set, progress percent = out_time_ms / durationMilliSeconds
     void setDurationMilliSeconds(int64_t durationMilliSeconds);
+	static string toSingleLine(vector<string> &args) ;
 
-    // build command (not shell-quoted). useProgressPipe true adds -progress pipe:1
+	// build command (not shell-quoted). useProgressPipe true adds -progress pipe:1
     [[nodiscard]] string build(bool useProgressPipe = false) const;
     [[nodiscard]] vector<string> buildArgs(bool useProgressPipe = false) const;
 

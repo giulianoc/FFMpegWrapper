@@ -23,6 +23,28 @@ FFMpegEngine::Input& FFMpegEngine::Input::addArgs(const string& parameters)
 	return *this;
 }
 
+void FFMpegEngine::Input::buildArgs(vector<string>& args) const
+{
+	for (auto& arg : _args)
+		args.emplace_back(arg);
+	if (_durationSeconds > 0)
+	{
+		args.emplace_back("-t");
+		args.emplace_back(std::format("{}", _durationSeconds));
+	}
+	args.emplace_back("-i");
+	args.emplace_back(_source);
+}
+
+string FFMpegEngine::Input::toSingleLine() const
+{
+	vector<string> args;
+	buildArgs(args);
+
+	return FFMpegEngine::toSingleLine(args);
+}
+
+
 // ---------------- Output methods ----------------
 
 FFMpegEngine::Output& FFMpegEngine::Output::addArg(const string_view& parameter)
@@ -37,6 +59,60 @@ FFMpegEngine::Output& FFMpegEngine::Output::addArgs(const string& parameters)
 		parameters | views::split(' ') | views::filter([](auto &&rng){ return !ranges::empty(rng); }))
 		_extraArgs.emplace_back(tok.begin(), tok.end());
 	return *this;
+}
+
+void FFMpegEngine::Output::buildArgs(vector<string>& args) const
+{
+	for (auto& map : _maps)
+	{
+		args.emplace_back("-map");
+		args.emplace_back(map);
+	}
+	if (_videoCodec)
+	{
+		args.emplace_back("-c:v");
+		args.emplace_back(*_videoCodec);
+	}
+	if (_audioCodec)
+	{
+		args.emplace_back("-c:a");
+		args.emplace_back(*_audioCodec);
+	}
+	if (!_videoFilters.empty())
+	{
+		string vf;
+		for (size_t index=0; index < _videoFilters.size(); ++index)
+		{
+			vf += _videoFilters[index];
+			if (index + 1 < _videoFilters.size())
+				vf += ",";
+		}
+		args.emplace_back("-vf");
+		args.emplace_back(vf);
+	}
+	if (!_audioFilters.empty())
+	{
+		string af;
+		for (size_t index = 0; index < _audioFilters.size(); ++index)
+		{
+			af += _audioFilters[index];
+			if (index + 1 < _audioFilters.size())
+				af += ",";
+		}
+		args.emplace_back("-af");
+		args.emplace_back(af);
+	}
+	for (auto& extraArg : _extraArgs)
+		args.emplace_back(extraArg);
+	args.emplace_back(_path);
+}
+
+string FFMpegEngine::Output::toSingleLine() const
+{
+	vector<string> args;
+	buildArgs(args);
+
+	return FFMpegEngine::toSingleLine(args);
 }
 
 // ---------------- builder methods ----------------
@@ -143,6 +219,27 @@ void FFMpegEngine::setDurationMilliSeconds(int64_t durationMilliSeconds) {
 
 // ---------------- build args (vector) ----------------
 
+string FFMpegEngine::toSingleLine(vector<string>& args)
+{
+	ostringstream ffmpegArgumentListStream;
+
+	// if (!ffmpegArgumentList.empty())
+	// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+
+	for (size_t index = 0; index < args.size(); ++index)
+	{
+		if (index)
+			ffmpegArgumentListStream << " ";
+		// simple quoting for visualization
+		if (args[index].find(' ') != string::npos)
+			ffmpegArgumentListStream << "\"" << args[index] << "\"";
+		else
+			ffmpegArgumentListStream << args[index];
+	}
+
+	return ffmpegArgumentListStream.str();
+}
+
 vector<string> FFMpegEngine::buildArgs(bool useProgressPipe) const {
     vector<string> args;
 
@@ -152,17 +249,8 @@ vector<string> FFMpegEngine::buildArgs(bool useProgressPipe) const {
     	args.emplace_back(g);
 
     // inputs
-    for (auto& in : _inputs)
-	{
-        for (auto& a : in._args) args.emplace_back(a);
-		if (in._durationSeconds > 0)
-		{
-            args.emplace_back("-t");
-            args.emplace_back(std::format("{}", in._durationSeconds));
-        }
-        args.emplace_back("-i");
-        args.emplace_back(in._source);
-    }
+    for (auto& input : _inputs)
+    	input.buildArgs(args);
 
     if (!_filterComplex.empty())
     {
@@ -180,50 +268,7 @@ vector<string> FFMpegEngine::buildArgs(bool useProgressPipe) const {
 
     // outputs
     for (auto& output : _outputs)
-    {
-        for (auto& map : output._maps)
-        {
-	        args.emplace_back("-map");
-        	args.emplace_back(map);
-        }
-        if (output._videoCodec)
-        {
-	        args.emplace_back("-c:v");
-        	args.emplace_back(*output._videoCodec);
-        }
-        if (output._audioCodec)
-        {
-	        args.emplace_back("-c:a");
-        	args.emplace_back(*output._audioCodec);
-        }
-        if (!output._videoFilters.empty())
-        {
-            string vf;
-            for (size_t index=0; index < output._videoFilters.size(); ++index)
-            {
-                vf += output._videoFilters[index];
-                if (index + 1 < output._videoFilters.size())
-                	vf += ",";
-            }
-            args.emplace_back("-vf");
-        	args.emplace_back(vf);
-        }
-        if (!output._audioFilters.empty())
-        {
-            string af;
-            for (size_t index = 0; index < output._audioFilters.size(); ++index)
-            {
-                af += output._audioFilters[index];
-                if (index + 1 < output._audioFilters.size())
-                	af += ",";
-            }
-            args.emplace_back("-af");
-        	args.emplace_back(af);
-        }
-        for (auto& extraArg : output._extraArgs)
-        	args.emplace_back(extraArg);
-        args.emplace_back(output._path);
-    }
+    	output.buildArgs(args);
 
     if (useProgressPipe)
     {
@@ -239,23 +284,7 @@ string FFMpegEngine::build(bool useProgressPipe) const
 {
     auto args = buildArgs(useProgressPipe);
 
-	ostringstream ffmpegArgumentListStream;
-
-	// if (!ffmpegArgumentList.empty())
-	// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
-
-    for (size_t index = 0; index < args.size(); ++index)
-    {
-        if (index)
-        	ffmpegArgumentListStream << " ";
-        // simple quoting for visualization
-        if (args[index].find(' ') != string::npos)
-        	ffmpegArgumentListStream << "\"" << args[index] << "\"";
-        else
-        	ffmpegArgumentListStream << args[index];
-    }
-
-    return ffmpegArgumentListStream.str();
+	return toSingleLine(args);
 }
 
 // ----------------- formatter per mostrare i comandi -----------------

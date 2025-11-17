@@ -3279,7 +3279,8 @@ void FFMpegWrapper::liveRecorder(
 		// 	ffmpegArgumentList.push_back(to_string(streamingDuration));
 		// }
 
-		SPDLOG_INFO("BBBBBBBBBBBBB: {}", ffmpegEngine.build());
+		SPDLOG_INFO("BBBBBBBBBBBBB ffmpegEngine: {}", ffmpegEngine.build());
+		SPDLOG_INFO("BBBBBBBBBBBBB mainInput: {}", mainInput.toSingleLine());
 		auto mainOutput = ffmpegEngine.addOutput();
 
 		if (utcTimeOverlay)
