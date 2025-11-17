@@ -3124,7 +3124,7 @@ void FFMpegWrapper::liveRecorder(
 		// 	ffmpegArgumentList.push_back(userAgent);
 		// }
 
-		auto mainInput = ffmpegEngine.addInput();
+		auto& mainInput = ffmpegEngine.addInput();
 
 		if (!otherInputOptions.empty())
 			mainInput.addArgs(otherInputOptions);
@@ -3225,7 +3225,7 @@ void FFMpegWrapper::liveRecorder(
 
 			// audio
 			{
-				auto audioInput = ffmpegEngine.addInput(std::format("hw:{}", captureLive_audioDeviceNumber));
+				auto& audioInput = ffmpegEngine.addInput(std::format("hw:{}", captureLive_audioDeviceNumber));
 
 				audioInput.addArgs("-f alsa -thread_queue_size 2048");
 				// ffmpegArgumentList.emplace_back("-f");
@@ -3257,7 +3257,7 @@ void FFMpegWrapper::liveRecorder(
 				{
 					string picturePathName = JSONUtils::asString(frameToBeDetectedRoot, "picturePathName", "");
 
-					auto pictureInput = ffmpegEngine.addInput(picturePathName);
+					auto& pictureInput = ffmpegEngine.addInput(picturePathName);
 					pictureInput.addArgs("-r 1 -loop 1");
 					// ffmpegArgumentList.emplace_back("-r");
 					// ffmpegArgumentList.emplace_back("1");
@@ -3281,7 +3281,7 @@ void FFMpegWrapper::liveRecorder(
 
 		SPDLOG_INFO("BBBBBBBBBBBBB ffmpegEngine: {}", ffmpegEngine.build());
 		SPDLOG_INFO("BBBBBBBBBBBBB mainInput: {}", mainInput.toSingleLine());
-		auto mainOutput = ffmpegEngine.addOutput();
+		auto& mainOutput = ffmpegEngine.addOutput();
 
 		if (utcTimeOverlay)
 		{
