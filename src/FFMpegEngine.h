@@ -13,16 +13,6 @@ using namespace std;
 
 class FFMpegEngine {
 public:
-	/*
-    struct Progress {
-        optional<int64_t> frame;
-        optional<double> fps;
-        optional<int64_t> totalSize; // bytes
-        optional<int64_t> outTimeMs;
-        optional<string> progress; // "continue" or "end"
-    };
-    */
-
     class Input {
     	friend FFMpegEngine;
 
@@ -93,7 +83,7 @@ public:
     // After calling this, for VAAPI outputs prefer videoCodec "h264_vaapi" or "hevc_vaapi"
     FFMpegEngine& vaapiPrepareUpload();
 
-    // watermark / drawtext
+    // TODO: watermark
     FFMpegEngine& addWatermark(Output& out, string_view overlayLabel, string_view pos = "10:10");
 
     // duration for percent calculation (ms). If set, progress percent = out_time_ms / durationMilliSeconds
@@ -108,7 +98,6 @@ public:
 	[[nodiscard]] string toSingleLine() const;
 
 private:
-    // internals
 	optional<string> _userAgent;
     vector<Input> _inputs;
     vector<Output> _outputs;
