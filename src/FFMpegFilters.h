@@ -37,7 +37,7 @@ class FFMpegFilters
 
 	[[nodiscard]] string addAudioFilters(const json &filtersRoot, int64_t streamingDurationInSeconds) const;
 
-	[[nodiscard]] string getFilter(const json& filtersRoot, int64_t streamingDurationInSeconds) const;
+	[[nodiscard]] string getFilter(const json& filtersRoot, int64_t streamingDurationInSeconds = -1) const;
 
 	static json mergeFilters(const json &filters_1Root, const json &filters_2Root);
 

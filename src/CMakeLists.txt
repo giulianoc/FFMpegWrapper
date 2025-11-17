@@ -20,6 +20,7 @@
 set(SOURCES
     FFMpegFilters.cpp
     FFMpegEncodingParameters.cpp
+    FFMpegEngine.cpp
     FFMpegWrapper.cpp
     Monitoring.cpp
     EncodeContent.cpp
@@ -40,7 +41,7 @@ set(SOURCES
     StreamingToFile.cpp
     Incrontab.cpp
     Youtube.cpp)
-set(HEADERS FFMpegFilters.h FFMpegEncodingParameters.h FFMpegWrapper.h)
+set(HEADERS FFMpegFilters.h FFMpegEncodingParameters.h FFMpegEngine.h FFMpegWrapper.h)
 
 find_program(LSB_RELEASE_EXEC lsb_release)
 execute_process(

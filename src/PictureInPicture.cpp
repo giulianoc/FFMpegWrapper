@@ -14,20 +14,20 @@
 #include "FFMpegEncodingParameters.h"
 #include "FFMpegWrapper.h"
 #include "ProcessUtility.h"
+#include "StringUtils.h"
 #include "spdlog/spdlog.h"
 #include <regex>
 
 void FFMpegWrapper::pictureInPicture(
-	string mmsMainVideoAssetPathName, int64_t mainVideoDurationInMilliSeconds, string mmsOverlayVideoAssetPathName,
-	int64_t overlayVideoDurationInMilliSeconds, bool soundOfMain, string overlayPosition_X_InPixel, string overlayPosition_Y_InPixel,
-	string overlay_Width_InPixel, string overlay_Height_InPixel,
+	const string& mmsMainVideoAssetPathName, int64_t mainVideoDurationInMilliSeconds, const string& mmsOverlayVideoAssetPathName,
+	int64_t overlayVideoDurationInMilliSeconds, bool soundOfMain, const string& overlayPosition_X_InPixel, const string& overlayPosition_Y_InPixel,
+	const string& overlay_Width_InPixel, const string& overlay_Height_InPixel,
 
-	json encodingProfileDetailsRoot,
+	const json& encodingProfileDetailsRoot,
 
 	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
 )
 {
-	int iReturnedStatus = 0;
 
 	_currentApiName = APIName::PictureInPicture;
 
@@ -86,29 +86,29 @@ void FFMpegWrapper::pictureInPicture(
 			try
 			{
 				string httpStreamingFileFormat;
-				string ffmpegHttpStreamingParameter = "";
+				string ffmpegHttpStreamingParameter;
 				bool encodingProfileIsVideo = true;
 
-				string ffmpegFileFormatParameter = "";
+				string ffmpegFileFormatParameter;
 
-				string ffmpegVideoCodecParameter = "";
-				string ffmpegVideoProfileParameter = "";
-				string ffmpegVideoResolutionParameter = "";
+				string ffmpegVideoCodecParameter;
+				string ffmpegVideoProfileParameter;
+				string ffmpegVideoResolutionParameter;
 				int videoBitRateInKbps = -1;
-				string ffmpegVideoBitRateParameter = "";
-				string ffmpegVideoOtherParameters = "";
-				string ffmpegVideoMaxRateParameter = "";
-				string ffmpegVideoBufSizeParameter = "";
-				string ffmpegVideoFrameRateParameter = "";
-				string ffmpegVideoKeyFramesRateParameter = "";
+				string ffmpegVideoBitRateParameter;
+				string ffmpegVideoOtherParameters;
+				string ffmpegVideoMaxRateParameter;
+				string ffmpegVideoBufSizeParameter;
+				string ffmpegVideoFrameRateParameter;
+				string ffmpegVideoKeyFramesRateParameter;
 				bool twoPasses;
 				vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
 
-				string ffmpegAudioCodecParameter = "";
-				string ffmpegAudioBitRateParameter = "";
-				string ffmpegAudioOtherParameters = "";
-				string ffmpegAudioChannelsParameter = "";
-				string ffmpegAudioSampleRateParameter = "";
+				string ffmpegAudioCodecParameter;
+				string ffmpegAudioBitRateParameter;
+				string ffmpegAudioOtherParameters;
+				string ffmpegAudioChannelsParameter;
+				string ffmpegAudioSampleRateParameter;
 				vector<string> audioBitRatesInfo;
 
 				FFMpegEncodingParameters::settingFfmpegParameters(
@@ -180,8 +180,8 @@ void FFMpegWrapper::pictureInPicture(
 				// comma (,) as separator. For now we will just comment it and the resolution will be the one
 				// coming from the video (no changes)
 				// FFMpegEncodingParameters::addToArguments(ffmpegVideoResolutionParameter, ffmpegEncodingProfileArgumentList);
-				ffmpegEncodingProfileArgumentList.push_back("-threads");
-				ffmpegEncodingProfileArgumentList.push_back("0");
+				ffmpegEncodingProfileArgumentList.emplace_back("-threads");
+				ffmpegEncodingProfileArgumentList.emplace_back("0");
 				FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegEncodingProfileArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegEncodingProfileArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegEncodingProfileArgumentList);
@@ -213,15 +213,15 @@ void FFMpegWrapper::pictureInPicture(
 		}
 
 		{
-			string ffmpegOverlayPosition_X_InPixel = regex_replace(overlayPosition_X_InPixel, regex("mainVideo_width"), "main_w");
-			ffmpegOverlayPosition_X_InPixel = regex_replace(ffmpegOverlayPosition_X_InPixel, regex("overlayVideo_width"), "overlay_w");
+			string ffmpegOverlayPosition_X_InPixel = StringUtils::replaceAll(overlayPosition_X_InPixel, "mainVideo_width", "main_w");
+			ffmpegOverlayPosition_X_InPixel = StringUtils::replaceAll(ffmpegOverlayPosition_X_InPixel, "overlayVideo_width", "overlay_w");
 
-			string ffmpegOverlayPosition_Y_InPixel = regex_replace(overlayPosition_Y_InPixel, regex("mainVideo_height"), "main_h");
-			ffmpegOverlayPosition_Y_InPixel = regex_replace(ffmpegOverlayPosition_Y_InPixel, regex("overlayVideo_height"), "overlay_h");
+			string ffmpegOverlayPosition_Y_InPixel = StringUtils::replaceAll(overlayPosition_Y_InPixel, "mainVideo_height", "main_h");
+			ffmpegOverlayPosition_Y_InPixel = StringUtils::replaceAll(ffmpegOverlayPosition_Y_InPixel, "overlayVideo_height", "overlay_h");
 
-			string ffmpegOverlay_Width_InPixel = regex_replace(overlay_Width_InPixel, regex("overlayVideo_width"), "iw");
+			string ffmpegOverlay_Width_InPixel = StringUtils::replaceAll(overlay_Width_InPixel, "overlayVideo_width", "iw");
 
-			string ffmpegOverlay_Height_InPixel = regex_replace(overlay_Height_InPixel, regex("overlayVideo_height"), "ih");
+			string ffmpegOverlay_Height_InPixel = StringUtils::replaceAll(overlay_Height_InPixel, "overlayVideo_height", "ih");
 
 			/*
 			string ffmpegFilterComplex = string("-filter_complex 'overlay=")
@@ -246,25 +246,26 @@ void FFMpegWrapper::pictureInPicture(
 				ffmpegFilterComplex += "[pip][0]overlay=";
 			}
 			ffmpegFilterComplex += (ffmpegOverlayPosition_X_InPixel + ":" + ffmpegOverlayPosition_Y_InPixel);
-			vector<string> ffmpegArgumentList;
 			ostringstream ffmpegArgumentListStream;
 			{
-				ffmpegArgumentList.push_back("ffmpeg");
+				vector<string> ffmpegArgumentList;
+				int iReturnedStatus = 0;
+				ffmpegArgumentList.emplace_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				ffmpegArgumentList.emplace_back("-y");
 				// input options
 				if (soundOfMain)
 				{
-					ffmpegArgumentList.push_back("-i");
+					ffmpegArgumentList.emplace_back("-i");
 					ffmpegArgumentList.push_back(mmsMainVideoAssetPathName);
-					ffmpegArgumentList.push_back("-i");
+					ffmpegArgumentList.emplace_back("-i");
 					ffmpegArgumentList.push_back(mmsOverlayVideoAssetPathName);
 				}
 				else
 				{
-					ffmpegArgumentList.push_back("-i");
+					ffmpegArgumentList.emplace_back("-i");
 					ffmpegArgumentList.push_back(mmsOverlayVideoAssetPathName);
-					ffmpegArgumentList.push_back("-i");
+					ffmpegArgumentList.emplace_back("-i");
 					ffmpegArgumentList.push_back(mmsMainVideoAssetPathName);
 				}
 				// output options
@@ -273,7 +274,7 @@ void FFMpegWrapper::pictureInPicture(
 				// encoding parameters
 				if (encodingProfileDetailsRoot != nullptr)
 				{
-					for (string parameter : ffmpegEncodingProfileArgumentList)
+					for (const string& parameter : ffmpegEncodingProfileArgumentList)
 						FFMpegEncodingParameters::addToArguments(parameter, ffmpegArgumentList);
 				}
 

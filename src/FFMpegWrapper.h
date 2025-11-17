@@ -127,10 +127,11 @@ class FFMpegWrapper
 	);
 
 	void pictureInPicture(
-		string mmsMainVideoAssetPathName, int64_t mainVideoDurationInMilliSeconds, string mmsOverlayVideoAssetPathName,
-		int64_t overlayVideoDurationInMilliSeconds, bool soundOfMain, string overlayPosition_X_InPixel, string overlayPosition_Y_InPixel,
-		string overlay_Width_InPixel, string overlay_Height_InPixel, json encodingProfileDetailsRoot, string stagingEncodedAssetPathName,
-		int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
+		const string &mmsMainVideoAssetPathName, int64_t mainVideoDurationInMilliSeconds, const string &mmsOverlayVideoAssetPathName,
+		int64_t overlayVideoDurationInMilliSeconds, bool soundOfMain, const string &overlayPosition_X_InPixel,
+		const string &overlayPosition_Y_InPixel, const string &overlay_Width_InPixel, const string &overlay_Height_InPixel,
+		const json &encodingProfileDetailsRoot, string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey,
+		ProcessUtility::ProcessId &processId
 	);
 
 	void introOutroOverlay(
@@ -253,7 +254,25 @@ class FFMpegWrapper
 		int64_t ingestionJobKey, string sourcePhysicalPath, vector<pair<string, int>> &tracksToBeExtracted, string extractTrackMediaPathName
 	);
 
-	void liveRecorder2(
+	void liveRecorder(
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string& segmentListPathName, const string& recordedFileNamePrefix,
+		const string& otherInputOptions,
+		const string& streamSourceType, // IP_PULL, TV, IP_PUSH, CaptureLive
+		string liveURL,
+		int pushListenTimeout,
+		int captureLive_videoDeviceNumber, const string& captureLive_videoInputFormat, int captureLive_frameRate, int captureLive_width, int captureLive_height,
+		int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
+		bool utcTimeOverlay,
+		const string_view& userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
+		int segmentDurationInSeconds, const string& outputFileFormat,
+		const string& segmenterType, // streamSegmenter or hlsSegmenter
+		const json& outputsRoot,
+		json framesToBeDetectedRoot,
+		const ProcessUtility::LineCallback& ffmpegLineCallback,
+		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
+	);
+
+		void liveRecorder2(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string &segmentListPathName,
 		const string &recordedFileNamePrefix,
 

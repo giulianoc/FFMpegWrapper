@@ -2047,10 +2047,6 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 void FFMpegEncodingParameters::addToArguments(string parameter, vector<string> &argumentList)
 {
-	// info(__FILEREF__ + "addToArguments"
-	// 		+ ", parameter: " + parameter
-	// );
-
 	if (parameter != "")
 	{
 		string item;

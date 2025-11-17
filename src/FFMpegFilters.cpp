@@ -75,10 +75,8 @@ string FFMpegFilters::addVideoFilters(
 	{
 		if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
 		{
-			for (int filterIndex = 0; filterIndex < filtersRoot["video"].size(); filterIndex++)
+			for (const auto& filterRoot : filtersRoot["video"])
 			{
-				json filterRoot = filtersRoot["video"][filterIndex];
-
 				string filter = getFilter(filterRoot, streamingDurationInSeconds);
 				if (!videoFilters.empty())
 					videoFilters += ",";
@@ -335,10 +333,12 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 				// text += "time: %{localtime:%Y-%m-%d %H.%M.%S}";
 				// text += "time: %{pts:localtime}";
 
+				// genera la date/time utc con formato 2025-11-15 14:30:00
 				time_t utcTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 				text += std::format("%{{pts{}:gmtime{}:{}}}", escape, escape, utcTime);
 
-				// text += std::format("%{{pts{}:hms}}", escape); // parte da 00:00:00.000
+				// parte da 00:00:00.000
+				// text += std::format("%{{pts{}:hms}}", escape);
 			}
 
 			if (!textFilePathName.empty())
@@ -464,7 +464,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 			if (!textPosition_Y_InPixel.empty())
 				filter += (":y=" + ffmpegTextPosition_Y_InPixel);
 			if (!fontType.empty())
-				filter += (":fontfile='" + _ffmpegTtfFontDir + "/" + fontType + "'");
+				filter += std::format(":fontfile='{}/{}'", _ffmpegTtfFontDir, fontType);
 			if (fontSize != -1)
 				filter += (":fontsize=" + to_string(fontSize));
 			if (!fontColor.empty())
