@@ -11,7 +11,7 @@
 
 using namespace std;
 
-class FFmpegEngine {
+class FFMpegEngine {
 public:
 	/*
     struct Progress {
@@ -24,7 +24,7 @@ public:
     */
 
     class Input {
-    	friend FFmpegEngine;
+    	friend FFMpegEngine;
 
 		string _source;
         vector<string> _args;
@@ -39,7 +39,7 @@ public:
     };
 
     class Output {
-    	friend FFmpegEngine;
+    	friend FFMpegEngine;
 
     	string _path;
         vector<string> _maps;
@@ -61,18 +61,18 @@ public:
      	Output& addArgs(const string& parameters);
    };
 
-    FFmpegEngine() = default;
+    FFMpegEngine() = default;
 
-	FFmpegEngine& setUserAgent(const string_view& ua);
+	FFMpegEngine& setUserAgent(const string_view& ua);
 
     // builder
-    FFmpegEngine& addGlobalArg(const string_view &a);
-	FFmpegEngine& addGlobalArgs(const string& parameters);
+    FFMpegEngine& addGlobalArg(const string_view &a);
+	FFMpegEngine& addGlobalArgs(const string& parameters);
     Input& addInput(string_view source);
     Input& addInput();
     Output& addOutput(string_view path);
     Output& addOutput();
-    FFmpegEngine& addFilterComplex(const string_view &fc);
+    FFMpegEngine& addFilterComplex(const string_view &fc);
 
     // convenience inputs
 	Input& addUdpInput(const string_view& target, optional<int> listenTimeoutMilliSeconds = {});
@@ -81,16 +81,16 @@ public:
     Input& addPipeInput(const string_view &spec);
 
     // HW accel
-    FFmpegEngine& enableNvenc();
-    FFmpegEngine& enableVaapi(const string_view &device = "/dev/dri/renderD128");
-    FFmpegEngine& enableVideoToolbox();
+    FFMpegEngine& enableNvenc();
+    FFMpegEngine& enableVaapi(const string_view &device = "/dev/dri/renderD128");
+    FFMpegEngine& enableVideoToolbox();
 
     // VAAPI convenience: prepare upload and choose codec names (adds filters/args as needed)
     // After calling this, for VAAPI outputs prefer videoCodec "h264_vaapi" or "hevc_vaapi"
-    FFmpegEngine& vaapiPrepareUpload();
+    FFMpegEngine& vaapiPrepareUpload();
 
     // watermark / drawtext
-    FFmpegEngine& addWatermark(Output& out, string_view overlayLabel, string_view pos = "10:10");
+    FFMpegEngine& addWatermark(Output& out, string_view overlayLabel, string_view pos = "10:10");
 
     // duration for percent calculation (ms). If set, progress percent = out_time_ms / durationMilliSeconds
     void setDurationMilliSeconds(int64_t durationMilliSeconds);

@@ -1,5 +1,5 @@
 
-#include "FFmpegEngine.h"
+#include "FFMpegEngine.h"
 
 #include <chrono>
 #include <cstring>
@@ -9,13 +9,13 @@
 
 // ---------------- Input methods ----------------
 
-FFmpegEngine::Input& FFmpegEngine::Input::addArg(const string_view& parameter)
+FFMpegEngine::Input& FFMpegEngine::Input::addArg(const string_view& parameter)
 {
 	_args.emplace_back(parameter);
 	return *this;
 }
 
-FFmpegEngine::Input& FFmpegEngine::Input::addArgs(const string& parameters)
+FFMpegEngine::Input& FFMpegEngine::Input::addArgs(const string& parameters)
 {
 	for (auto&& tok :
 		parameters | views::split(' ') | views::filter([](auto &&rng){ return !ranges::empty(rng); }))
@@ -25,13 +25,13 @@ FFmpegEngine::Input& FFmpegEngine::Input::addArgs(const string& parameters)
 
 // ---------------- Output methods ----------------
 
-FFmpegEngine::Output& FFmpegEngine::Output::addArg(const string_view& parameter)
+FFMpegEngine::Output& FFMpegEngine::Output::addArg(const string_view& parameter)
 {
 	_extraArgs.emplace_back(parameter);
 	return *this;
 }
 
-FFmpegEngine::Output& FFmpegEngine::Output::addArgs(const string& parameters)
+FFMpegEngine::Output& FFMpegEngine::Output::addArgs(const string& parameters)
 {
 	for (auto&& tok :
 		parameters | views::split(' ') | views::filter([](auto &&rng){ return !ranges::empty(rng); }))
@@ -41,12 +41,12 @@ FFmpegEngine::Output& FFmpegEngine::Output::addArgs(const string& parameters)
 
 // ---------------- builder methods ----------------
 
-FFmpegEngine& FFmpegEngine::addGlobalArg(const string_view& a) {
+FFMpegEngine& FFMpegEngine::addGlobalArg(const string_view& a) {
     _globalArgs.emplace_back(a);
     return *this;
 }
 
-FFmpegEngine& FFmpegEngine::addGlobalArgs(const string& parameters)
+FFMpegEngine& FFMpegEngine::addGlobalArgs(const string& parameters)
 {
 	for (auto&& tok :
 		parameters | views::split(' ') | views::filter([](auto &&rng){ return !ranges::empty(rng); }))
@@ -54,75 +54,75 @@ FFmpegEngine& FFmpegEngine::addGlobalArgs(const string& parameters)
     return *this;
 }
 
-FFmpegEngine& FFmpegEngine::setUserAgent(const string_view& ua) {
+FFMpegEngine& FFMpegEngine::setUserAgent(const string_view& ua) {
 	_userAgent = string(ua);
 	return *this;
 }
 
-FFmpegEngine::Input& FFmpegEngine::addInput(const string_view source) {
+FFMpegEngine::Input& FFMpegEngine::addInput(const string_view source) {
 	_inputs.emplace_back(source);
 	return _inputs.back();
 }
 
-FFmpegEngine::Input& FFmpegEngine::addInput() {
+FFMpegEngine::Input& FFMpegEngine::addInput() {
 	_inputs.emplace_back();
     return _inputs.back();
 }
 
-FFmpegEngine::Output& FFmpegEngine::addOutput(const string_view path) {
+FFMpegEngine::Output& FFMpegEngine::addOutput(const string_view path) {
 	_outputs.emplace_back(path);
 	return _outputs.back();
 }
 
-FFmpegEngine::Output& FFmpegEngine::addOutput() {
+FFMpegEngine::Output& FFMpegEngine::addOutput() {
     _outputs.emplace_back();
     return _outputs.back();
 }
 
-FFmpegEngine& FFmpegEngine::addFilterComplex(const string_view& fc) {
+FFMpegEngine& FFMpegEngine::addFilterComplex(const string_view& fc) {
     _filterComplex.emplace_back(fc);
     return *this;
 }
 
-FFmpegEngine::Input& FFmpegEngine::addSrtInput(const string_view& target, optional<int> latencyMilliSeconds) {
+FFMpegEngine::Input& FFMpegEngine::addSrtInput(const string_view& target, optional<int> latencyMilliSeconds) {
     auto& in = addInput(std::format("srt://{}", target));
     if (latencyMilliSeconds)
     	in.addArg(string("-timeout ") + to_string(*latencyMilliSeconds));
     return in;
 }
 
-FFmpegEngine::Input& FFmpegEngine::addUdpInput(const string_view& target, optional<int> listenTimeoutMilliSeconds) {
+FFMpegEngine::Input& FFMpegEngine::addUdpInput(const string_view& target, optional<int> listenTimeoutMilliSeconds) {
 	if (listenTimeoutMilliSeconds)
 		return addInput(std::format("udp://{}?timeout=", target, *listenTimeoutMilliSeconds * 1000));
 	return addInput(std::format("udp://{}", target));
 }
 
-FFmpegEngine::Input& FFmpegEngine::addRtmpInput(const string_view& target) {
+FFMpegEngine::Input& FFMpegEngine::addRtmpInput(const string_view& target) {
     return addInput(std::format("rtmp://{}", target));
 }
 
-FFmpegEngine::Input& FFmpegEngine::addPipeInput(const string_view& spec) {
+FFMpegEngine::Input& FFMpegEngine::addPipeInput(const string_view& spec) {
     return addInput(spec);
 }
 
-FFmpegEngine& FFmpegEngine::enableNvenc() {
+FFMpegEngine& FFMpegEngine::enableNvenc() {
     _hwAccel = "nvenc";
     return *this;
 }
 
-FFmpegEngine& FFmpegEngine::enableVaapi(const string_view& device) {
+FFMpegEngine& FFMpegEngine::enableVaapi(const string_view& device) {
     _hwAccel = "vaapi";
     _vaapiDevice = string(device);
     return *this;
 }
 
-FFmpegEngine& FFmpegEngine::enableVideoToolbox() {
+FFMpegEngine& FFMpegEngine::enableVideoToolbox() {
     _hwAccel = "videotoolbox";
     return *this;
 }
 
 // Prepare VAAPI upload filter and ensure device arg is present
-FFmpegEngine& FFmpegEngine::vaapiPrepareUpload() {
+FFMpegEngine& FFMpegEngine::vaapiPrepareUpload() {
     // Add a default hwupload filter for use in filter_complex consumers
     // Caller should add [in] format/ hwupload and map the output to encoder
     if (!_vaapiDevice)
@@ -132,18 +132,18 @@ FFmpegEngine& FFmpegEngine::vaapiPrepareUpload() {
     return *this;
 }
 
-FFmpegEngine& FFmpegEngine::addWatermark(Output& out, string_view overlayLabel, string_view pos) {
+FFMpegEngine& FFMpegEngine::addWatermark(Output& out, string_view overlayLabel, string_view pos) {
     out.addVideoFilter(string(overlayLabel) + " overlay=" + string(pos));
     return *this;
 }
 
-void FFmpegEngine::setDurationMilliSeconds(int64_t durationMilliSeconds) {
+void FFMpegEngine::setDurationMilliSeconds(int64_t durationMilliSeconds) {
     _durationMilliSeconds = durationMilliSeconds;
 }
 
 // ---------------- build args (vector) ----------------
 
-vector<string> FFmpegEngine::buildArgs(bool useProgressPipe) const {
+vector<string> FFMpegEngine::buildArgs(bool useProgressPipe) const {
     vector<string> args;
 
 	args.emplace_back("ffmpeg");
@@ -235,7 +235,7 @@ vector<string> FFmpegEngine::buildArgs(bool useProgressPipe) const {
     return args;
 }
 
-string FFmpegEngine::build(bool useProgressPipe) const
+string FFMpegEngine::build(bool useProgressPipe) const
 {
     auto args = buildArgs(useProgressPipe);
 
@@ -259,7 +259,7 @@ string FFmpegEngine::build(bool useProgressPipe) const
 }
 
 // ----------------- formatter per mostrare i comandi -----------------
-string FFmpegEngine::toPrettyString(const int indentSpaces) const {
+string FFMpegEngine::toPrettyString(const int indentSpaces) const {
 	std::ostringstream oss;
 	const std::string indent(indentSpaces, ' ');
 
@@ -298,7 +298,7 @@ string FFmpegEngine::toPrettyString(const int indentSpaces) const {
 }
 
 /// Formato singola linea, come vero comando ffmpeg
-std::string FFmpegEngine::toSingleLine() const {
+std::string FFMpegEngine::toSingleLine() const {
 
 	return build();
 }

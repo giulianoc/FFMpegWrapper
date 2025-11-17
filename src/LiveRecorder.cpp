@@ -12,9 +12,9 @@
  */
 #include "Datetime.h"
 #include "FFMpegEncodingParameters.h"
+#include "FFMpegEngine.h"
 #include "FFMpegFilters.h"
 #include "FFMpegWrapper.h"
-#include "FFmpegEngine.h"
 #include "JSONUtils.h"
 #include "ProcessUtility.h"
 #include "StringUtils.h"
@@ -2918,7 +2918,7 @@ void FFMpegWrapper::liveRecorder(
 		*/
 	);
 
-	FFmpegEngine ffmpegEngine;
+	FFMpegEngine ffmpegEngine;
 	// vector<string> ffmpegArgumentList;
 	// ostringstream ffmpegArgumentListStream;
 	int iReturnedStatus = 0;
