@@ -11,8 +11,7 @@
  * Created on February 18, 2018, 1:27 AM
  */
 
-#ifndef FFMpegWrapper_h
-#define FFMpegWrapper_h
+#pragma once
 
 #include "FFMpegEngine.h"
 #include "ProcessUtility.h"
@@ -185,6 +184,7 @@ class FFMpegWrapper
 
 	time_t getOutputFFMpegFileLastModificationTime();
 	uintmax_t getOutputFFMpegFileSize();
+	string getOutputFfmpegPathFileName() const;
 	bool nonMonotonousDTSInOutputLog();
 	bool forbiddenErrorInOutputLog();
 	// bool areRealTimeInfoChanged(int maxMilliSecondsToWait);
@@ -273,7 +273,7 @@ class FFMpegWrapper
 		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 	);
 
-		void liveRecorder2(
+	void liveRecorder2(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string &segmentListPathName,
 		const string &recordedFileNamePrefix,
 
@@ -574,5 +574,3 @@ class FFMpegWrapper
 
 	void renameOutputFfmpegPathFileName(int64_t ingestionJobKey, int64_t encodingJobKey, string outputFfmpegPathFileName);
 };
-
-#endif

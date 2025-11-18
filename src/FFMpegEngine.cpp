@@ -279,7 +279,8 @@ vector<string> FFMpegEngine::buildArgs(bool useProgressPipe) const {
 
     if (useProgressPipe)
     {
-        args.emplace_back("-nostats");
+    	// TODO
+        // args.emplace_back("-nostats"); temporaneamente rimosso per compatibilità con la precedente versione di fork
         args.emplace_back("-progress");
         args.emplace_back("pipe:1");
     }
@@ -295,6 +296,7 @@ string FFMpegEngine::build(bool useProgressPipe) const
 }
 
 // ----------------- formatter per mostrare i comandi -----------------
+
 string FFMpegEngine::toPrettyString(const int indentSpaces) const {
 	std::ostringstream oss;
 	const std::string indent(indentSpaces, ' ');

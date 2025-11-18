@@ -19,6 +19,11 @@
 #include <fstream>
 #include <regex>
 
+string FFMpegWrapper::getOutputFfmpegPathFileName() const
+{
+	return _outputFfmpegPathFileName;
+}
+
 double FFMpegWrapper::getEncodingProgress()
 {
 	double encodingPercentage = 0.0;
