@@ -613,9 +613,10 @@ tuple<long, long, double, double, int> FFMpegWrapper::getRealTimeInfoByOutputLog
 						", _outputFfmpegPathFileName: {}"
 						", _currentMMSSourceAssetPathName: {}"
 						", _currentStagingEncodedAssetPathName: {}"
-						", value: {}",
+						", value: {}"
+						", ffmpegEncodingStatus: {}",
 						_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
-						_currentStagingEncodedAssetPathName, value
+						_currentStagingEncodedAssetPathName, value, ffmpegEncodingStatus
 					);
 				}
 				else
