@@ -604,6 +604,7 @@ tuple<long, long, double, double, int> FFMpegWrapper::getRealTimeInfoByOutputLog
 				string value = ffmpegEncodingStatus.substr(startIndex + toSearch.size());
 				value = StringUtils::ltrim(value);
 				size_t endIndex = value.find(" ");
+				/*
 				if (endIndex == string::npos)
 				{
 					SPDLOG_ERROR(
@@ -613,15 +614,16 @@ tuple<long, long, double, double, int> FFMpegWrapper::getRealTimeInfoByOutputLog
 						", _outputFfmpegPathFileName: {}"
 						", _currentMMSSourceAssetPathName: {}"
 						", _currentStagingEncodedAssetPathName: {}"
-						", value: {}"
-						", ffmpegEncodingStatus: {}",
+						", value: {}",
 						_currentIngestionJobKey, _currentEncodingJobKey, _outputFfmpegPathFileName, _currentMMSSourceAssetPathName,
-						_currentStagingEncodedAssetPathName, value, ffmpegEncodingStatus
+						_currentStagingEncodedAssetPathName, value
 					);
 				}
 				else
+				*/
 				{
-					value = value.substr(0, endIndex);
+					if (endIndex != string::npos)
+						value = value.substr(0, endIndex);
 					if (!value.starts_with("N/A"))
 					{
 						try
