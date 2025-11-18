@@ -20,7 +20,6 @@
 set(SOURCES
     FFMpegFilters.cpp
     FFMpegEncodingParameters.cpp
-    FFMpegEngine.cpp
     FFMpegWrapper.cpp
     Monitoring.cpp
     EncodeContent.cpp
@@ -41,7 +40,7 @@ set(SOURCES
     StreamingToFile.cpp
     Incrontab.cpp
     Youtube.cpp)
-set(HEADERS FFMpegFilters.h FFMpegEncodingParameters.h FFMpegEngine.h FFMpegWrapper.h)
+set(HEADERS FFMpegFilters.h FFMpegEncodingParameters.h FFMpegWrapper.h)
 
 find_program(LSB_RELEASE_EXEC lsb_release)
 execute_process(
@@ -51,6 +50,7 @@ execute_process(
 message("-- LSB_RELEASE_ID_SHORT: ${LSB_RELEASE_ID_SHORT}")
 
 include_directories("${STRINGUTILS_INCLUDE_DIR}")
+include_directories("${FFMPEGENGINE_INCLUDE_DIR}")
 include_directories("${DATETIME_INCLUDE_DIR}")
 include_directories("${JSONUTILS_INCLUDE_DIR}")
 include_directories("${CURLWRAPPER_INCLUDE_DIR}")
@@ -59,11 +59,13 @@ include_directories("${SPDLOG_INCLUDE_DIR}")
 include_directories("${NLOHMANN_INCLUDE_DIR}")
 if(APPLE)
 	link_directories("${JSONUTILS_LIB_DIR}")
+    link_directories("${FFMPEGENGINE_LIB_DIR}")
 endif()
 
 add_library(FFMpegWrapper SHARED ${SOURCES} ${HEADERS})
 
 if(APPLE)
+    target_link_libraries(FFMpegWrapper FFMpegEngine)
     target_link_libraries(FFMpegWrapper StringUtils)
     target_link_libraries(FFMpegWrapper Datetime)
     target_link_libraries(FFMpegWrapper JSONUtils)
