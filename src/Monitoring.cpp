@@ -249,7 +249,7 @@ bool FFMpegWrapper::nonMonotonousDTSInOutputLog()
 		string ffmpegEncodingStatus;
 		try
 		{
-			int lastCharsToBeReadToGetInfo = 10000;
+			constexpr int lastCharsToBeReadToGetInfo = 10000;
 
 			ffmpegEncodingStatus = getLastPartOfFile(_outputFfmpegPathFileName, lastCharsToBeReadToGetInfo);
 		}
@@ -346,7 +346,7 @@ bool FFMpegWrapper::forbiddenErrorInOutputLog()
 		string ffmpegEncodingStatus;
 		try
 		{
-			int lastCharsToBeReadToGetInfo = 10000;
+			constexpr int lastCharsToBeReadToGetInfo = 10000;
 
 			ffmpegEncodingStatus = getLastPartOfFile(_outputFfmpegPathFileName, lastCharsToBeReadToGetInfo);
 		}
@@ -409,7 +409,7 @@ bool FFMpegWrapper::forbiddenErrorInOutputLog()
 			_currentStagingEncodedAssetPathName, e.what()
 		);
 
-		throw e;
+		throw;
 	}
 }
 
