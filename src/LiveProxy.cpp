@@ -3514,6 +3514,9 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				// ffmpegInputArgumentList.push_back(userAgent);
 				mainInput.addArgs(std::format("-user_agent {}", userAgent));
 			}
+			if (inputDurationInSeconds)
+				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
+
 			// ffmpegInputArgumentList.push_back("-re");
 			mainInput.addArg("-re");
 			// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
@@ -3710,6 +3713,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					// ffmpegInputArgumentList.push_back("2048");
 					audioInput.addArgs("-f alsa -thread_queue_size 2048");
 
+					if (inputDurationInSeconds)
+						audioInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
 
 					if (captureLive_channelsNumber != -1)
 					{
@@ -3879,6 +3884,10 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			// ffmpegInputArgumentList.push_back("-re");
 			mainInput.addArg("-re");
+
+			if (inputDurationInSeconds)
+				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
+
 			{
 				if (!otherInputOptions.empty())
 					// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
@@ -4081,6 +4090,9 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			mainInput.addArg("-re");
 			// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
 			mainInput.addArgs(otherInputOptions);
+
+			if (inputDurationInSeconds)
+				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
 
 			if (vodContentType == "Image")
 			{
@@ -4482,6 +4494,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			// ffmpegInputArgumentList.push_back(mmsSourceVideoAssetPathName);
 			auto& mainInput = ffmpegEngine.addInput();
 			mainInput.addArgs(std::format("-re -stream_loop {}", streamLoopNumber));
+			if (inputDurationInSeconds)
+				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			mainInput.setSource(mmsSourceVideoAssetPathName);
 		}
 
@@ -5744,8 +5758,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					output.map(*inputSelectedVideoMap);
 				if (inputSelectedAudioMap)
 					output.map(*inputSelectedAudioMap);
-				if (inputDurationInSeconds)
-					output.addArgs(std::format("-t {}", *inputDurationInSeconds));
+				// inputDurationInSeconds già aggiunta nell'input
+				// if (inputDurationInSeconds)
+				// 	output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
 			// 2023-01-14
@@ -5850,8 +5865,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					output.map(*inputSelectedVideoMap);
 				if (inputSelectedAudioMap)
 					output.map(*inputSelectedAudioMap);
-				if (inputDurationInSeconds)
-					output.addArgs(std::format("-t {}", *inputDurationInSeconds));
+				// inputDurationInSeconds già aggiunta nell'input
+				// if (inputDurationInSeconds)
+				// 	output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
 			// ffmpegOutputArgumentList.push_back("-f");
@@ -5989,8 +6005,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				output.map(*inputSelectedVideoMap);
 			if (inputSelectedAudioMap)
 				output.map(*inputSelectedAudioMap);
-			if (inputDurationInSeconds)
-				output.addArgs(std::format("-t {}", *inputDurationInSeconds));
+			// inputDurationInSeconds già aggiunta nell'input
+			// if (inputDurationInSeconds)
+			// 	output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 
 			// ffmpegOutputArgumentList.push_back("-f");
 			// ffmpegOutputArgumentList.push_back("hls");
@@ -6030,8 +6047,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					output.map(*inputSelectedVideoMap);
 				if (inputSelectedAudioMap)
 					output.map(*inputSelectedAudioMap);
-				if (inputDurationInSeconds)
-					output.addArgs(std::format("-t {}", *inputDurationInSeconds));
+				// inputDurationInSeconds già aggiunta nell'input
+				// if (inputDurationInSeconds)
+				// 	output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
 			// ffmpegOutputArgumentList.push_back("-f");
@@ -6056,8 +6074,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					output.map(*inputSelectedVideoMap);
 				if (inputSelectedAudioMap)
 					output.map(*inputSelectedAudioMap);
-				if (inputDurationInSeconds)
-					output.addArgs(std::format("-t {}", *inputDurationInSeconds));
+				// inputDurationInSeconds già aggiunta nell'input
+				// if (inputDurationInSeconds)
+				// 	output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
 			tuple<string, string, string> allFilters = ffmpegFilters.addFilters(filtersRoot, "", "", -1);
