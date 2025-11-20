@@ -16,10 +16,10 @@ FFMpegFilters::~FFMpegFilters() = default;
 
 tuple<string, string, string>
 FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter,
-	int64_t streamingDurationInSeconds) const
+	optional<int32_t> inputDurationInSeconds) const
 {
-	string videoFilters = addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, ffmpegDrawTextFilter, streamingDurationInSeconds);
-	string audioFilters = addAudioFilters(filtersRoot, streamingDurationInSeconds);
+	string videoFilters = addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, ffmpegDrawTextFilter, inputDurationInSeconds);
+	string audioFilters = addAudioFilters(filtersRoot, inputDurationInSeconds);
 	string complexFilters;
 
 	if (filtersRoot != nullptr)
@@ -30,7 +30,7 @@ FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionP
 			{
 				json filterRoot = filtersRoot["complex"][filterIndex];
 
-				string filter = getFilter(filterRoot, streamingDurationInSeconds);
+				string filter = getFilter(filterRoot, inputDurationInSeconds);
 				if (!complexFilters.empty())
 					complexFilters += ",";
 				complexFilters += filter;
@@ -53,7 +53,8 @@ FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionP
 }
 
 string FFMpegFilters::addVideoFilters(
-	json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds
+	json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter,
+	optional<int32_t> inputDurationInSeconds
 ) const
 {
 	string videoFilters;
@@ -77,7 +78,7 @@ string FFMpegFilters::addVideoFilters(
 		{
 			for (const auto& filterRoot : filtersRoot["video"])
 			{
-				string filter = getFilter(filterRoot, streamingDurationInSeconds);
+				string filter = getFilter(filterRoot, inputDurationInSeconds);
 				if (!videoFilters.empty())
 					videoFilters += ",";
 				videoFilters += filter;
@@ -88,7 +89,7 @@ string FFMpegFilters::addVideoFilters(
 	return videoFilters;
 }
 
-string FFMpegFilters::addAudioFilters(const json& filtersRoot, const int64_t streamingDurationInSeconds) const
+string FFMpegFilters::addAudioFilters(const json& filtersRoot, optional<int32_t> inputDurationInSeconds) const
 {
 	string audioFilters;
 
@@ -98,7 +99,7 @@ string FFMpegFilters::addAudioFilters(const json& filtersRoot, const int64_t str
 		{
 			for (const auto& filterRoot : filtersRoot["audio"])
 			{
-				const string filter = getFilter(filterRoot, streamingDurationInSeconds);
+				const string filter = getFilter(filterRoot, inputDurationInSeconds);
 				if (!audioFilters.empty())
 					audioFilters += ",";
 				audioFilters += filter;
@@ -109,7 +110,7 @@ string FFMpegFilters::addAudioFilters(const json& filtersRoot, const int64_t str
 	return audioFilters;
 }
 
-string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDurationInSeconds) const
+string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputDurationInSeconds) const
 {
 	string filter;
 
@@ -162,7 +163,8 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 		bool exact = JSONUtils::asBool(filterRoot, "exact", false);
 
 		// crop=w=100:h=100:x=12:y=34
-		filter = std::format("crop=out_w={}:out_h={}:x={}:y={}:keep_aspect={}:exact={}", out_w, out_h, x, y, keep_aspect, exact);
+		filter = std::format("crop=out_w={}:out_h={}:x={}:y={}:keep_aspect={}:exact={}", out_w, out_h, x, y,
+			keep_aspect, exact);
 	}
 	else if (type == "drawbox")
 	{
@@ -188,7 +190,8 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 		}
 
 		// drawbox=x=700:y=400:w=160:h=90:color=blue:t=5
-		filter = std::format("drawbox=x={}:y={}:w={}:h={}:color={}{}:t={}", x, y, width, height, fontColor, opacity, thickness);
+		filter = std::format("drawbox=x={}:y={}:w={}:h={}:color={}{}:t={}", x, y, width, height,
+			fontColor, opacity, thickness);
 	}
 	else if (type == "drawtext")
 	{
@@ -260,7 +263,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 			// text = regex_replace(text, regex("'"), escape + "'");
 			text = StringUtils::replaceAll(text, "'", std::format("{}'", escape));
 
-			if (streamingDurationInSeconds != -1)
+			if (inputDurationInSeconds)
 			{
 				// see https://ffmpeg.org/ffmpeg-filters.html
 				// see https://ffmpeg.org/ffmpeg-utils.html
@@ -316,7 +319,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 						"%{eif" + escape + ":(mod(countDownDurationInSecs-t" + escape + ",1)*pow(10,2))" + escape + ":d" + escape + ":2}"
 					);
 					// text = regex_replace(text, regex("countDownDurationInSecs"), to_string(streamingDurationInSeconds));
-					text = StringUtils::replaceAll(text, "countDownDurationInSecs", std::format("{}", streamingDurationInSeconds));
+					text = StringUtils::replaceAll(text, "countDownDurationInSecs", std::format("{}", *inputDurationInSeconds));
 				}
 			}
 
@@ -523,7 +526,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 			", streamingDurationInSeconds: {}"
 			", filter: {}",
 			text, textPosition_X_InPixel, textPosition_Y_InPixel, fontType, fontSize, fontColor, textPercentageOpacity, boxEnable, boxColor,
-			boxPercentageOpacity, streamingDurationInSeconds, filter
+			boxPercentageOpacity, inputDurationInSeconds ? *inputDurationInSeconds : -1, filter
 		);
 	}
 	else if (type == "imageoverlay") // overlay image on video
@@ -568,11 +571,11 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 	{
 		int duration = JSONUtils::asInt(filterRoot, "duration", 4);
 
-		if (streamingDurationInSeconds >= duration)
+		if (inputDurationInSeconds && *inputDurationInSeconds >= duration)
 		{
 			// fade=type=in:duration=3,fade=type=out:duration=3:start_time=27
 			filter = std::format("fade=type=in:duration={},fade=type=out:duration={}:start_time={}",
-				duration, duration, streamingDurationInSeconds - duration);
+				duration, duration, *inputDurationInSeconds - duration);
 				// ("fade=type=in:duration=" + to_string(duration) + ",fade=type=out:duration=" + to_string(duration) +
 				//  ":start_time=" + to_string(streamingDurationInSeconds - duration));
 		}
@@ -582,7 +585,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, int64_t streamingDuratio
 				"fade filter, streaming duration to small"
 				", fadeDuration: {}"
 				", streamingDurationInSeconds: {}",
-				duration, streamingDurationInSeconds
+				duration, inputDurationInSeconds ? *inputDurationInSeconds : -1
 			);
 		}
 	}

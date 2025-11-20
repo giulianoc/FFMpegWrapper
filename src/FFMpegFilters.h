@@ -31,13 +31,16 @@ class FFMpegFilters
 	~FFMpegFilters();
 
 	tuple<string, string, string>
-	addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds) const;
+	addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter,
+		optional<int32_t> inputDurationInSeconds) const;
 
-	[[nodiscard]] string addVideoFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter, int64_t streamingDurationInSeconds) const;
+	[[nodiscard]] string addVideoFilters(
+		json filtersRoot, const string &ffmpegVideoResolutionParameter, const string &ffmpegDrawTextFilter, optional<int32_t> inputDurationInSeconds
+	) const;
 
-	[[nodiscard]] string addAudioFilters(const json &filtersRoot, int64_t streamingDurationInSeconds) const;
+	[[nodiscard]] string addAudioFilters(const json &filtersRoot, optional<int32_t> inputDurationInSeconds) const;
 
-	[[nodiscard]] string getFilter(const json& filtersRoot, int64_t streamingDurationInSeconds = -1) const;
+	[[nodiscard]] string getFilter(const json &filterRoot, optional<int32_t> inputDurationInSeconds) const;
 
 	static json mergeFilters(const json &filters_1Root, const json &filters_2Root);
 

@@ -18,7 +18,6 @@
 #include "JSONUtils.h"
 #include "ProcessUtility.h"
 #include "spdlog/fmt/bundled/format.h"
-#include "spdlog/fmt/fmt.h"
 #include "spdlog/spdlog.h"
 #include <fstream>
 #include <regex>
@@ -63,7 +62,7 @@ void FFMpegWrapper::liveProxy2(
 		throw runtime_error(errorMessage);
 	}
 
-	if (outputsRoot.size() == 0)
+	if (outputsRoot.empty())
 	{
 		string errorMessage = std::format(
 			"liveProxy. No output parameters"
@@ -704,6 +703,816 @@ void FFMpegWrapper::liveProxy2(
 						endFfmpegCommand - startFfmpegCommand <
 							chrono::seconds(streamingDurationInSeconds - 60)
 					)
+					// per almeno XXX minuti ha strimmato correttamente
+					&& endFfmpegCommand - startFfmpegCommand > chrono::seconds(5 * 60)
+				)
+				{
+					SPDLOG_INFO(
+						"Command has to be executed again"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", ffmpegCommandDuration (secs): @{}@"
+						", currentNumberOfRepeatingSameInput: {}"
+						", currentInputIndex: {}"
+						", _outputFfmpegPathFileName: {}",
+						ingestionJobKey, encodingJobKey,
+						chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - startFfmpegCommand).count(),
+						currentNumberOfRepeatingSameInput, currentInputIndex, _outputFfmpegPathFileName
+					);
+
+					// in case of IP_PUSH the monitor thread, in case the client does not
+					// reconnect istantaneously, kills the process.
+					// In general, if ffmpeg restart, liveMonitoring has to wait, for this reason
+					// we will set again the liveProxy->_proxyStart variable
+					{
+						// pushListenTimeout in case it is not PUSH, it will be -1
+						if (utcProxyPeriodStart != -1)
+						{
+							if (chrono::system_clock::from_time_t(utcProxyPeriodStart) < chrono::system_clock::now())
+								*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+							else
+								*pProxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
+						}
+						else
+							*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+					}
+				}
+				else
+				{
+					currentNumberOfRepeatingSameInput++;
+					if (currentNumberOfRepeatingSameInput >= maxTimesRepeatingSameInput)
+					{
+						SPDLOG_INFO(
+							"Command is NOT executed anymore, reached max number of repeating"
+							", ingestionJobKey: {}"
+							", encodingJobKey: {}"
+							", currentNumberOfRepeatingSameInput: {}"
+							", maxTimesRepeatingSameInput: {}"
+							", currentInputIndex: {}"
+							", _outputFfmpegPathFileName: {}",
+							ingestionJobKey, encodingJobKey, currentNumberOfRepeatingSameInput, maxTimesRepeatingSameInput, currentInputIndex,
+							_outputFfmpegPathFileName
+						);
+						throw e;
+					}
+					else
+					{
+						SPDLOG_INFO(
+							"Command is executed again"
+							", ingestionJobKey: {}"
+							", encodingJobKey: {}"
+							", currentNumberOfRepeatingSameInput: {}"
+							", sleepInSecondsInCaseOfRepeating: {}"
+							", currentInputIndex: {}"
+							", _outputFfmpegPathFileName: {}",
+							ingestionJobKey, encodingJobKey, currentNumberOfRepeatingSameInput, sleepInSecondsInCaseOfRepeating, currentInputIndex,
+							_outputFfmpegPathFileName
+						);
+
+						// in case of IP_PUSH the monitor thread, in case the client does not
+						// reconnect istantaneously, kills the process.
+						// In general, if ffmpeg restart, liveMonitoring has to wait, for this reason
+						// we will set again the liveProxy->_proxyStart variable
+						{
+							if (utcProxyPeriodStart != -1)
+							{
+								if (chrono::system_clock::from_time_t(utcProxyPeriodStart) < chrono::system_clock::now())
+									*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+								else
+									*pProxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
+							}
+							else
+								*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+						}
+
+						currentInputIndex--;
+						this_thread::sleep_for(chrono::seconds(sleepInSecondsInCaseOfRepeating));
+					}
+				}
+			}
+			else // if (stoppedBySigQuitOrTerm)
+			{
+				// in case of IP_PUSH the monitor thread, in case the client does not
+				// reconnect istantaneously, kills the process.
+				// In general, if ffmpeg restart, liveMonitoring has to wait, for this reason
+				// we will set again the liveProxy->_proxyStart variable
+				{
+					if (utcProxyPeriodStart != -1)
+					{
+						if (chrono::system_clock::from_time_t(utcProxyPeriodStart) < chrono::system_clock::now())
+							*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+						else
+							*pProxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
+					}
+					else
+						*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+				}
+
+				// 2022-10-21: this is the scenario where the LiveProxy playlist is changed (signal: 3)
+				//	and we need to use the new playlist
+				//	This is the ffmpeg 'client side'.
+				//	The above condition (!stoppedBySigQuitOrTerm) is the scenario server side.
+				//	This is what happens:
+				//		time A: a new playlist is received by MMS and a SigQuit/SigTerm (signal: 3/15) is sent
+				//			to the ffmpeg client side
+				//		time A + few milliseconds: the ffmpeg client side starts again
+				//			with the new 'input' (1)
+				//		time A + few seconds: The server ffmpeg recognizes the client disconnect and exit
+				//		time A + few seconds + few milliseconds: The ffmpeg server side starts again (2)
+				//
+				//	The problem is that The ffmpeg server starts too late (2). The ffmpeg client (1)
+				//	already failed because the ffmpeg server was not listening yet.
+				//	So ffmpeg client exit from this method, reach the engine and returns after about 15 seconds.
+				//	In this scenario the player already disconnected and has to retry again the URL to start again.
+				//
+				//	To avoid this problem, we add here (ffmpeg client) a delay to wait ffmpeg server to starts
+				//	Based on my statistics I think 2 seconds should be enought
+				int sleepInSecondsToBeSureServerIsRunning = 2;
+				this_thread::sleep_for(chrono::seconds(sleepInSecondsToBeSureServerIsRunning));
+			}
+		}
+
+		if (keepOutputLog)
+			renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
+		else
+		{
+			SPDLOG_INFO(
+				"Remove"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", currentInputIndex: {}"
+				", currentNumberOfRepeatingSameInput: {}"
+				", _outputFfmpegPathFileName: {}",
+				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName
+			);
+			fs::remove_all(_outputFfmpegPathFileName);
+		}
+	}
+}
+
+void FFMpegWrapper::liveProxy(
+	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
+	json *inputsRoot, const json& outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
+	const ProcessUtility::LineCallback& ffmpegLineCallback,
+	long *numberOfRestartBecauseOfFailure, bool keepOutputLog
+)
+{
+	_currentApiName = APIName::LiveProxy;
+
+	SPDLOG_INFO(
+		"Received {}"
+		", ingestionJobKey: {}"
+		", encodingJobKey: {}"
+		", inputsRoot->size: {}",
+		toString(_currentApiName), ingestionJobKey, encodingJobKey, inputsRoot->size()
+	);
+
+	setStatus(
+		ingestionJobKey, encodingJobKey
+		/*
+		videoDurationInMilliSeconds,
+		mmsAssetPathName
+		stagingEncodedAssetPathName
+		*/
+	);
+
+	// Creating multi outputs: https://trac.ffmpeg.org/wiki/Creating%20multiple%20outputs
+	if (inputsRoot->empty())
+	{
+		string errorMessage = std::format(
+			"liveProxy. No input parameters"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", inputsRoot: {}",
+			ingestionJobKey, encodingJobKey, JSONUtils::toString(*inputsRoot)
+		);
+		SPDLOG_ERROR(errorMessage);
+
+		throw runtime_error(errorMessage);
+	}
+
+	if (outputsRoot.empty())
+	{
+		string errorMessage = std::format(
+			"liveProxy. No output parameters"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", outputsRoot.size: {}",
+			ingestionJobKey, encodingJobKey, outputsRoot.size()
+		);
+		SPDLOG_ERROR(errorMessage);
+
+		throw runtime_error(errorMessage);
+	}
+
+	// info(__FILEREF__ + "Calculating timedInput"
+	// 	+ ", ingestionJobKey: " + to_string(ingestionJobKey)
+	// 	+ ", encodingJobKey: " + to_string(encodingJobKey)
+	// 	+ ", inputsRoot->size: " + to_string(inputsRoot->size())
+	// );
+	bool timedInput = true;
+	{
+		lock_guard<mutex> locker(*inputsRootMutex);
+
+		for (const auto& inputRoot : *inputsRoot)
+		{
+			bool timePeriod = false;
+			timePeriod = JSONUtils::asBool(inputRoot, "timePeriod", false);
+
+			int64_t utcProxyPeriodStart = -1;
+			utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, "utcScheduleStart", -1);
+
+			int64_t utcProxyPeriodEnd = -1;
+			utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, "utcScheduleEnd", -1);
+
+			if (!timePeriod || utcProxyPeriodStart == -1 || utcProxyPeriodEnd == -1)
+			{
+				timedInput = false;
+
+				break;
+			}
+		}
+	}
+	SPDLOG_INFO(
+		"Calculated timedInput"
+		", ingestionJobKey: {}"
+		", encodingJobKey: {}"
+		", inputsRoot->size: {}"
+		", timedInput: {}",
+		ingestionJobKey, encodingJobKey, inputsRoot->size(), timedInput
+	);
+
+	if (timedInput)
+	{
+		int64_t utcFirstProxyPeriodStart = -1;
+		int64_t utcLastProxyPeriodEnd = -1;
+		{
+			lock_guard<mutex> locker(*inputsRootMutex);
+
+			for (const auto& inputRoot : *inputsRoot)
+			{
+				string field = "utcScheduleStart";
+				int64_t utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
+				if (utcFirstProxyPeriodStart == -1)
+					utcFirstProxyPeriodStart = utcProxyPeriodStart;
+
+				field = "utcScheduleEnd";
+				utcLastProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
+			}
+		}
+
+		time_t utcNow;
+		{
+			chrono::system_clock::time_point now = chrono::system_clock::now();
+			utcNow = chrono::system_clock::to_time_t(now);
+		}
+
+		if (utcNow < utcFirstProxyPeriodStart)
+		{
+			while (utcNow < utcFirstProxyPeriodStart)
+			{
+				time_t sleepTime = utcFirstProxyPeriodStart - utcNow;
+
+				SPDLOG_INFO(
+					"LiveProxy timing. "
+					"Too early to start the LiveProxy, just sleep {} seconds"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", utcNow: {}"
+					", utcFirstProxyPeriodStart: {}",
+					sleepTime, ingestionJobKey, encodingJobKey, utcNow, utcFirstProxyPeriodStart
+				);
+
+				this_thread::sleep_for(chrono::seconds(sleepTime));
+
+				{
+					chrono::system_clock::time_point now = chrono::system_clock::now();
+					utcNow = chrono::system_clock::to_time_t(now);
+				}
+			}
+		}
+		else if (utcLastProxyPeriodEnd < utcNow)
+		{
+			time_t tooLateTime = utcNow - utcLastProxyPeriodEnd;
+
+			string errorMessage = std::format(
+				"LiveProxy timing. Too late to start the LiveProxy"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", utcNow: {}"
+				", utcLastProxyPeriodEnd: {}"
+				", tooLateTime: {}",
+				ingestionJobKey, encodingJobKey, utcNow, utcLastProxyPeriodEnd, tooLateTime
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+	}
+
+	// max repeating is 1 because:
+	//	- we have to return to the engine because the engine has to register the failure
+	//	- if we increase 'max repeating':
+	//		- transcoder does not return to engine even in case of failure (max repeating is > 1)
+	//		- engine calls getEncodingStatus and get a 'success' (transcoding is repeating and
+	//			the failure is not raised to the engine). So failures number engine variable is set to 0
+	//		- transcoder, after repeating, raise the failure to engine but the engine,
+	//			as mentioned before, already reset failures number to 0
+	//	The result is that engine never reach max number of failures and encoding request,
+	//	even if it is failing, never exit from the engine loop (EncoderVideoAudioProxy.cpp)
+
+	//	In case ffmpeg fails after at least XXX minutes, this is not considered a failure
+	//	and it will be executed again. This is very important because it makes sure ffmpeg
+	//	is not failing continuously without working at all.
+	//	Here follows some scenarios where it is important to execute again ffmpeg and not returning to
+	//	EncoderVideoAudioProxy:
+	// case 1:
+	// 2022-10-20. scenario (ffmpeg is a server):
+	//	- (1) streamSourceType is IP_PUSH
+	//	- (2) the client just disconnected because of a client issue
+	//	- (3) ffmpeg exit too early
+	// In this case ffmpeg has to return to listen as soon as possible for a new connection.
+	// In case we return an exception it will pass about 10-15 seconds before ffmpeg returns
+	// to be executed and listen again for a new connection.
+	// To make ffmpeg to listen as soon as possible, we will not return an exception
+	// da almeno XXX secondi (4)
+	// case 2:
+	// 2022-10-26. scenario (ffmpeg is a client):
+	//	Nel caso in cui devono essere "ripetuti" multiple inputs, vedi commento 2022-10-27.
+	//  In questo scenario quando ffmpeg termina la prima ripetizione, deve essere eseguito
+	//	nuovamente per la successiva ripetizione.
+	int maxTimesRepeatingSameInput = 1;
+	int currentNumberOfRepeatingSameInput = 0;
+	int sleepInSecondsInCaseOfRepeating = 5;
+	int currentInputIndex = -1;
+	int previousInputIndex = -1;
+	json currentInputRoot;
+	while ((currentInputIndex =
+				getNextLiveProxyInput(ingestionJobKey, encodingJobKey, inputsRoot, inputsRootMutex, currentInputIndex, timedInput, &currentInputRoot)
+		   ) != -1)
+	{
+		FFMpegEngine ffmpegEngine;
+		optional<string> inputSelectedVideoMap;
+		optional<string> inputSelectedAudioMap;
+		optional<int32_t> inputDurationInSeconds;
+		// vector<string> ffmpegInputArgumentList;
+		string otherOutputOptionsBecauseOfMaxWidth;
+		string endlessPlaylistListPathName;
+		int pushListenTimeout;
+		int64_t utcProxyPeriodStart;
+		json inputFiltersRoot;
+
+		if (previousInputIndex == -1)
+			previousInputIndex = currentInputIndex;
+		else
+		{
+			if (previousInputIndex == currentInputIndex)
+				(*numberOfRestartBecauseOfFailure)++;
+			else
+				previousInputIndex = currentInputIndex;
+		}
+
+		try
+		{
+			SPDLOG_INFO(
+				"liveProxyInput..."
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", inputsRoot->size: {}"
+				", timedInput: {}"
+				", currentInputIndex: {}",
+				ingestionJobKey, encodingJobKey, inputsRoot->size(), timedInput, currentInputIndex
+			);
+
+			tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> inputDetails =
+				liveProxyInput(ingestionJobKey, encodingJobKey, externalEncoder,
+				currentInputRoot, maxStreamingDurationInMinutes, ffmpegEngine);
+			tie(endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart,
+				inputFiltersRoot, inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds) = inputDetails;
+
+			{
+				/*
+				ostringstream ffmpegInputArgumentListStream;
+				if (!ffmpegInputArgumentList.empty())
+					copy(
+						ffmpegInputArgumentList.begin(), ffmpegInputArgumentList.end(), ostream_iterator<string>(ffmpegInputArgumentListStream, " ")
+					);
+					*/
+				SPDLOG_INFO(
+					"liveProxy: ffmpegInputArgumentList"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", externalEncoder: {}"
+					", currentInputRoot: {}"
+					", ffmpegInputArgumentList: {}",
+					ingestionJobKey, encodingJobKey, externalEncoder, JSONUtils::toString(currentInputRoot), ffmpegEngine.toSingleLine()
+				);
+			}
+		}
+		catch (exception &e)
+		{
+			string errorMessage = std::format(
+				"liveProxy. Wrong input parameters"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", currentInputIndex: {}"
+				", currentNumberOfRepeatingSameInput: {}"
+				", exception: {}",
+				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, e.what()
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+
+		// vector<string> ffmpegOutputArgumentList;
+		try
+		{
+			SPDLOG_INFO(
+				"outputsRootToFfmpeg..."
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", outputsRoot.size: {}",
+				ingestionJobKey, encodingJobKey, outputsRoot.size()
+			);
+			outputsRootToFfmpeg(
+				ingestionJobKey, encodingJobKey, externalEncoder, inputFiltersRoot,
+				// inputVideoTracks, inputAudioTracks,
+				outputsRoot, ffmpegEngine,
+				inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds
+			);
+
+			{
+				/*
+				ostringstream ffmpegOutputArgumentListStream;
+				if (!ffmpegOutputArgumentList.empty())
+					copy(
+						ffmpegOutputArgumentList.begin(), ffmpegOutputArgumentList.end(),
+						ostream_iterator<string>(ffmpegOutputArgumentListStream, " ")
+					);
+				*/
+				SPDLOG_INFO(
+					"liveProxy: ffmpegOutputArgumentList"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", ffmpegOutputArgumentList: {}",
+					ingestionJobKey, encodingJobKey, ffmpegEngine.toSingleLine()
+				);
+			}
+		}
+		catch (exception &e)
+		{
+			string errorMessage = std::format(
+				"liveProxy. Wrong output parameters"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", currentInputIndex: {}"
+				", currentNumberOfRepeatingSameInput: {}"
+				", exception: {}",
+				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, e.what()
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+
+		// ostringstream ffmpegArgumentListStream;
+		int iReturnedStatus = 0;
+		chrono::system_clock::time_point startFfmpegCommand;
+		chrono::system_clock::time_point endFfmpegCommand;
+
+		try
+		{
+			{
+				tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(chrono::system_clock::to_time_t(chrono::system_clock::now()));
+
+				_outputFfmpegPathFileName = std::format(
+					"{}/{}_{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.{}.log", _ffmpegTempDir, "liveProxy", _currentIngestionJobKey,
+					_currentEncodingJobKey, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour,
+					tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec, currentInputIndex
+				);
+			}
+
+			// vector<string> ffmpegArgumentList;
+
+			// ffmpegArgumentList.push_back("ffmpeg");
+			// for (string parameter : ffmpegInputArgumentList)
+			// 	ffmpegArgumentList.push_back(parameter);
+			// for (string parameter : ffmpegOutputArgumentList)
+			// 	ffmpegArgumentList.push_back(parameter);
+
+			time_t utcNow;
+			{
+				chrono::system_clock::time_point now = chrono::system_clock::now();
+				utcNow = chrono::system_clock::to_time_t(now);
+			}
+
+			// if (!ffmpegArgumentList.empty())
+			// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+
+			SPDLOG_INFO(
+				"liveProxy: Executing ffmpeg command"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", currentInputIndex: {}"
+				", currentNumberOfRepeatingSameInput: {}"
+				", _outputFfmpegPathFileName: {}"
+				", ffmpegArgumentList: {}",
+				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
+				ffmpegEngine.toSingleLine()
+			);
+
+			startFfmpegCommand = chrono::system_clock::now();
+
+			bool redirectionStdOutput = true;
+			bool redirectionStdError = true;
+
+			ProcessUtility::forkAndExecByCallback(
+				_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
+				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+			);
+			processId.reset();
+
+			endFfmpegCommand = chrono::system_clock::now();
+
+			if (iReturnedStatus != 0)
+			{
+				string errorMessage = std::format(
+					"liveProxy: Executed ffmpeg command failed"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", currentInputIndex: {}"
+					", currentNumberOfRepeatingSameInput: {}"
+					", iReturnedStatus: {}"
+					", _outputFfmpegPathFileName: {}"
+					", ffmpegArgumentList: {}",
+					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, iReturnedStatus, _outputFfmpegPathFileName,
+					ffmpegEngine.toSingleLine()
+				);
+				SPDLOG_ERROR(errorMessage);
+
+				// to hide the ffmpeg staff
+				errorMessage = std::format(
+					"liveProxy: command failed"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", currentInputIndex: {}"
+					", currentNumberOfRepeatingSameInput: {}",
+					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput
+				);
+				throw runtime_error(errorMessage);
+			}
+
+			SPDLOG_INFO(
+				"liveProxy: Executed ffmpeg command"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", currentInputIndex: {}"
+				", currentNumberOfRepeatingSameInput: {}"
+				", ffmpegArgumentList: {}"
+				", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
+				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, ffmpegEngine.toSingleLine(),
+				chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
+			);
+
+			if (!endlessPlaylistListPathName.empty() && fs::exists(endlessPlaylistListPathName))
+			{
+				if (externalEncoder)
+				{
+					ifstream ifConfigurationFile(endlessPlaylistListPathName);
+					if (ifConfigurationFile)
+					{
+						string configuration;
+						string prefixFile = "file '";
+						while (getline(ifConfigurationFile, configuration))
+						{
+							if (configuration.size() >= prefixFile.size() && 0 == configuration.compare(0, prefixFile.size(), prefixFile))
+							{
+								string mediaFileName = configuration.substr(prefixFile.size(), configuration.size() - prefixFile.size() - 1);
+
+								SPDLOG_INFO(
+									"Remove"
+									", ingestionJobKey: {}"
+									", encodingJobKey: {}"
+									", _ffmpegEndlessRecursivePlaylist: {}",
+									ingestionJobKey, encodingJobKey, _ffmpegEndlessRecursivePlaylistDir + "/" + mediaFileName
+								);
+								fs::remove_all(_ffmpegEndlessRecursivePlaylistDir + "/" + mediaFileName);
+							}
+						}
+
+						ifConfigurationFile.close();
+					}
+				}
+
+				SPDLOG_INFO(
+					"Remove"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", endlessPlaylistListPathName: {}",
+					ingestionJobKey, encodingJobKey, endlessPlaylistListPathName
+				);
+				fs::remove_all(endlessPlaylistListPathName);
+				endlessPlaylistListPathName = "";
+			}
+
+			try
+			{
+				outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
+			}
+			catch (exception &e)
+			{
+				SPDLOG_ERROR(
+					"outputsRootToFfmpeg_clean failed"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", e.what(): {}",
+					ingestionJobKey, encodingJobKey, e.what()
+				);
+
+				// throw e;
+			}
+
+			if (inputDurationInSeconds && endFfmpegCommand - startFfmpegCommand < chrono::seconds(*inputDurationInSeconds - 60))
+				throw runtime_error(string("liveProxy exit before unexpectly, tried ") + to_string(maxTimesRepeatingSameInput) + " times");
+
+			// we finished one input and, may be, go to the next input
+			currentNumberOfRepeatingSameInput = 0;
+		}
+		catch (exception &e)
+		{
+			processId.reset();
+
+			bool stoppedBySigQuitOrTerm = false;
+
+			string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+			string errorMessage;
+			if (iReturnedStatus == 9) // 9 means: SIGKILL
+			{
+				errorMessage = std::format(
+					"ffmpeg: ffmpeg execution command failed because killed by the user"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", currentInputIndex: {}"
+					", currentNumberOfRepeatingSameInput: {}"
+					", _outputFfmpegPathFileName: {}"
+					", ffmpegArgumentList: {}"
+					", lastPartOfFfmpegOutputFile: {}"
+					", e.what(): {}",
+					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
+					ffmpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				);
+			}
+			else
+			{
+				// signal: 3 is what the LiveProxy playlist is changed and
+				//		we need to use the new playlist
+				// lastPartOfFfmpegOutputFile is like:
+				//	Child has exit abnormally because of an uncaught signal. Terminating signal: 3
+				// 2023-02-18: ho verificato che SIGQUIT non ha funzionato e il processo non si è stoppato,
+				//	mentre ha funzionato SIGTERM, per cui ora sto usando SIGTERM
+				if (lastPartOfFfmpegOutputFile.find("signal 3") != string::npos // SIGQUIT
+					|| lastPartOfFfmpegOutputFile.find("signal: 3") != string::npos ||
+					lastPartOfFfmpegOutputFile.find("signal 15") != string::npos // SIGTERM
+					|| lastPartOfFfmpegOutputFile.find("signal: 15") != string::npos)
+				{
+					stoppedBySigQuitOrTerm = true;
+
+					errorMessage = std::format(
+						"ffmpeg execution stopped by SIGQUIT/SIGTERM (3/15): ffmpeg command failed"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", currentInputIndex: {}"
+						", currentNumberOfRepeatingSameInput: {}"
+						", _outputFfmpegPathFileName: {}"
+						", ffmpegArgumentList: {}"
+						", lastPartOfFfmpegOutputFile: {}"
+						", e.what(): {}",
+						ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
+						ffmpegEngine.toSingleLine(), regex_replace(lastPartOfFfmpegOutputFile, regex("\n"), " "), e.what()
+					);
+				}
+				else
+				{
+					errorMessage = std::format(
+						"ffmpeg: ffmpeg execution command failed"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", currentInputIndex: {}"
+						", currentNumberOfRepeatingSameInput: {}"
+						", ffmpegCommandDuration (secs): @{}@"
+						", _outputFfmpegPathFileName: {}"
+						", ffmpegArgumentList: {}"
+						", lastPartOfFfmpegOutputFile: {}"
+						", e.what(): {}",
+						ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput,
+						chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - startFfmpegCommand).count(), _outputFfmpegPathFileName,
+						ffmpegEngine.toSingleLine(), regex_replace(lastPartOfFfmpegOutputFile, regex("\n"), " "), e.what()
+					);
+				}
+			}
+			SPDLOG_ERROR(errorMessage);
+
+			if (keepOutputLog)
+				renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
+			else
+			{
+				SPDLOG_INFO(
+					"Remove"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", currentInputIndex: {}"
+					", currentNumberOfRepeatingSameInput: {}"
+					", _outputFfmpegPathFileName: {}",
+					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName
+				);
+				fs::remove_all(_outputFfmpegPathFileName);
+			}
+
+			if (!endlessPlaylistListPathName.empty() && fs::exists(endlessPlaylistListPathName))
+			{
+				if (externalEncoder)
+				{
+					ifstream ifConfigurationFile(endlessPlaylistListPathName);
+					if (ifConfigurationFile)
+					{
+						string configuration;
+						string prefixFile = "file '";
+						while (getline(ifConfigurationFile, configuration))
+						{
+							if (configuration.size() >= prefixFile.size() && 0 == configuration.compare(0, prefixFile.size(), prefixFile))
+							{
+								string mediaFileName = configuration.substr(prefixFile.size(), configuration.size() - prefixFile.size() - 1);
+
+								SPDLOG_INFO(
+									"Remove"
+									", ingestionJobKey: {}"
+									", encodingJobKey: {}"
+									", _ffmpegEndlessRecursivePlaylist: {}",
+									ingestionJobKey, encodingJobKey, _ffmpegEndlessRecursivePlaylistDir + "/" + mediaFileName
+								);
+								fs::remove_all(_ffmpegEndlessRecursivePlaylistDir + "/" + mediaFileName);
+							}
+						}
+
+						ifConfigurationFile.close();
+					}
+				}
+
+				SPDLOG_INFO(
+					"Remove"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", endlessPlaylistListPathName: {}",
+					ingestionJobKey, encodingJobKey, endlessPlaylistListPathName
+				);
+				fs::remove_all(endlessPlaylistListPathName);
+				endlessPlaylistListPathName = "";
+			}
+
+			try
+			{
+				outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
+			}
+			catch (runtime_error &e)
+			{
+				SPDLOG_ERROR(
+					"outputsRootToFfmpeg_clean failed"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", e.what(): {}",
+					ingestionJobKey, encodingJobKey, e.what()
+				);
+
+				// throw e;
+			}
+			catch (exception &e)
+			{
+				SPDLOG_ERROR(
+					"outputsRootToFfmpeg_clean failed"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", e.what(): {}",
+					ingestionJobKey, encodingJobKey, e.what()
+				);
+
+				// throw e;
+			}
+
+			// next code will decide to throw an exception or not (we are in an error scenario)
+
+			if (iReturnedStatus == 9) // 9 means: SIGKILL
+				throw FFMpegEncodingKilledByUser();
+			else if (lastPartOfFfmpegOutputFile.find("403 Forbidden") != string::npos)
+				throw FFMpegURLForbidden();
+			else if (lastPartOfFfmpegOutputFile.find("404 Not Found") != string::npos)
+				throw FFMpegURLNotFound();
+			else if (!stoppedBySigQuitOrTerm)
+			{
+				// see the comment before 'while'
+				if (
+					// terminato troppo presto
+					(inputDurationInSeconds && endFfmpegCommand - startFfmpegCommand < chrono::seconds(*inputDurationInSeconds - 60))
 					// per almeno XXX minuti ha strimmato correttamente
 					&& endFfmpegCommand - startFfmpegCommand > chrono::seconds(5 * 60)
 				)
@@ -2357,6 +3166,1438 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 	); // , videoTracks, audioTracks);
 }
 
+tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> FFMpegWrapper::liveProxyInput(
+	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
+	FFMpegEngine &ffmpegEngine
+)
+{
+	string endlessPlaylistListPathName;
+	int pushListenTimeout = -1;
+	int64_t utcProxyPeriodStart = -1;
+	json inputFiltersRoot = nullptr;
+	optional<string> inputSelectedVideoMap;
+	optional<string> inputSelectedAudioMap;
+	optional<int32_t> inputDurationInSeconds;
+
+	// "inputRoot": {
+	//	"timePeriod": false, "utcScheduleEnd": -1, "utcScheduleStart": -1
+	//	...
+	// }
+	bool timePeriod = false;
+	string field = "timePeriod";
+	timePeriod = JSONUtils::asBool(inputRoot, field, false);
+
+	field = "utcScheduleStart";
+	utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
+
+	int64_t utcProxyPeriodEnd = -1;
+	field = "utcScheduleEnd";
+	utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
+
+	//	"streamInput": { "captureAudioDeviceNumber": -1, "captureChannelsNumber": -1, "captureFrameRate": -1, "captureHeight": -1,
+	//"captureVideoDeviceNumber": -1, "captureVideoInputFormat": "", "captureWidth": -1, "confKey": 2464, "configurationLabel":
+	//"Italia-nazionali-Diretta canale satellitare della Camera dei deputati", "streamSourceType": "IP_PULL", "pushListenTimeout": -1,
+	//"tvAudioItalianPid": -1, "tvFrequency": -1, "tvModulation": "", "tvServiceId": -1, "tvSymbolRate": -1, "tvVideoPid": -1, "url":
+	//"https://www.youtube.com/watch?v=Cnjs83yowUM", "maxWidth": -1, "userAgent": "", "otherInputOptions": "" },
+	if (JSONUtils::isMetadataPresent(inputRoot, "streamInput"))
+	{
+		field = "streamInput";
+		json streamInputRoot = inputRoot[field];
+
+		field = "streamSourceType";
+		if (!JSONUtils::isMetadataPresent(streamInputRoot, field))
+		{
+			string errorMessage = std::format(
+				"Field is not present or it is null"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", Field: {}",
+				ingestionJobKey, encodingJobKey, field
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+		string streamSourceType = JSONUtils::asString(streamInputRoot, field, "");
+
+		int maxWidth = -1;
+		field = "maxWidth";
+		maxWidth = JSONUtils::asInt(streamInputRoot, field, -1);
+
+		string url;
+		field = "url";
+		url = JSONUtils::asString(streamInputRoot, field, "");
+
+		field = "useVideoTrackFromPhysicalPathName";
+		string useVideoTrackFromPhysicalPathName = JSONUtils::asString(streamInputRoot, field, "");
+
+		field = "useVideoTrackFromPhysicalDeliveryURL";
+		string useVideoTrackFromPhysicalDeliveryURL = JSONUtils::asString(streamInputRoot, field, "");
+
+		string userAgent;
+		field = "userAgent";
+		userAgent = JSONUtils::asString(streamInputRoot, field, "");
+
+		field = "pushListenTimeout";
+		pushListenTimeout = JSONUtils::asInt(streamInputRoot, field, -1);
+
+		string otherInputOptions;
+		field = "otherInputOptions";
+		otherInputOptions = JSONUtils::asString(streamInputRoot, field, "");
+
+		string captureLive_videoInputFormat;
+		field = "captureVideoInputFormat";
+		captureLive_videoInputFormat = JSONUtils::asString(streamInputRoot, field, "");
+
+		int captureLive_frameRate = -1;
+		field = "captureFrameRate";
+		captureLive_frameRate = JSONUtils::asInt(streamInputRoot, field, -1);
+
+		int captureLive_width = -1;
+		field = "captureWidth";
+		captureLive_width = JSONUtils::asInt(streamInputRoot, field, -1);
+
+		int captureLive_height = -1;
+		field = "captureHeight";
+		captureLive_height = JSONUtils::asInt(streamInputRoot, field, -1);
+
+		int captureLive_videoDeviceNumber = -1;
+		field = "captureVideoDeviceNumber";
+		captureLive_videoDeviceNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+
+		int captureLive_channelsNumber = -1;
+		field = "captureChannelsNumber";
+		captureLive_channelsNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+
+		int captureLive_audioDeviceNumber = -1;
+		field = "captureAudioDeviceNumber";
+		captureLive_audioDeviceNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+
+		SPDLOG_INFO(
+			"liveProxy: setting dynamic -map option"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", timePeriod: {}"
+			", utcProxyPeriodStart: {}"
+			", utcProxyPeriodEnd: {}"
+			", streamSourceType: {}",
+			ingestionJobKey, encodingJobKey, timePeriod, utcProxyPeriodStart, utcProxyPeriodEnd, streamSourceType
+		);
+
+		/* 2023-03-26: vedi commento sopra in questo metodo
+		if (streamSourceType == "IP_PULL"
+			|| streamSourceType == "IP_PUSH"
+			|| streamSourceType == "TV")
+		{
+			try
+			{
+				int timeoutInSeconds = 20;
+				getMediaInfo(ingestionJobKey, false, timeoutInSeconds, url, videoTracks, audioTracks);
+			}
+			catch(runtime_error& e)
+			{
+				string errorMessage = __FILEREF__ + "ffmpeg: getMediaInfo failed"
+					+ ", ingestionJobKey: " + to_string(ingestionJobKey)
+					+ ", encodingJobKey: " + to_string(encodingJobKey)
+					+ ", e.what(): " + e.what()
+				;
+				SPDLOG_ERROR(errorMessage);
+
+				// throw e;
+			}
+		}
+		*/
+
+		if (streamSourceType == "IP_PULL" && maxWidth != -1)
+		{
+			try
+			{
+				vector<tuple<int, string, string, string, string, int, int>> liveVideoTracks;
+				vector<tuple<int, string, string, string, int, bool>> liveAudioTracks;
+
+				getLiveStreamingInfo(url, userAgent, ingestionJobKey, encodingJobKey, liveVideoTracks, liveAudioTracks);
+
+				SPDLOG_INFO(
+					"liveProxy: setting dynamic -map option"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", maxWidth: {}",
+					ingestionJobKey, encodingJobKey, maxWidth
+				);
+
+				int currentVideoWidth = -1;
+				string selectedVideoStreamId;
+				string selectedAudioStreamId;
+				for (const tuple<int, string, string, string, string, int, int>& videoTrack : liveVideoTracks)
+				{
+					int videoProgramId;
+					string videoStreamId;
+					string videoStreamDescription;
+					string videoCodec;
+					string videoYUV;
+					int videoWidth;
+					int videoHeight;
+
+					tie(videoProgramId, videoStreamId, videoStreamDescription, videoCodec, videoYUV, videoWidth, videoHeight) = videoTrack;
+
+					if (!videoStreamId.empty() && videoWidth != -1 && videoWidth <= maxWidth &&
+						(currentVideoWidth == -1 || videoWidth > currentVideoWidth))
+					{
+						// look an audio belonging to the same Program
+						for (const tuple<int, string, string, string, int, bool>& audioTrack : liveAudioTracks)
+						{
+							int audioProgramId;
+							string audioStreamId;
+							string audioStreamDescription;
+							string audioCodec;
+							int audioSamplingRate;
+							bool audioStereo;
+
+							tie(audioProgramId, audioStreamId, audioStreamDescription, audioCodec, audioSamplingRate, audioStereo) = audioTrack;
+
+							if (audioStreamDescription.find("eng") != string::npos || audioStreamDescription.find("des") != string::npos)
+							{
+								SPDLOG_INFO(
+									"liveProxy: audio track discarded"
+									", ingestionJobKey: {}"
+									", encodingJobKey: {}"
+									", audioStreamId: {}"
+									", audioStreamDescription: {}",
+									ingestionJobKey, encodingJobKey, audioStreamId, audioStreamDescription
+								);
+
+								continue;
+							}
+
+							if (videoProgramId == audioProgramId && !audioStreamId.empty())
+							{
+								selectedVideoStreamId = videoStreamId;
+								selectedAudioStreamId = audioStreamId;
+
+								currentVideoWidth = videoWidth;
+
+								break;
+							}
+						}
+					}
+				}
+
+				if (!selectedVideoStreamId.empty() && !selectedAudioStreamId.empty())
+				{
+					// otherOutputOptionsBecauseOfMaxWidth = string(" -map ") + selectedVideoStreamId + " -map " + selectedAudioStreamId;
+					inputSelectedVideoMap = selectedVideoStreamId;
+					inputSelectedAudioMap = selectedAudioStreamId;
+				}
+
+				SPDLOG_INFO(
+					"liveProxy: new other output options"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", maxWidth: {}",
+					// ", otherOutputOptionsBecauseOfMaxWidth: {}",
+					ingestionJobKey, encodingJobKey, maxWidth//, otherOutputOptionsBecauseOfMaxWidth
+				);
+			}
+			catch (runtime_error &e)
+			{
+				string errorMessage = std::format(
+					"ffmpeg: getLiveStreamingInfo or associate processing failed"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", e.what(): {}",
+					ingestionJobKey, encodingJobKey, e.what()
+				);
+				SPDLOG_ERROR(errorMessage);
+
+				// throw e;
+			}
+		}
+
+		time_t utcNow;
+		{
+			chrono::system_clock::time_point now = chrono::system_clock::now();
+			utcNow = chrono::system_clock::to_time_t(now);
+		}
+
+		{
+			if (timePeriod)
+			{
+				// 2024-05-23: abbiamo visto che, per alcuni canali, il processo ffmpeg dopo tanto tempo che è running, non prox-a piu tanto bene.
+				// 	Per questo motivo abbiamo introdotto maxStreamingDurationInMinutes che rappresenta il max che il processo ffmpeg posso essere
+				// running. 	Il processo ffmpeg ripartirà l'istante dopo in base a utcProxyPeriodEnd
+				if (maxStreamingDurationInMinutes == -1)
+					inputDurationInSeconds = utcProxyPeriodEnd - utcNow;
+				else
+					inputDurationInSeconds = utcProxyPeriodEnd - utcNow > maxStreamingDurationInMinutes * 60 ? maxStreamingDurationInMinutes * 60
+																												 : utcProxyPeriodEnd - utcNow;
+
+				SPDLOG_INFO(
+					"LiveProxy timing. Streaming duration"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", utcNow: {}"
+					", utcProxyPeriodStart: {}"
+					", utcProxyPeriodEnd: {}"
+					", inputDurationInSeconds: {}",
+					ingestionJobKey, encodingJobKey, utcNow, utcProxyPeriodStart, utcProxyPeriodEnd, *inputDurationInSeconds
+				);
+
+				if (streamSourceType == "IP_PUSH" || streamSourceType == "TV")
+				{
+					if (pushListenTimeout > 0 && pushListenTimeout > *inputDurationInSeconds)
+					{
+						// 2021-02-02: sceanrio:
+						//	streaming duration is 25 seconds
+						//	timeout: 3600 seconds
+						//	The result is that the process will finish after 3600 seconds, not after 25 seconds
+						//	To avoid that, in this scenario, we will set the timeout equals to inputDurationInSeconds
+						SPDLOG_INFO(
+							"LiveProxy timing. Listen timeout in seconds is reduced because max after 'inputDurationInSeconds' the process has "
+							"to finish"
+							", ingestionJobKey: {}"
+							", encodingJobKey: {}"
+							", utcNow: {}"
+							", utcProxyPeriodStart: {}"
+							", utcProxyPeriodEnd: {}"
+							", inputDurationInSeconds: {}"
+							", pushListenTimeout: {}",
+							ingestionJobKey, encodingJobKey, utcNow, utcProxyPeriodStart, utcProxyPeriodEnd, *inputDurationInSeconds,
+							pushListenTimeout
+						);
+
+						pushListenTimeout = *inputDurationInSeconds;
+					}
+				}
+			}
+
+			// user agent is an HTTP header and can be used only in case of http request
+			bool userAgentToBeUsed = false;
+			if (streamSourceType == "IP_PULL" && !userAgent.empty())
+			{
+				string httpPrefix = "http"; // it includes also https
+				if (url.size() >= httpPrefix.size() && url.compare(0, httpPrefix.size(), httpPrefix) == 0)
+				{
+					userAgentToBeUsed = true;
+				}
+				else
+				{
+					SPDLOG_WARN(
+						"user agent cannot be used if not http"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", url: {}",
+						ingestionJobKey, encodingJobKey, url
+					);
+				}
+			}
+
+			// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
+
+			// -re (input) Read input at native frame rate. By default ffmpeg attempts to read the input(s)
+			//		as fast as possible. This option will slow down the reading of the input(s)
+			//		to the native frame rate of the input(s). It is useful for real-time output
+			//		(e.g. live streaming).
+			// -hls_flags append_list: Append new segments into the end of old segment list
+			//		and remove the #EXT-X-ENDLIST from the old segment list
+			// -hls_time seconds: Set the target segment length in seconds. Segment will be cut on the next key frame
+			//		after this time has passed.
+			// -hls_list_size size: Set the maximum number of playlist entries. If set to 0 the list file
+			//		will contain all the segments. Default value is 5.
+			//	-nostdin: Disabling interaction on standard input, it is useful, for example, if ffmpeg is
+			//		in the background process group
+			// ffmpegInputArgumentList.push_back("-nostdin");
+			ffmpegEngine.addGlobalArg("-nostdin");
+			auto& mainInput = ffmpegEngine.addInput();
+			if (userAgentToBeUsed)
+			{
+				// ffmpegInputArgumentList.push_back("-user_agent");
+				// ffmpegInputArgumentList.push_back(userAgent);
+				mainInput.addArgs(std::format("-user_agent {}", userAgent));
+			}
+			// ffmpegInputArgumentList.push_back("-re");
+			mainInput.addArg("-re");
+			// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
+			mainInput.addArgs(otherInputOptions);
+			if (streamSourceType == "IP_PUSH")
+			{
+				// listen/timeout depend on the protocol (https://ffmpeg.org/ffmpeg-protocols.html)
+				if (url.find("http://") != string::npos || url.find("rtmp://") != string::npos)
+				{
+					// ffmpegInputArgumentList.push_back("-listen");
+					// ffmpegInputArgumentList.push_back("1");
+					mainInput.addArgs("-listen 1");
+					if (pushListenTimeout > 0)
+					{
+						// no timeout means it will listen infinitely
+						// ffmpegInputArgumentList.push_back("-timeout");
+						// ffmpegInputArgumentList.push_back(to_string(pushListenTimeout));
+						mainInput.addArgs(std::format("-timeout {}", pushListenTimeout));
+					}
+				}
+				else if (url.find("udp://") != string::npos)
+				{
+					if (pushListenTimeout > 0)
+					{
+						// About the timeout url parameter, ffmpeg docs says: This option is only relevant
+						//	in read mode: if no data arrived in more than this time interval, raise error
+						// This parameter accepts microseconds and we cannot provide a huge number
+						// i.e. 1h in microseconds because it will not work (it will be the max number
+						// of a 'long' type).
+						// For this reason we have to set max 30 minutes
+						//
+						// Remark: this is just a read timeout, then we have below the -t parameter
+						//	that will stop the ffmpeg command after a specified time.
+						//  So, in case for example we have to run this command for 1h, we will have
+						//  ?timeout=1800000000 (30 mins) and -t 3600
+						//  ONLY in case it is not received any data for 30 mins, this command will exit
+						//  after 30 mins (because of the ?timeout parameter) and the system will run
+						// again the command again for the remaining 30 minutes:
+						//  ?timeout=1800000000 (30 mins) and -t 180
+
+						int maxPushTimeout = 180; // 30 mins
+						int64_t listenTimeoutInMicroSeconds;
+						if (pushListenTimeout > maxPushTimeout)
+							listenTimeoutInMicroSeconds = maxPushTimeout;
+						else
+							listenTimeoutInMicroSeconds = pushListenTimeout;
+						listenTimeoutInMicroSeconds *= 1000000;
+
+						if (url.find('?') == string::npos)
+							url += std::format("?timeout={}", listenTimeoutInMicroSeconds);
+						else
+							url += std::format("&timeout={}", listenTimeoutInMicroSeconds);
+					}
+
+					// In case of udp:
+					// overrun_nonfatal=1 prevents ffmpeg from exiting,
+					//		it can recover in most circumstances.
+					// fifo_size=50000000 uses a 50MB udp input buffer (default 5MB)
+					if (url.find('?') == string::npos)
+						url += "?overrun_nonfatal=1&fifo_size=50000000";
+					else
+						url += "&overrun_nonfatal=1&fifo_size=50000000";
+				}
+				else if (url.find("srt://") != string::npos)
+				{
+				}
+				else
+				{
+					SPDLOG_ERROR(
+						"listen/timeout not managed yet for the current protocol"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", url: {}",
+						ingestionJobKey, encodingJobKey, url
+					);
+				}
+
+				// ffmpegInputArgumentList.push_back("-i");
+				// ffmpegInputArgumentList.push_back(url);
+				mainInput.setSource(url);
+			}
+			else if (streamSourceType == "IP_PULL")
+			{
+				// this is a streaming
+				// ffmpegInputArgumentList.push_back("-i");
+				// ffmpegInputArgumentList.push_back(url);
+				mainInput.setSource(url);
+
+				if (!useVideoTrackFromPhysicalPathName.empty() && !externalEncoder)
+				{
+					// this is a file
+
+					// ffmpegInputArgumentList.push_back("-stream_loop");
+					// // number of times input stream shall be looped. Loop 0 means no loop, loop -1 means infinite loop
+					// ffmpegInputArgumentList.push_back("-1");
+					mainInput.addArgs("-stream_loop -1");
+
+					// ffmpegInputArgumentList.push_back("-i");
+					// ffmpegInputArgumentList.push_back(useVideoTrackFromPhysicalPathName);
+					mainInput.setSource(useVideoTrackFromPhysicalPathName);
+
+					// ffmpegInputArgumentList.push_back("-map");
+					// ffmpegInputArgumentList.push_back("0:a");
+					// ffmpegInputArgumentList.push_back("-map");
+					// ffmpegInputArgumentList.push_back("1:v");
+					inputSelectedVideoMap = "1:v";
+					inputSelectedAudioMap = "0:a";
+				}
+				else if (!useVideoTrackFromPhysicalDeliveryURL.empty() && externalEncoder)
+				{
+					// this is a file
+
+					// ffmpegInputArgumentList.push_back("-stream_loop");
+					// // number of times input stream shall be looped. Loop 0 means no loop, loop -1 means infinite loop
+					// ffmpegInputArgumentList.push_back("-1");
+					mainInput.addArgs("-stream_loop -1");
+
+					// ffmpegInputArgumentList.push_back("-i");
+					// ffmpegInputArgumentList.push_back(useVideoTrackFromPhysicalDeliveryURL);
+					mainInput.setSource(useVideoTrackFromPhysicalDeliveryURL);
+
+					// ffmpegInputArgumentList.push_back("-map");
+					// ffmpegInputArgumentList.push_back("0:a");
+					// ffmpegInputArgumentList.push_back("-map");
+					// ffmpegInputArgumentList.push_back("1:v");
+					inputSelectedVideoMap = "1:v";
+					inputSelectedAudioMap = "0:a";
+				}
+			}
+			else if (streamSourceType == "TV")
+			{
+				if (url.find("udp://") != string::npos)
+				{
+					// In case of udp:
+					// overrun_nonfatal=1 prevents ffmpeg from exiting,
+					//		it can recover in most circumstances.
+					// fifo_size=50000000 uses a 50MB udp input buffer (default 5MB)
+					if (url.find('?') == string::npos)
+						url += "?overrun_nonfatal=1&fifo_size=50000000";
+					else
+						url += "&overrun_nonfatal=1&fifo_size=50000000";
+				}
+
+				// ffmpegInputArgumentList.push_back("-i");
+				// ffmpegInputArgumentList.push_back(url);
+				mainInput.setSource(url);
+			}
+			else if (streamSourceType == "CaptureLive")
+			{
+				// video
+				{
+					// -f v4l2 -framerate 25 -video_size 640x480 -i /dev/video0
+					// ffmpegInputArgumentList.push_back("-f");
+					// ffmpegInputArgumentList.push_back("v4l2");
+					//
+					// ffmpegInputArgumentList.push_back("-thread_queue_size");
+					// ffmpegInputArgumentList.push_back("4096");
+					mainInput.addArgs("-f v4l2 -thread_queue_size 4096");
+
+					if (!captureLive_videoInputFormat.empty())
+					{
+						// ffmpegInputArgumentList.push_back("-input_format");
+						// ffmpegInputArgumentList.push_back(captureLive_videoInputFormat);
+						mainInput.addArgs(std::format("-input_format {}", captureLive_videoInputFormat));
+					}
+
+					if (captureLive_frameRate != -1)
+					{
+						// ffmpegInputArgumentList.push_back("-framerate");
+						// ffmpegInputArgumentList.push_back(to_string(captureLive_frameRate));
+						mainInput.addArgs(std::format("-framerate {}", captureLive_frameRate));
+					}
+
+					if (captureLive_width != -1 && captureLive_height != -1)
+					{
+						// ffmpegInputArgumentList.push_back("-video_size");
+						// ffmpegInputArgumentList.push_back(to_string(captureLive_width) + "x" + to_string(captureLive_height));
+						mainInput.addArgs(std::format("-video_size {}x{}", captureLive_width, captureLive_height));
+					}
+
+					// ffmpegInputArgumentList.push_back("-i");
+					// ffmpegInputArgumentList.push_back(string("/dev/video") + to_string(captureLive_videoDeviceNumber));
+					mainInput.setSource(std::format("/dev/video{}", captureLive_videoDeviceNumber));
+				}
+
+				// audio
+				{
+					auto& audioInput = ffmpegEngine.addInput();
+
+					// ffmpegInputArgumentList.push_back("-f");
+					// ffmpegInputArgumentList.push_back("alsa");
+					//
+					// ffmpegInputArgumentList.push_back("-thread_queue_size");
+					// ffmpegInputArgumentList.push_back("2048");
+					audioInput.addArgs("-f alsa -thread_queue_size 2048");
+
+
+					if (captureLive_channelsNumber != -1)
+					{
+						// ffmpegInputArgumentList.push_back("-ac");
+						// ffmpegInputArgumentList.push_back(to_string(captureLive_channelsNumber));
+						audioInput.addArgs(std::format("-ac {}", captureLive_channelsNumber));
+					}
+
+					// ffmpegInputArgumentList.push_back("-i");
+					// ffmpegInputArgumentList.push_back(string("hw:") + to_string(captureLive_audioDeviceNumber));
+					audioInput.setSource(std::format("hw:{}", captureLive_audioDeviceNumber));
+				}
+			}
+
+			// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
+			{
+				if (JSONUtils::isMetadataPresent(streamInputRoot, "filters"))
+				{
+					json filtersRoot = streamInputRoot["filters"];
+
+					// se viene usato il filtro imageoverlay, è necessario recuperare sourcePhysicalPathName e sourcePhysicalDeliveryURL
+					if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+					{
+						json complexFiltersRoot = filtersRoot["complex"];
+						for (int complexFilterIndex = 0; complexFilterIndex < complexFiltersRoot.size(); complexFilterIndex++)
+						{
+							json complexFilterRoot = complexFiltersRoot[complexFilterIndex];
+							if (JSONUtils::isMetadataPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
+							{
+								if (externalEncoder)
+								{
+									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
+									{
+										string errorMessage = std::format(
+											"imageoverlay filter without imagePhysicalDeliveryURL"
+											", ingestionJobKey: {}"
+											", imageoverlay filter: {}",
+											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
+										);
+										SPDLOG_ERROR(errorMessage);
+
+										throw runtime_error(errorMessage);
+									}
+									// ffmpegInputArgumentList.push_back("-i");
+									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
+									auto& imageInput = ffmpegEngine.addInput();
+									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
+								}
+								else
+								{
+									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalPathName"))
+									{
+										string errorMessage = std::format(
+											"imageoverlay filter without imagePhysicalDeliveryURL"
+											", ingestionJobKey: {}"
+											", imageoverlay filter: {}",
+											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
+										);
+										SPDLOG_ERROR(errorMessage);
+
+										throw runtime_error(errorMessage);
+									}
+									// ffmpegInputArgumentList.push_back("-i");
+									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
+									auto& imageInput = ffmpegEngine.addInput();
+									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// if (timePeriod)
+			// {
+				// ffmpegInputArgumentList.push_back("-t");
+				// ffmpegInputArgumentList.push_back(to_string(streamingDurationInSeconds));
+			// }
+		}
+
+		if (JSONUtils::isMetadataPresent(streamInputRoot, "filters"))
+			inputFiltersRoot = streamInputRoot["filters"];
+	}
+	//	"directURLInput": { "url": "" },
+	else if (JSONUtils::isMetadataPresent(inputRoot, "directURLInput"))
+	{
+		field = "directURLInput";
+		json directURLInputRoot = inputRoot[field];
+
+		string otherInputOptions = JSONUtils::asString(directURLInputRoot, "otherInputOptions");
+		string inputFormat = JSONUtils::asString(directURLInputRoot, "inputFormat", "");
+		string url = JSONUtils::asString(directURLInputRoot, "url", "");
+
+		SPDLOG_INFO(
+			"liveProxy, url"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", timePeriod: {}"
+			", utcProxyPeriodStart: {}"
+			", utcProxyPeriodEnd: {}"
+			", inputFormat: {}",
+			", url: {}", ingestionJobKey, encodingJobKey, timePeriod, utcProxyPeriodStart, utcProxyPeriodEnd, inputFormat, url
+		);
+
+		/* 2023-03-26: vedi commento sopra in questo metodo
+		{
+			try
+			{
+				int timeoutInSeconds = 20;
+				getMediaInfo(ingestionJobKey, false, timeoutInSeconds, url, videoTracks, audioTracks);
+			}
+			catch(runtime_error& e)
+			{
+				string errorMessage = __FILEREF__ + "ffmpeg: getMediaInfo failed"
+					+ ", ingestionJobKey: " + to_string(ingestionJobKey)
+					+ ", encodingJobKey: " + to_string(encodingJobKey)
+					+ ", e.what(): " + e.what()
+				;
+				SPDLOG_ERROR(errorMessage);
+
+				// throw e;
+			}
+		}
+		*/
+
+		time_t utcNow;
+		{
+			chrono::system_clock::time_point now = chrono::system_clock::now();
+			utcNow = chrono::system_clock::to_time_t(now);
+		}
+
+		{
+			if (timePeriod)
+			{
+				inputDurationInSeconds = utcProxyPeriodEnd - utcNow;
+
+				SPDLOG_INFO(
+					"LiveProxy timing. Streaming duration"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", utcNow: {}"
+					", utcProxyPeriodStart: {}"
+					", utcProxyPeriodEnd: {}"
+					", inputDurationInSeconds: {}",
+					ingestionJobKey, encodingJobKey, utcNow, utcProxyPeriodStart, utcProxyPeriodEnd, *inputDurationInSeconds
+				);
+			}
+
+			// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
+
+			// -re (input) Read input at native frame rate. By default ffmpeg attempts to read the input(s)
+			//		as fast as possible. This option will slow down the reading of the input(s)
+			//		to the native frame rate of the input(s). It is useful for real-time output
+			//		(e.g. live streaming).
+			// -hls_flags append_list: Append new segments into the end of old segment list
+			//		and remove the #EXT-X-ENDLIST from the old segment list
+			// -hls_time seconds: Set the target segment length in seconds. Segment will be cut on the next key frame
+			//		after this time has passed.
+			// -hls_list_size size: Set the maximum number of playlist entries. If set to 0 the list file
+			//		will contain all the segments. Default value is 5.
+			//	-nostdin: Disabling interaction on standard input, it is useful, for example, if ffmpeg is
+			//		in the background process group
+			// ffmpegInputArgumentList.push_back("-nostdin");
+			ffmpegEngine.addGlobalArg("-nostdin");
+
+			auto& mainInput = ffmpegEngine.addInput();
+
+			// ffmpegInputArgumentList.push_back("-re");
+			mainInput.addArg("-re");
+			{
+				if (!otherInputOptions.empty())
+					// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
+					mainInput.addArgs(otherInputOptions);
+				if (!inputFormat.empty())
+				{
+					// ffmpegInputArgumentList.push_back("-f");
+					// ffmpegInputArgumentList.push_back(inputFormat);
+					mainInput.addArgs(std::format("-f {}", inputFormat));
+				}
+				// ffmpegInputArgumentList.push_back("-i");
+				// ffmpegInputArgumentList.push_back(url);
+				mainInput.setSource(url);
+			}
+
+			// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
+			{
+				if (JSONUtils::isMetadataPresent(directURLInputRoot, "filters"))
+				{
+					json filtersRoot = directURLInputRoot["filters"];
+
+					// se viene usato il filtro imageoverlay, è necessario recuperare sourcePhysicalPathName e sourcePhysicalDeliveryURL
+					if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+					{
+						json complexFiltersRoot = filtersRoot["complex"];
+						for (const auto& complexFilterRoot : complexFiltersRoot)
+						{
+							if (JSONUtils::isMetadataPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
+							{
+								if (externalEncoder)
+								{
+									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
+									{
+										string errorMessage = std::format(
+											"imageoverlay filter without imagePhysicalDeliveryURL"
+											", ingestionJobKey: {}"
+											", imageoverlay filter: {}",
+											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
+										);
+										SPDLOG_ERROR(errorMessage);
+
+										throw runtime_error(errorMessage);
+									}
+									// ffmpegInputArgumentList.push_back("-i");
+									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
+									auto& imageInput = ffmpegEngine.addInput();
+									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
+								}
+								else
+								{
+									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalPathName"))
+									{
+										string errorMessage = std::format(
+											"imageoverlay filter without imagePhysicalDeliveryURL"
+											", ingestionJobKey: {}"
+											", imageoverlay filter: {}",
+											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
+										);
+										SPDLOG_ERROR(errorMessage);
+
+										throw runtime_error(errorMessage);
+									}
+									// ffmpegInputArgumentList.push_back("-i");
+									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
+									auto& imageInput = ffmpegEngine.addInput();
+									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// if (timePeriod)
+			// {
+				// ffmpegInputArgumentList.push_back("-t");
+				// ffmpegInputArgumentList.push_back(to_string(streamingDurationInSeconds));
+			// }
+		}
+
+		if (JSONUtils::isMetadataPresent(directURLInputRoot, "filters"))
+			inputFiltersRoot = directURLInputRoot["filters"];
+	}
+	//	"vodInput": { "vodContentType": "", "sources": [{"sourcePhysicalPathName": "..."}],
+	//		"otherInputOptions": "" },
+	else if (JSONUtils::isMetadataPresent(inputRoot, "vodInput"))
+	{
+		json vodInputRoot = inputRoot["vodInput"];
+
+		string field = "vodContentType";
+		if (!JSONUtils::isMetadataPresent(vodInputRoot, field))
+		{
+			string errorMessage = std::format(
+				"Field is not present or it is null"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", Field: {}",
+				ingestionJobKey, encodingJobKey, field
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+		string vodContentType = JSONUtils::asString(vodInputRoot, field, "Video");
+
+		vector<string> sources;
+		// int64_t durationOfInputsInMilliSeconds = 0;
+		{
+			field = "sources";
+			if (!JSONUtils::isMetadataPresent(vodInputRoot, field))
+			{
+				string errorMessage = std::format(
+					"Field is not present or it is null"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", Field: {}",
+					ingestionJobKey, encodingJobKey, field
+				);
+				SPDLOG_ERROR(errorMessage);
+
+				throw runtime_error(errorMessage);
+			}
+			json sourcesRoot = vodInputRoot[field];
+
+			for (const auto& sourceRoot : sourcesRoot)
+			{
+				if (externalEncoder)
+					field = "sourcePhysicalDeliveryURL";
+				else
+					field = "sourcePhysicalPathName";
+				if (!JSONUtils::isMetadataPresent(sourceRoot, field))
+				{
+					string errorMessage = std::format(
+						"Field is not present or it is null"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", Field: {}"
+						", externalEncoder: {}"
+						", sourceRoot: {}",
+						ingestionJobKey, encodingJobKey, field, externalEncoder, JSONUtils::toString(sourceRoot)
+					);
+					SPDLOG_ERROR(errorMessage);
+
+					throw runtime_error(errorMessage);
+				}
+				string sourcePhysicalReference = JSONUtils::asString(sourceRoot, field, "");
+				sources.push_back(sourcePhysicalReference);
+
+				// field = "durationInMilliSeconds";
+				// if (JSONUtils::isMetadataPresent(sourceRoot, field))
+				// 	durationOfInputsInMilliSeconds += JSONUtils::asInt64(sourceRoot, field, 0);
+			}
+		}
+
+		string otherInputOptions = JSONUtils::asString(vodInputRoot, "otherInputOptions");
+
+		time_t utcNow;
+		{
+			chrono::system_clock::time_point now = chrono::system_clock::now();
+			utcNow = chrono::system_clock::to_time_t(now);
+		}
+
+		{
+			if (timePeriod)
+			{
+				inputDurationInSeconds = utcProxyPeriodEnd - utcNow;
+
+				SPDLOG_INFO(
+					"VODProxy timing. Streaming duration"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", utcNow: {}"
+					", utcProxyPeriodStart: {}"
+					", utcProxyPeriodEnd: {}"
+					", inputDurationInSeconds: {}",
+					ingestionJobKey, encodingJobKey, utcNow, utcProxyPeriodStart, utcProxyPeriodEnd, *inputDurationInSeconds
+				);
+			}
+
+			// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
+
+			// -re (input) Read input at native frame rate. By default ffmpeg attempts to read the input(s)
+			//		as fast as possible. This option will slow down the reading of the input(s)
+			//		to the native frame rate of the input(s). It is useful for real-time output
+			//		(e.g. live streaming).
+			// -hls_flags append_list: Append new segments into the end of old segment list
+			//		and remove the #EXT-X-ENDLIST from the old segment list
+			// -hls_time seconds: Set the target segment length in seconds. Segment will be cut on the next key frame
+			//		after this time has passed.
+			// -hls_list_size size: Set the maximum number of playlist entries. If set to 0 the list file
+			//		will contain all the segments. Default value is 5.
+			//	-nostdin: Disabling interaction on standard input, it is useful, for example, if ffmpeg is
+			//		in the background process group
+			// ffmpegInputArgumentList.push_back("-nostdin");
+			ffmpegEngine.addGlobalArg("-nostdin");
+
+			auto& mainInput = ffmpegEngine.addInput();
+
+			// ffmpegInputArgumentList.push_back("-re");
+			mainInput.addArg("-re");
+			// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
+			mainInput.addArgs(otherInputOptions);
+
+			if (vodContentType == "Image")
+			{
+				// ffmpegInputArgumentList.push_back("-r");
+				// ffmpegInputArgumentList.push_back("25");
+				//
+				// ffmpegInputArgumentList.push_back("-loop");
+				// ffmpegInputArgumentList.push_back("1");
+				mainInput.addArgs("-r 25 -loop 1");
+			}
+			else
+			{
+				/*
+					2022-10-27: -stream_loop works only in case of ONE input.
+						In case of multiple VODs we will use the '-f concat' option implementing
+						an endless recursive playlist
+						see https://video.stackexchange.com/questions/18982/is-it-possible-to-create-an-endless-loop-using-concat
+				*/
+				if (sources.size() == 1)
+				{
+					// ffmpegInputArgumentList.push_back("-stream_loop");
+					// ffmpegInputArgumentList.push_back("-1");
+					mainInput.addArgs("-stream_loop -1");
+				}
+			}
+
+			if (sources.size() == 1)
+			{
+				// ffmpegInputArgumentList.push_back("-i");
+				// ffmpegInputArgumentList.push_back(sources[0]);
+				mainInput.setSource(sources[0]);
+			}
+			else // if (sources.size() > 1)
+			{
+				// ffmpeg concat demuxer supports nested scripts with the header "ffconcat version 1.0".
+				// Build the endless recursive playlist file like (i.e:
+				//	ffconcat version 1.0
+				//	file 'storage/MMSRepository/MMS_0003/1/000/004/016/2030954_97080_24.mp4'
+				//	file 'storage/MMSRepository/MMS_0003/1/000/004/235/2143253_99028_24.mp4'
+				//	...
+				//	file 'XXX_YYY_endlessPlaylist.txt'
+
+				string endlessPlaylistListFileName = std::format("{}_{}_endlessPlaylist.txt", ingestionJobKey, encodingJobKey);
+				endlessPlaylistListPathName = _ffmpegEndlessRecursivePlaylistDir + "/" + endlessPlaylistListFileName;
+				;
+
+				SPDLOG_INFO(
+					"Creating ffmpegEndlessRecursivePlaylist file"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", endlessPlaylistListPathName: {}",
+					ingestionJobKey, encodingJobKey, endlessPlaylistListPathName
+				);
+				ofstream playlistListFile(endlessPlaylistListPathName.c_str(), ofstream::trunc);
+				if (!playlistListFile)
+				{
+#ifdef _WIN32
+					char buffer[256];
+					string errorMessage = std::format(
+						"Error creating ffmpegEndlessRecursivePlaylist file"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", _ffmpegEndlessRecursivePlaylist: {}"
+						", errno: {} ({})",
+						ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, errno, strerror_s(buffer, sizeof(buffer), errno)
+					);
+#else
+					string errorMessage = std::format(
+						"Error creating ffmpegEndlessRecursivePlaylist file"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", _ffmpegEndlessRecursivePlaylist: {}"
+						", errno: {} ({})",
+						ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, errno, strerror(errno)
+					);
+#endif
+					SPDLOG_ERROR(errorMessage);
+
+					throw runtime_error(errorMessage);
+				}
+				playlistListFile << "ffconcat version 1.0" << endl;
+				for (string sourcePhysicalReference : sources)
+				{
+					// sourcePhysicalReference will be:
+					//	a URL in case of externalEncoder
+					//	a storage path name in case of a local encoder
+
+					if (externalEncoder)
+					{
+						bool isStreaming = false;
+
+						string destBinaryPathName;
+						string destBinaryFileName;
+						{
+							size_t fileNameIndex = sourcePhysicalReference.find_last_of("/");
+							if (fileNameIndex == string::npos)
+							{
+								SPDLOG_ERROR(
+									"physical path has a wrong path"
+									", ingestionJobKey: {}"
+									", sourcePhysicalReference: {}",
+									ingestionJobKey, sourcePhysicalReference
+								);
+
+								continue;
+							}
+							// 2023-06-10: nel destBinaryFileName è necessario aggiungere
+							//	ingestionJobKey and encodingJobKey come per il nome della playlist.
+							//	Infatti, nel caso in cui avessimo due IngestionJob (due VOD Proxy)
+							//	che usano lo stesso source file, entrambi farebbero il download dello stesso file,
+							//	con lo stesso nome, nella stessa directory (_ffmpegEndlessRecursivePlaylistDir).
+							//	Per questo motivo aggiungiamo, come prefisso al source file name,
+							//	ingestionJobKey and encodingJobKey
+							destBinaryFileName =
+								std::format("{}_{}_{}", ingestionJobKey, encodingJobKey, sourcePhysicalReference.substr(fileNameIndex + 1));
+
+							size_t extensionIndex = destBinaryFileName.find_last_of(".");
+							if (extensionIndex != string::npos)
+							{
+								if (destBinaryFileName.substr(extensionIndex + 1) == "m3u8")
+								{
+									isStreaming = true;
+									destBinaryFileName = destBinaryFileName.substr(0, extensionIndex) + ".mp4";
+								}
+							}
+
+							destBinaryPathName = _ffmpegEndlessRecursivePlaylistDir + "/" + destBinaryFileName;
+						}
+
+						// sourcePhysicalReference is like
+						// https://mms-delivery-path.catramms-cloud.com/token_mDEs0rZTXRyMkOCngnG87w==,1666987919/MMS_0000/1/000/229/507/1429406_231284_changeFileFormat.mp4
+						if (isStreaming)
+						{
+							// regenerateTimestamps: see docs/TASK_01_Add_Content_JSON_Format.txt
+							bool regenerateTimestamps = false;
+
+							streamingToFile(ingestionJobKey, regenerateTimestamps, sourcePhysicalReference, destBinaryPathName);
+						}
+						else
+						{
+							try
+							{
+								FFMpegProgressData progressData;
+								progressData._ingestionJobKey = ingestionJobKey;
+								progressData._lastTimeProgressUpdate = chrono::system_clock::now();
+								progressData._lastPercentageUpdated = -1.0;
+
+								CurlWrapper::downloadFile(
+									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
+									std::format(", ingestionJobKey: {}", ingestionJobKey), 120 /* timeoutInSeconds */, 1 /* maxRetryNumber */
+								);
+							}
+							catch (exception &e)
+							{
+								SPDLOG_ERROR(
+									"CurlWrapper::downloadFile failed"
+									", ingestionJobKey: {}"
+									", sourcePhysicalReference: {}"
+									", exception: {}",
+									ingestionJobKey, sourcePhysicalReference, e.what()
+								);
+
+								continue;
+							}
+						}
+						// playlist and dowloaded files will be removed by the calling FFMpeg::liveProxy2 method
+						playlistListFile << "file '" << destBinaryFileName << "'" << endl;
+
+						SPDLOG_INFO(
+							"ffmpeg: adding physical path"
+							", ingestionJobKey: {}"
+							", encodingJobKey: {}"
+							", _ffmpegEndlessRecursivePlaylist: {}"
+							", sourcePhysicalReference: {}"
+							", content: file '{}'",
+							ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, sourcePhysicalReference, destBinaryFileName
+						);
+					}
+					else
+					{
+						size_t storageIndex = sourcePhysicalReference.find("/storage/");
+						if (storageIndex == string::npos)
+						{
+							SPDLOG_ERROR(
+								"physical path has a wrong path"
+								", ingestionJobKey: {}"
+								", sourcePhysicalReference: {}",
+								ingestionJobKey, sourcePhysicalReference
+							);
+
+							continue;
+						}
+
+						playlistListFile << "file '" << sourcePhysicalReference.substr(storageIndex + 1) << "'" << endl;
+
+						SPDLOG_INFO(
+							"ffmpeg: adding physical path"
+							", ingestionJobKey: {}"
+							", encodingJobKey: {}"
+							", endlessPlaylistListPathName: {}"
+							", sourcePhysicalReference: {}"
+							", content: file '{}'",
+							ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, sourcePhysicalReference,
+							sourcePhysicalReference.substr(storageIndex + 1)
+						);
+					}
+				}
+				playlistListFile << "file '" << endlessPlaylistListFileName << "'" << endl;
+				playlistListFile.close();
+
+				// ffmpegInputArgumentList.push_back("-f");
+				// ffmpegInputArgumentList.push_back("concat");
+				// ffmpegInputArgumentList.push_back("-i");
+				// ffmpegInputArgumentList.push_back(endlessPlaylistListPathName);
+				mainInput.addArgs("-f concat");
+				mainInput.setSource(endlessPlaylistListFileName);
+			}
+
+			// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
+			{
+				if (JSONUtils::isMetadataPresent(vodInputRoot, "filters"))
+				{
+					json filtersRoot = vodInputRoot["filters"];
+
+					// se viene usato il filtro imageoverlay, è necessario recuperare sourcePhysicalPathName e sourcePhysicalDeliveryURL
+					if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+					{
+						json complexFiltersRoot = filtersRoot["complex"];
+						for (const auto& complexFilterRoot : complexFiltersRoot)
+						{
+							if (JSONUtils::isMetadataPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
+							{
+								if (externalEncoder)
+								{
+									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
+									{
+										string errorMessage = std::format(
+											"imageoverlay filter without imagePhysicalDeliveryURL"
+											", ingestionJobKey: {}"
+											", imageoverlay filter: {}",
+											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
+										);
+										SPDLOG_ERROR(errorMessage);
+
+										throw runtime_error(errorMessage);
+									}
+									// ffmpegInputArgumentList.push_back("-i");
+									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
+									auto& imageInput = ffmpegEngine.addInput();
+									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
+								}
+								else
+								{
+									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalPathName"))
+									{
+										string errorMessage = std::format(
+											"imageoverlay filter without imagePhysicalDeliveryURL"
+											", ingestionJobKey: {}"
+											", imageoverlay filter: {}",
+											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
+										);
+										SPDLOG_ERROR(errorMessage);
+
+										throw runtime_error(errorMessage);
+									}
+									// ffmpegInputArgumentList.push_back("-i");
+									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
+									auto& imageInput = ffmpegEngine.addInput();
+									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// if (timePeriod)
+			// {
+				// ffmpegInputArgumentList.push_back("-t");
+				// ffmpegInputArgumentList.push_back(to_string(streamingDurationInSeconds));
+			// }
+		}
+
+		if (JSONUtils::isMetadataPresent(vodInputRoot, "filters"))
+			inputFiltersRoot = vodInputRoot["filters"];
+	}
+	//	"countdownInput": { "mmsSourceVideoAssetPathName": "", "videoDurationInMilliSeconds": 123, "text": "", "textPosition_X_InPixel": "",
+	//"textPosition_Y_InPixel": "", "fontType": "", "fontSize": 22, "fontColor": "", "textPercentageOpacity": -1, "boxEnable": false, "boxColor":
+	//"", "boxPercentageOpacity": 20 },
+	else if (JSONUtils::isMetadataPresent(inputRoot, "countdownInput"))
+	{
+		string field = "countdownInput";
+		json countdownInputRoot = inputRoot[field];
+
+		if (externalEncoder)
+			field = "mmsSourceVideoAssetDeliveryURL";
+		else
+			field = "mmsSourceVideoAssetPathName";
+		if (!JSONUtils::isMetadataPresent(countdownInputRoot, field))
+		{
+			string errorMessage = std::format(
+				"Field is not present or it is null"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", Field: {}",
+				ingestionJobKey, encodingJobKey, field
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+		string mmsSourceVideoAssetPathName = JSONUtils::asString(countdownInputRoot, field, "");
+
+		field = "videoDurationInMilliSeconds";
+		if (!JSONUtils::isMetadataPresent(countdownInputRoot, field))
+		{
+			string errorMessage = std::format(
+				"Field is not present or it is null"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", Field: {}",
+				ingestionJobKey, encodingJobKey, field
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+		int64_t videoDurationInMilliSeconds = JSONUtils::asInt64(countdownInputRoot, field, -1);
+
+		if (!externalEncoder && !fs::exists(mmsSourceVideoAssetPathName))
+		{
+			string errorMessage = std::format(
+				"Source video asset path name not existing"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", mmsSourceVideoAssetPathName: {}",
+				ingestionJobKey, encodingJobKey, mmsSourceVideoAssetPathName
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+
+		int64_t utcCountDownEnd = utcProxyPeriodEnd;
+
+		time_t utcNow;
+		{
+			chrono::system_clock::time_point now = chrono::system_clock::now();
+			utcNow = chrono::system_clock::to_time_t(now);
+		}
+
+		if (utcCountDownEnd <= utcNow)
+		{
+			time_t tooLateTime = utcNow - utcCountDownEnd;
+
+			string errorMessage = std::format(
+				"Countdown timing. Too late to start"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", utcNow: {}"
+				", utcCountDownEnd: {}"
+				", tooLateTime: {}",
+				ingestionJobKey, encodingJobKey, utcNow, utcCountDownEnd, tooLateTime
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+
+		int streamLoopNumber;
+		{
+			inputDurationInSeconds = utcCountDownEnd - utcNow;
+
+			SPDLOG_INFO(
+				"Countdown timing. Streaming duration"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", utcNow: {}"
+				", utcCountDownEnd: {}"
+				", inputDurationInSeconds: {}"
+				", videoDurationInMilliSeconds: {}",
+				ingestionJobKey, encodingJobKey, utcNow, utcCountDownEnd, *inputDurationInSeconds, videoDurationInMilliSeconds
+			);
+
+			float fVideoDurationInMilliSeconds = videoDurationInMilliSeconds;
+			fVideoDurationInMilliSeconds /= 1000;
+
+			streamLoopNumber = *inputDurationInSeconds / fVideoDurationInMilliSeconds;
+			streamLoopNumber += 2;
+		}
+
+		{
+			// global options
+			// input options
+			// ffmpegInputArgumentList.push_back("-re");
+			// ffmpegInputArgumentList.push_back("-stream_loop");
+			// ffmpegInputArgumentList.push_back(to_string(streamLoopNumber));
+			// ffmpegInputArgumentList.push_back("-i");
+			// ffmpegInputArgumentList.push_back(mmsSourceVideoAssetPathName);
+			auto& mainInput = ffmpegEngine.addInput();
+			mainInput.addArgs(std::format("-re -stream_loop {}", streamLoopNumber));
+			mainInput.setSource(mmsSourceVideoAssetPathName);
+		}
+
+		// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
+		{
+			if (JSONUtils::isMetadataPresent(countdownInputRoot, "filters"))
+			{
+				json filtersRoot = countdownInputRoot["filters"];
+
+				// se viene usato il filtro imageoverlay, è necessario recuperare sourcePhysicalPathName e sourcePhysicalDeliveryURL
+				if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+				{
+					json complexFiltersRoot = filtersRoot["complex"];
+					for (int complexFilterIndex = 0; complexFilterIndex < complexFiltersRoot.size(); complexFilterIndex++)
+					{
+						json complexFilterRoot = complexFiltersRoot[complexFilterIndex];
+						if (JSONUtils::isMetadataPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
+						{
+							if (externalEncoder)
+							{
+								if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
+								{
+									string errorMessage = std::format(
+										"imageoverlay filter without imagePhysicalDeliveryURL"
+										", ingestionJobKey: {}"
+										", imageoverlay filter: {}",
+										ingestionJobKey, JSONUtils::toString(complexFilterRoot)
+									);
+									SPDLOG_ERROR(errorMessage);
+
+									throw runtime_error(errorMessage);
+								}
+								// ffmpegInputArgumentList.push_back("-i");
+								// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
+								auto& imageInput = ffmpegEngine.addInput();
+								imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
+							}
+							else
+							{
+								if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalPathName"))
+								{
+									string errorMessage = std::format(
+										"imageoverlay filter without imagePhysicalDeliveryURL"
+										", ingestionJobKey: {}"
+										", imageoverlay filter: {}",
+										ingestionJobKey, JSONUtils::toString(complexFilterRoot)
+									);
+									SPDLOG_ERROR(errorMessage);
+
+									throw runtime_error(errorMessage);
+								}
+								// ffmpegInputArgumentList.push_back("-i");
+								// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
+								auto& imageInput = ffmpegEngine.addInput();
+								imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// {
+			// ffmpegInputArgumentList.push_back("-t");
+			// ffmpegInputArgumentList.push_back(to_string(streamingDurationInSeconds));
+		// }
+
+		// inizializza filtersRoot e verifica se drawtext is present
+		bool isDrawTextFilterPresent = false;
+		if (JSONUtils::isMetadataPresent(countdownInputRoot, "filters"))
+		{
+			inputFiltersRoot = countdownInputRoot["filters"];
+			if (JSONUtils::isMetadataPresent(inputFiltersRoot, "video"))
+			{
+				json videoFiltersRoot = inputFiltersRoot["video"];
+				for (int videoFilterIndex = 0; videoFilterIndex < videoFiltersRoot.size(); videoFilterIndex++)
+				{
+					json videoFilterRoot = videoFiltersRoot[videoFilterIndex];
+					if (JSONUtils::isMetadataPresent(videoFilterRoot, "type") && videoFilterRoot["type"] == "drawtext")
+						isDrawTextFilterPresent = true;
+				}
+			}
+		}
+		if (!isDrawTextFilterPresent)
+		{
+			string errorMessage = std::format(
+				"Countdown has to have the drawText filter"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", countdownInputRoot: {}",
+				ingestionJobKey, encodingJobKey, JSONUtils::toString(countdownInputRoot)
+			);
+			SPDLOG_ERROR(errorMessage);
+
+			throw runtime_error(errorMessage);
+		}
+	}
+	else
+	{
+		string errorMessage = std::format(
+			"streamInput or vodInput or countdownInput is not present"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}",
+			ingestionJobKey, encodingJobKey
+		);
+		SPDLOG_ERROR(errorMessage);
+
+		throw runtime_error(errorMessage);
+	}
+
+	return make_tuple(
+		endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart,
+		inputFiltersRoot, inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds
+	);
+}
+
 // il metodo outputsRootToFfmpeg_clean pulisce eventuali directory/files creati da outputsRootToFfmpeg
 void FFMpegWrapper::outputsRootToFfmpeg(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string otherOutputOptionsBecauseOfMaxWidth, json inputFiltersRoot,
@@ -3053,8 +5294,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 // il metodo outputsRootToFfmpeg_clean pulisce eventuali directory/files creati da outputsRootToFfmpeg
 void FFMpegWrapper::outputsRootToFfmpeg(
-	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string otherOutputOptionsBecauseOfMaxWidth, json inputFiltersRoot,
-	long streamingDurationInSeconds, json outputsRoot,
+	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const json& inputFiltersRoot,
+	json outputsRoot,
 
 	/*
 	// vengono usati i due vector seguenti nel caso abbiamo una lista di maps (video and audio)
@@ -3069,10 +5310,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 	vector<string> audioMaps,
 	*/
 
-	FFMpegEngine& ffMpegEngine
+	FFMpegEngine& ffMpegEngine, optional<string>& inputSelectedVideoMap,
+	optional<string>& inputSelectedAudioMap, optional<int32_t>& inputDurationInSeconds
 )
 {
-
 	SPDLOG_INFO(
 		"Received outputsRootToFfmpeg"
 		", ingestionJobKey: {}"
@@ -3142,7 +5383,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		//    In particolare, il parametro inputFiltersRoot arriva inizializzato solamente se
 		//    siamo nello scenario di un solo inputRoot che richiede il suo drawtext.
 		//    Per questo motivo, il prossimo if, gestisce il caso di drawTextDetails solo per un input root
-		json filtersRoot = ffmpegFilters.mergeFilters(outputRoot["filters"], inputFiltersRoot);
+		json filtersRoot = FFMpegFilters::mergeFilters(outputRoot["filters"], inputFiltersRoot);
 		SPDLOG_INFO(
 			"mergeFilters"
 			", ingestionJobKey: {}"
@@ -3167,28 +5408,28 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		bool isVideo = encodingProfileContentType == "Video" ? true : false;
 
 		string httpStreamingFileFormat;
-		string ffmpegHttpStreamingParameter = "";
+		string ffmpegHttpStreamingParameter;
 
-		string ffmpegFileFormatParameter = "";
+		string ffmpegFileFormatParameter;
 
-		string ffmpegVideoCodecParameter = "";
-		string ffmpegVideoProfileParameter = "";
-		string ffmpegVideoResolutionParameter = "";
+		string ffmpegVideoCodecParameter;
+		string ffmpegVideoProfileParameter;
+		string ffmpegVideoResolutionParameter;
 		int videoBitRateInKbps = -1;
-		string ffmpegVideoBitRateParameter = "";
-		string ffmpegVideoOtherParameters = "";
-		string ffmpegVideoMaxRateParameter = "";
-		string ffmpegVideoBufSizeParameter = "";
-		string ffmpegVideoFrameRateParameter = "";
-		string ffmpegVideoKeyFramesRateParameter = "";
+		string ffmpegVideoBitRateParameter;
+		string ffmpegVideoOtherParameters;
+		string ffmpegVideoMaxRateParameter;
+		string ffmpegVideoBufSizeParameter;
+		string ffmpegVideoFrameRateParameter;
+		string ffmpegVideoKeyFramesRateParameter;
 		bool twoPasses;
 		vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
 
-		string ffmpegAudioCodecParameter = "";
-		string ffmpegAudioBitRateParameter = "";
-		string ffmpegAudioOtherParameters = "";
-		string ffmpegAudioChannelsParameter = "";
-		string ffmpegAudioSampleRateParameter = "";
+		string ffmpegAudioCodecParameter;
+		string ffmpegAudioBitRateParameter;
+		string ffmpegAudioOtherParameters;
+		string ffmpegAudioChannelsParameter;
+		string ffmpegAudioSampleRateParameter;
 		vector<string> audioBitRatesInfo;
 
 		if (encodingProfileDetailsRoot != nullptr)
@@ -3288,14 +5529,14 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		string complexFilters;
 		if (filtersRoot != nullptr)
 			tie(videoFilters, audioFilters, complexFilters) =
-				ffmpegFilters.addFilters(filtersRoot, ffmpegVideoResolutionParameter, "", streamingDurationInSeconds);
+				ffmpegFilters.addFilters(filtersRoot, ffmpegVideoResolutionParameter, "", inputDurationInSeconds);
 
 		bool threadsParameterToBeAdded = false;
 
 		auto& output = ffMpegEngine.addOutput();
 
 		// video (parametri di encoding)
-		if (inputVideoMap != "" && inputVideoMap != "default")
+		if (!inputVideoMap.empty() && inputVideoMap != "default")
 		{
 			/*
 			ffmpegOutputArgumentList.push_back("-map");
@@ -3335,7 +5576,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
 				{
 					for (const auto& filterRoot : filtersRoot["video"])
-						output.addVideoFilter(ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds));
+						output.addVideoFilter(ffmpegFilters.getFilter(filterRoot, inputDurationInSeconds));
 				}
 			}
 		}
@@ -3386,7 +5627,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 
 		// audio (parametri di encoding)
-		if (inputAudioMap != "" && inputAudioMap != "default")
+		if (!inputAudioMap.empty() && inputAudioMap != "default")
 		{
 			/*
 			ffmpegOutputArgumentList.push_back("-map");
@@ -3425,7 +5666,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				if (JSONUtils::isMetadataPresent(filtersRoot, "audio"))
 				{
 					for (const auto& filterRoot : filtersRoot["audio"])
-						output.addAudioFilter(ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds));
+						output.addAudioFilter(ffmpegFilters.getFilter(filterRoot, inputDurationInSeconds));
 				}
 			}
 		}
@@ -3471,7 +5712,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		{
 			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
 			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
-			if (rtmpUrl == "" && srtUrl == "")
+			if (rtmpUrl.empty() && srtUrl.empty())
 			{
 				string errorMessage = std::format(
 					"rtmpUrl/srtUrl cannot be empty"
@@ -3491,10 +5732,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
 				// else
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
-					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
-				else
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				// else
 					output.addArgs(otherOutputOptions);
+				if (inputSelectedVideoMap)
+					output.map(*inputSelectedVideoMap);
+				if (inputSelectedAudioMap)
+					output.map(*inputSelectedAudioMap);
+				if (inputDurationInSeconds)
+					output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
 			// 2023-01-14
@@ -3539,7 +5786,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 				if (aacFilterToBeAdded)
 				*/
-				if (rtmpUrl != "")
+				if (!rtmpUrl.empty())
 				{
 					// ffmpegOutputArgumentList.push_back("-bsf:a");
 					// ffmpegOutputArgumentList.push_back("aac_adtstoasc");
@@ -3553,7 +5800,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			// right now it is fixed flv, it means cdnURL will be like "rtmp://...."
 			// ffmpegOutputArgumentList.push_back("-f");
-			if (rtmpUrl != "")
+			if (!rtmpUrl.empty())
 			{
 				// ffmpegOutputArgumentList.push_back("flv");
 				output.addArgs("-f flv");
@@ -3571,7 +5818,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		else if (outputType == "SRT_Channel")
 		{
 			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
-			if (srtUrl == "")
+			if (srtUrl.empty())
 			{
 				string errorMessage = std::format(
 					"srtUrl cannot be empty"
@@ -3591,10 +5838,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
 				// else
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
-					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
-				else
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				// else
 					output.addArgs(otherOutputOptions);
+				if (inputSelectedVideoMap)
+					output.map(*inputSelectedVideoMap);
+				if (inputSelectedAudioMap)
+					output.map(*inputSelectedAudioMap);
+				if (inputDurationInSeconds)
+					output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
 			// ffmpegOutputArgumentList.push_back("-f");
@@ -3650,7 +5903,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				);
 			}
 
-			if (externalEncoder && manifestDirectoryPath != "")
+			if (externalEncoder && !manifestDirectoryPath.empty())
 				addToIncrontab(ingestionJobKey, encodingJobKey, manifestDirectoryPath);
 
 			// if (outputType == "HLS")
@@ -3723,11 +5976,17 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
 				// else
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
-					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
-				else
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				// else
 					output.addArgs(otherOutputOptions);
 			}
+			if (inputSelectedVideoMap)
+				output.map(*inputSelectedVideoMap);
+			if (inputSelectedAudioMap)
+				output.map(*inputSelectedAudioMap);
+			if (inputDurationInSeconds)
+				output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 
 			// ffmpegOutputArgumentList.push_back("-f");
 			// ffmpegOutputArgumentList.push_back("hls");
@@ -3739,7 +5998,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		{
 			string udpUrl = JSONUtils::asString(outputRoot, "udpUrl", "");
 
-			if (udpUrl == "")
+			if (udpUrl.empty())
 			{
 				string errorMessage = std::format(
 					"udpUrl cannot be empty"
@@ -3759,10 +6018,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
 				// else
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
-					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
-				else
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				// else
 					output.addArgs(otherOutputOptions);
+				if (inputSelectedVideoMap)
+					output.map(*inputSelectedVideoMap);
+				if (inputSelectedAudioMap)
+					output.map(*inputSelectedAudioMap);
+				if (inputDurationInSeconds)
+					output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
 			// ffmpegOutputArgumentList.push_back("-f");
@@ -3779,10 +6044,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
 				// else
 				// 	FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
-					output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
-				else
+				// if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				// 	output.addArgs(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth);
+				// else
 					output.addArgs(otherOutputOptions);
+				if (inputSelectedVideoMap)
+					output.map(*inputSelectedVideoMap);
+				if (inputSelectedAudioMap)
+					output.map(*inputSelectedAudioMap);
+				if (inputDurationInSeconds)
+					output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
 			tuple<string, string, string> allFilters = ffmpegFilters.addFilters(filtersRoot, "", "", -1);
@@ -3803,7 +6074,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
 					{
 						for (const auto& filterRoot : filtersRoot["video"])
-							output.addVideoFilter(ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds));
+							output.addVideoFilter(ffmpegFilters.getFilter(filterRoot, inputDurationInSeconds));
 					}
 				}
 			}
@@ -3819,12 +6090,12 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					if (JSONUtils::isMetadataPresent(filtersRoot, "audio"))
 					{
 						for (const auto& filterRoot : filtersRoot["audio"])
-							output.addAudioFilter(ffmpegFilters.getFilter(filterRoot, streamingDurationInSeconds));
+							output.addAudioFilter(ffmpegFilters.getFilter(filterRoot, inputDurationInSeconds));
 					}
 				}
 			}
 
-			if (complexFilters != "")
+			if (!complexFilters.empty())
 			{
 				// ffmpegOutputArgumentList.push_back("-filter_complex");
 				// ffmpegOutputArgumentList.push_back(complexFilters);

@@ -293,7 +293,7 @@ void FFMpegWrapper::generateFramesToIngest(
 			filterRoot["framesNumber"] = 1;
 			filterRoot["periodInSeconds"] = periodInSeconds;
 
-			filter = ffmpegFilters.getFilter(filterRoot, -1);
+			filter = ffmpegFilters.getFilter(filterRoot, nullopt);
 		}
 
 		// videoFilterParameters = "-vf fps=1/" + to_string(periodInSeconds) + " ";
@@ -308,7 +308,7 @@ void FFMpegWrapper::generateFramesToIngest(
 				json filterRoot;
 				filterRoot["type"] = "select";
 				filterRoot["frameType"] = "i-frame";
-				filter = ffmpegFilters.getFilter(filterRoot, -1);
+				filter = ffmpegFilters.getFilter(filterRoot, nullopt);
 			}
 
 			// videoFilterParameters = "-vf select='eq(pict_type,PICT_TYPE_I)' ";
@@ -322,7 +322,7 @@ void FFMpegWrapper::generateFramesToIngest(
 				filterRoot["type"] = "select";
 				filterRoot["frameType"] = "i-frame";
 				filterRoot["fpsMode"] = "vfr";
-				filter = ffmpegFilters.getFilter(filterRoot, -1);
+				filter = ffmpegFilters.getFilter(filterRoot, nullopt);
 			}
 
 			// videoFilterParameters = "-vf select='eq(pict_type,PICT_TYPE_I)' -fps_mode vfr ";

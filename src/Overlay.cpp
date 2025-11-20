@@ -594,8 +594,8 @@ void FFMpegWrapper::overlayTextOnVideo(
 				// comma (,) as separator. For now we will just comment it and the resolution will be the one
 				// coming from the video (no changes)
 				// addToArguments(ffmpegVideoResolutionParameter, ffmpegEncodingProfileArgumentList);
-				ffmpegEncodingProfileArgumentList.push_back("-threads");
-				ffmpegEncodingProfileArgumentList.push_back("0");
+				ffmpegEncodingProfileArgumentList.emplace_back("-threads");
+				ffmpegEncodingProfileArgumentList.emplace_back("0");
 				FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegEncodingProfileArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegEncodingProfileArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegEncodingProfileArgumentList);
@@ -653,7 +653,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				// filterRoot["textFilePathName"] = textTemporaryFileName;
 
 				FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey);
-				ffmpegDrawTextFilter = ffmpegFilters.getFilter(filterRoot, -1);
+				ffmpegDrawTextFilter = ffmpegFilters.getFilter(filterRoot, nullopt);
 			}
 			/*
 			string ffmpegDrawTextFilter = getDrawTextVideoFilterDescription(ingestionJobKey,

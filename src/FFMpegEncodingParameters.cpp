@@ -228,7 +228,8 @@ void FFMpegEncodingParameters::applyEncoding(
 								FFMpegEncodingParameters::addToArguments(string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							else
 							{
-								string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, "", -1);
+								string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
+									"", nullopt);
 
 								if (videoFilters != "")
 									FFMpegEncodingParameters::addToArguments(string("-filter:v ") + videoFilters, ffmpegArgumentList);
@@ -253,7 +254,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
-							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, -1);
+							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, nullopt);
 
 							if (audioFilters != "")
 								FFMpegEncodingParameters::addToArguments(string("-filter:a ") + audioFilters, ffmpegArgumentList);
@@ -343,7 +344,8 @@ void FFMpegEncodingParameters::applyEncoding(
 								FFMpegEncodingParameters::addToArguments(string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							else
 							{
-								string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, "", -1);
+								string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
+									"", nullopt);
 
 								if (videoFilters != "")
 									FFMpegEncodingParameters::addToArguments(string("-filter:v ") + videoFilters, ffmpegArgumentList);
@@ -363,7 +365,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
-							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, -1);
+							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, nullopt);
 
 							if (audioFilters != "")
 								FFMpegEncodingParameters::addToArguments(string("-filter:a ") + audioFilters, ffmpegArgumentList);
@@ -458,7 +460,8 @@ void FFMpegEncodingParameters::applyEncoding(
 							FFMpegEncodingParameters::addToArguments(string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 						else
 						{
-							string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, "", -1);
+							string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
+								"", nullopt);
 
 							if (videoFilters != "")
 								FFMpegEncodingParameters::addToArguments(string("-filter:v ") + videoFilters, ffmpegArgumentList);
@@ -479,7 +482,7 @@ void FFMpegEncodingParameters::applyEncoding(
 					FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 					if (filtersRoot != nullptr)
 					{
-						string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, -1);
+						string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, nullopt);
 
 						if (audioFilters != "")
 							FFMpegEncodingParameters::addToArguments(string("-filter:a ") + audioFilters, ffmpegArgumentList);
@@ -565,7 +568,8 @@ void FFMpegEncodingParameters::applyEncoding(
 								FFMpegEncodingParameters::addToArguments(string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							else
 							{
-								string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, "", -1);
+								string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
+									"", nullopt);
 
 								if (videoFilters != "")
 									FFMpegEncodingParameters::addToArguments(string("-filter:v ") + videoFilters, ffmpegArgumentList);
@@ -599,7 +603,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
-							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, -1);
+							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, nullopt);
 
 							if (audioFilters != "")
 								FFMpegEncodingParameters::addToArguments(string("-filter:a ") + audioFilters, ffmpegArgumentList);
@@ -656,7 +660,8 @@ void FFMpegEncodingParameters::applyEncoding(
 								FFMpegEncodingParameters::addToArguments(string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							else
 							{
-								string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, "", -1);
+								string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
+									"", nullopt);
 
 								if (videoFilters != "")
 									FFMpegEncodingParameters::addToArguments(string("-filter:v ") + videoFilters, ffmpegArgumentList);
@@ -685,7 +690,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
-							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, -1);
+							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, nullopt);
 
 							if (audioFilters != "")
 								FFMpegEncodingParameters::addToArguments(string("-filter:a ") + audioFilters, ffmpegArgumentList);
@@ -752,7 +757,8 @@ void FFMpegEncodingParameters::applyEncoding(
 									FFMpegEncodingParameters::addToArguments(string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 								else
 								{
-									string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, "", -1);
+									string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
+										"", nullopt);
 
 									if (videoFilters != "")
 										FFMpegEncodingParameters::addToArguments(string("-filter:v ") + videoFilters, ffmpegArgumentList);
@@ -773,7 +779,7 @@ void FFMpegEncodingParameters::applyEncoding(
 							FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 							if (filtersRoot != nullptr)
 							{
-								string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, -1);
+								string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, nullopt);
 
 								if (audioFilters != "")
 									FFMpegEncodingParameters::addToArguments(string("-filter:a ") + audioFilters, ffmpegArgumentList);
@@ -837,7 +843,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
-							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, -1);
+							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, nullopt);
 
 							if (audioFilters != "")
 								FFMpegEncodingParameters::addToArguments(string("-filter:a ") + audioFilters, ffmpegArgumentList);
@@ -878,7 +884,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
-							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, -1);
+							string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, nullopt);
 
 							if (audioFilters != "")
 								FFMpegEncodingParameters::addToArguments(string("-filter:a ") + audioFilters, ffmpegArgumentList);

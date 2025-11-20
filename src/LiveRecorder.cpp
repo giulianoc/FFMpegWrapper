@@ -2386,7 +2386,8 @@ void FFMpegWrapper::liveRecorder2(
 				videoFiltersRoot.push_back(FFMpegFilters::createTimecodeDrawTextFilter());
 				filtersRoot["video"] = videoFiltersRoot;
 
-				string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, "", "", -1);
+				string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, "",
+					"", nullopt);
 
 				ffmpegArgumentList.emplace_back("-filter:v");
 				ffmpegArgumentList.push_back(videoFilters);
@@ -3117,14 +3118,14 @@ void FFMpegWrapper::liveRecorder(
 
 		// ffmpegArgumentList.emplace_back("ffmpeg");
 
+		auto& mainInput = ffmpegEngine.addInput();
+
 		if (userAgentToBeUsed)
-			ffmpegEngine.setUserAgent(userAgent);
+			mainInput.addArgs(std::format("-user_agent {}", userAgent));
 		// {
 		// 	ffmpegArgumentList.emplace_back("-user_agent");
 		// 	ffmpegArgumentList.push_back(userAgent);
 		// }
-
-		auto& mainInput = ffmpegEngine.addInput();
 
 		if (!otherInputOptions.empty())
 			mainInput.addArgs(otherInputOptions);
@@ -3279,15 +3280,13 @@ void FFMpegWrapper::liveRecorder(
 		// 	ffmpegArgumentList.push_back(to_string(streamingDuration));
 		// }
 
-		SPDLOG_INFO("BBBBBBBBBBBBB ffmpegEngine: {}", ffmpegEngine.build());
-		SPDLOG_INFO("BBBBBBBBBBBBB mainInput: {}", mainInput.toSingleLine());
 		auto& mainOutput = ffmpegEngine.addOutput();
 
 		if (utcTimeOverlay)
 		{
 			{
 				FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, ingestionJobKey, encodingJobKey, -1);
-				mainOutput.addVideoFilter(ffmpegFilters.getFilter(FFMpegFilters::createTimecodeDrawTextFilter()));
+				mainOutput.addVideoFilter(ffmpegFilters.getFilter(FFMpegFilters::createTimecodeDrawTextFilter(), nullopt));
 
 				// json filtersRoot;
 				// json videoFiltersRoot = json::array();
@@ -3434,12 +3433,14 @@ void FFMpegWrapper::liveRecorder(
 			outputsRoot, ffmpegArgumentList
 		);
 		*/
+		optional<string> inputSelectedVideoMap;
+		optional<string> inputSelectedAudioMap;
+		optional<int32_t> inputDurationInSeconds;
 		outputsRootToFfmpeg(
 			ingestionJobKey, encodingJobKey, externalEncoder,
-			"",		 // otherOutputOptionsBecauseOfMaxWidth,
 			nullptr, // inputDrawTextDetailsRoot,
-			-1,		 // streamingDurationInSeconds,
-			outputsRoot, ffmpegEngine
+			outputsRoot, ffmpegEngine, inputSelectedVideoMap,
+			inputSelectedAudioMap, inputDurationInSeconds
 		);
 
 		// 2. add: -filter_complex "[0:v][1:v]blend=difference:shortest=1,blackframe=99:32[f]" -map "[f]" -f null -
@@ -3529,8 +3530,8 @@ void FFMpegWrapper::liveRecorder(
 			startFfmpegCommand = chrono::system_clock::now();
 
 			ProcessUtility::forkAndExecByCallback(
-				_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback, redirectionStdOutput, redirectionStdError, processId,
-				iReturnedStatus
+				_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
+				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 			);
 			processId.reset();
 

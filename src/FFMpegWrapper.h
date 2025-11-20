@@ -17,7 +17,6 @@
 #include "ProcessUtility.h"
 #include <chrono>
 #include <cstdint>
-#include <filesystem>
 #include <string>
 #ifndef SPDLOG_ACTIVE_LEVEL
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
@@ -296,6 +295,12 @@ class FFMpegWrapper
 		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 	);
 
+	void liveProxy(
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
+		json *inputsRoot, const json &outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
+		const ProcessUtility::LineCallback &ffmpegLineCallback, long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
+	);
+
 	void liveProxy2(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 		json *inputsRoot, json outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
@@ -531,7 +536,7 @@ class FFMpegWrapper
 		int64_t streamingDurationInSeconds);
 	*/
 
-	int getNextLiveProxyInput(
+	static int getNextLiveProxyInput(
 		int64_t ingestionJobKey, int64_t encodingJobKey, json *inputsRoot, mutex *inputsRootMutex, int currentInputIndex, bool timedInput,
 		json *newInputRoot
 	);
@@ -546,15 +551,22 @@ class FFMpegWrapper
 		vector<string> &ffmpegInputArgumentList
 	);
 
+	tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> liveProxyInput(
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
+		FFMpegEngine &ffmpegEngine
+	);
+
 	void outputsRootToFfmpeg(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string otherOutputOptionsBecauseOfMaxWidth,
 		json inputDrawTextDetailsRoot,
 		long streamingDurationInSeconds, json outputsRoot, vector<string> &ffmpegOutputArgumentList
 	);
 	void outputsRootToFfmpeg(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string otherOutputOptionsBecauseOfMaxWidth,
-		json inputDrawTextDetailsRoot,
-		long streamingDurationInSeconds, json outputsRoot, FFMpegEngine& ffMpegEngine
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder,
+		const json& inputDrawTextDetailsRoot,
+		json outputsRoot, FFMpegEngine& ffMpegEngine,
+		optional<string> &inputSelectedVideoMap, optional<string> &inputSelectedAudioMap,
+		optional<int32_t> &inputDurationInSeconds
 	);
 	void outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, json outputsRoot, bool externalEncoder);
 
