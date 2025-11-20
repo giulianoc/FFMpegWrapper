@@ -60,6 +60,7 @@ FFMpegEncodingParameters::FFMpegEncodingParameters(
 		_ffmpegFileFormatParameter = "";
 
 		_ffmpegVideoCodecParameter = "";
+		_ffmpegVideoCodec = "";
 		_ffmpegVideoProfileParameter = "";
 		_ffmpegVideoOtherParameters = "";
 		_ffmpegVideoFrameRateParameter = "";
@@ -67,6 +68,7 @@ FFMpegEncodingParameters::FFMpegEncodingParameters(
 		_videoBitRatesInfo.clear();
 
 		_ffmpegAudioCodecParameter = "";
+		_ffmpegAudioCodec = "";
 		_ffmpegAudioOtherParameters = "";
 		_ffmpegAudioChannelsParameter = "";
 		_ffmpegAudioSampleRateParameter = "";
@@ -79,11 +81,11 @@ FFMpegEncodingParameters::FFMpegEncodingParameters(
 
 			_ffmpegFileFormatParameter,
 
-			_ffmpegVideoCodecParameter, _ffmpegVideoProfileParameter, _ffmpegVideoOtherParameters, twoPasses, _ffmpegVideoFrameRateParameter,
-			_ffmpegVideoKeyFramesRateParameter, _videoBitRatesInfo,
+			_ffmpegVideoCodecParameter, _ffmpegVideoCodec, _ffmpegVideoProfileParameter, _ffmpegVideoOtherParameters, twoPasses, _ffmpegVideoFrameRateParameter,
+			_ffmpegVideoKeyFramesRateParameter,
 
-			_ffmpegAudioCodecParameter, _ffmpegAudioOtherParameters, _ffmpegAudioChannelsParameter, _ffmpegAudioSampleRateParameter,
-			_audioBitRatesInfo
+			_videoBitRatesInfo, _ffmpegAudioCodecParameter, _ffmpegAudioCodec, _ffmpegAudioOtherParameters, _ffmpegAudioChannelsParameter,
+			_ffmpegAudioSampleRateParameter, _audioBitRatesInfo
 		);
 
 		_initialized = true;
@@ -1506,11 +1508,11 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 	string &ffmpegFileFormatParameter,
 
-	string &ffmpegVideoCodecParameter, string &ffmpegVideoProfileParameter, string &ffmpegVideoOtherParameters, bool &twoPasses,
-	string &ffmpegVideoFrameRateParameter, string &ffmpegVideoKeyFramesRateParameter,
+	string &ffmpegVideoCodecParameter, string &ffmpegVideoCodec, string &ffmpegVideoProfileParameter, string &ffmpegVideoOtherParameters,
+	bool &twoPasses, string &ffmpegVideoFrameRateParameter, string &ffmpegVideoKeyFramesRateParameter,
 	vector<tuple<string, int, int, int, string, string, string>> &videoBitRatesInfo,
 
-	string &ffmpegAudioCodecParameter, string &ffmpegAudioOtherParameters, string &ffmpegAudioChannelsParameter,
+	string &ffmpegAudioCodecParameter, string &ffmpegAudioCodec, string &ffmpegAudioOtherParameters, string &ffmpegAudioChannelsParameter,
 	string &ffmpegAudioSampleRateParameter, vector<string> &audioBitRatesInfo
 )
 {
@@ -1632,7 +1634,6 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			json videoRoot = encodingProfileDetailsRoot[field];
 
 			// codec
-			string codec;
 			{
 				field = "codec";
 				if (!JSONUtils::isMetadataPresent(videoRoot, field))
@@ -1647,13 +1648,13 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					throw runtime_error(errorMessage);
 				}
 
-				codec = JSONUtils::asString(videoRoot, field, "");
+				ffmpegVideoCodec = JSONUtils::asString(videoRoot, field, "");
 
 				// 2020-03-27: commented just to avoid to add the check every time a new codec is added
 				//		In case the codec is wrong, ffmpeg will generate the error later
 				// FFMpeg::encodingVideoCodecValidation(codec, logger);
 
-				ffmpegVideoCodecParameter = "-codec:v " + codec + " ";
+				ffmpegVideoCodecParameter = "-codec:v " + ffmpegVideoCodec + " ";
 			}
 
 			// profile
@@ -1663,18 +1664,18 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				{
 					string profile = JSONUtils::asString(videoRoot, field, "");
 
-					if (codec == "libx264" || codec == "libvpx" || codec == "mpeg4" || codec == "xvid")
+					if (ffmpegVideoCodec == "libx264" || ffmpegVideoCodec == "libvpx" || ffmpegVideoCodec == "mpeg4" || ffmpegVideoCodec == "xvid")
 					{
-						FFMpegEncodingParameters::encodingVideoProfileValidation(codec, profile);
-						if (codec == "libx264" && profile != "")
+						FFMpegEncodingParameters::encodingVideoProfileValidation(ffmpegVideoCodec, profile);
+						if (ffmpegVideoCodec == "libx264" && profile != "")
 						{
 							ffmpegVideoProfileParameter = "-profile:v " + profile + " ";
 						}
-						else if (codec == "libvpx" && profile != "")
+						else if (ffmpegVideoCodec == "libvpx" && profile != "")
 						{
 							ffmpegVideoProfileParameter = "-quality " + profile + " ";
 						}
-						else if ((codec == "mpeg4" || codec == "xvid") && profile != "")
+						else if ((ffmpegVideoCodec == "mpeg4" || ffmpegVideoCodec == "xvid") && profile != "")
 						{
 							ffmpegVideoProfileParameter = "-qscale:v " + profile + " ";
 						}
@@ -1813,7 +1814,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							throw runtime_error(errorMessage);
 						}
 						videoWidth = JSONUtils::asInt(bitRateInfo, field, 0);
-						if (videoWidth == -1 && codec == "libx264")
+						if (videoWidth == -1 && ffmpegVideoCodec == "libx264")
 							videoWidth = -2; // h264 requires always a even width/height
 
 						field = "height";
@@ -1829,7 +1830,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							throw runtime_error(errorMessage);
 						}
 						videoHeight = JSONUtils::asInt(bitRateInfo, field, 0);
-						if (videoHeight == -1 && codec == "libx264")
+						if (videoHeight == -1 && ffmpegVideoCodec == "libx264")
 							videoHeight = -2; // h264 requires always a even width/height
 
 						// forceOriginalAspectRatio could be: decrease or increase
@@ -1950,11 +1951,11 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 				throw runtime_error(errorMessage);
 			}
-			string codec = JSONUtils::asString(audioRoot, field, "");
+			ffmpegAudioCodec = JSONUtils::asString(audioRoot, field, "");
 
-			FFMpegEncodingParameters::encodingAudioCodecValidation(codec);
+			FFMpegEncodingParameters::encodingAudioCodecValidation(ffmpegAudioCodec);
 
-			ffmpegAudioCodecParameter = "-acodec " + codec + " ";
+			ffmpegAudioCodecParameter = "-acodec " + ffmpegAudioCodec + " ";
 		}
 
 		// kBitRate

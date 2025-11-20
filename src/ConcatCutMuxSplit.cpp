@@ -818,6 +818,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 				string ffmpegFileFormatParameter = "";
 
 				string ffmpegVideoCodecParameter = "";
+				string ffmpegVideoCodec = "";
 				string ffmpegVideoProfileParameter = "";
 				string ffmpegVideoResolutionParameter = "";
 				int videoBitRateInKbps = -1;
@@ -831,6 +832,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 				vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
 
 				string ffmpegAudioCodecParameter = "";
+				string ffmpegAudioCodec = "";
 				string ffmpegAudioBitRateParameter = "";
 				string ffmpegAudioOtherParameters = "";
 				string ffmpegAudioChannelsParameter = "";
@@ -844,11 +846,11 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 
 					ffmpegFileFormatParameter,
 
-					ffmpegVideoCodecParameter, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses, ffmpegVideoFrameRateParameter,
-					ffmpegVideoKeyFramesRateParameter, videoBitRatesInfo,
+					ffmpegVideoCodecParameter, ffmpegVideoCodec, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses,
+					ffmpegVideoFrameRateParameter, ffmpegVideoKeyFramesRateParameter,
 
-					ffmpegAudioCodecParameter, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter, ffmpegAudioSampleRateParameter,
-					audioBitRatesInfo
+					videoBitRatesInfo, ffmpegAudioCodecParameter, ffmpegAudioCodec, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter,
+					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
 				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];

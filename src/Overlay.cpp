@@ -77,6 +77,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 				string ffmpegFileFormatParameter = "";
 
 				string ffmpegVideoCodecParameter = "";
+				string ffmpegVideoCodec = "";
 				string ffmpegVideoProfileParameter = "";
 				string ffmpegVideoResolutionParameter = "";
 				int videoBitRateInKbps = -1;
@@ -90,6 +91,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 				vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
 
 				string ffmpegAudioCodecParameter = "";
+				string ffmpegAudioCodec = "";
 				string ffmpegAudioBitRateParameter = "";
 				string ffmpegAudioOtherParameters = "";
 				string ffmpegAudioChannelsParameter = "";
@@ -103,11 +105,11 @@ void FFMpegWrapper::overlayImageOnVideo(
 
 					ffmpegFileFormatParameter,
 
-					ffmpegVideoCodecParameter, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses, ffmpegVideoFrameRateParameter,
-					ffmpegVideoKeyFramesRateParameter, videoBitRatesInfo,
+					ffmpegVideoCodecParameter, ffmpegVideoCodec, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses,
+					ffmpegVideoFrameRateParameter, ffmpegVideoKeyFramesRateParameter,
 
-					ffmpegAudioCodecParameter, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter, ffmpegAudioSampleRateParameter,
-					audioBitRatesInfo
+					videoBitRatesInfo, ffmpegAudioCodecParameter, ffmpegAudioCodec, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter,
+					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
 				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];
@@ -506,6 +508,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				string ffmpegFileFormatParameter = "";
 
 				string ffmpegVideoCodecParameter = "";
+				string ffmpegVideoCodec = "";
 				string ffmpegVideoProfileParameter = "";
 				string ffmpegVideoResolutionParameter = "";
 				int videoBitRateInKbps = -1;
@@ -519,6 +522,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
 
 				string ffmpegAudioCodecParameter = "";
+				string ffmpegAudioCodec = "";
 				string ffmpegAudioBitRateParameter = "";
 				string ffmpegAudioOtherParameters = "";
 				string ffmpegAudioChannelsParameter = "";
@@ -532,11 +536,11 @@ void FFMpegWrapper::overlayTextOnVideo(
 
 					ffmpegFileFormatParameter,
 
-					ffmpegVideoCodecParameter, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses, ffmpegVideoFrameRateParameter,
-					ffmpegVideoKeyFramesRateParameter, videoBitRatesInfo,
+					ffmpegVideoCodecParameter, ffmpegVideoCodec, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses,
+					ffmpegVideoFrameRateParameter, ffmpegVideoKeyFramesRateParameter,
 
-					ffmpegAudioCodecParameter, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter, ffmpegAudioSampleRateParameter,
-					audioBitRatesInfo
+					videoBitRatesInfo, ffmpegAudioCodecParameter, ffmpegAudioCodec, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter,
+					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
 				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];

@@ -11,19 +11,15 @@
  * Created on February 18, 2018, 1:27 AM
  */
 
-#ifndef FFMpegEncodingParameters_h
-#define FFMpegEncodingParameters_h
+#pragma once
 
 #include <string>
 #ifndef SPDLOG_ACTIVE_LEVEL
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
-#include "nlohmann/json.hpp"
+#include "JSONUtils.h"
 #include "spdlog/spdlog.h"
 
-using json = nlohmann::json;
-using orderd_json = nlohmann::ordered_json;
-using namespace nlohmann::literals;
 
 #ifndef __FILEREF__
 #ifdef __APPLE__
@@ -59,6 +55,7 @@ class FFMpegEncodingParameters
 	string _ffmpegFileFormatParameter;
 
 	string _ffmpegVideoCodecParameter;
+	string _ffmpegVideoCodec;
 	string _ffmpegVideoProfileParameter;
 	string _ffmpegVideoOtherParameters;
 	string _ffmpegVideoFrameRateParameter;
@@ -66,6 +63,7 @@ class FFMpegEncodingParameters
 	vector<tuple<string, int, int, int, string, string, string>> _videoBitRatesInfo;
 
 	string _ffmpegAudioCodecParameter;
+	string _ffmpegAudioCodec;
 	string _ffmpegAudioOtherParameters;
 	string _ffmpegAudioChannelsParameter;
 	string _ffmpegAudioSampleRateParameter;
@@ -129,19 +127,19 @@ class FFMpegEncodingParameters
 	void createManifestFile_audioGroup();
 
 	static void settingFfmpegParameters(
-		json encodingProfileDetailsRoot,
-		bool isVideo, // if false it means is audio
+		json encodingProfileDetailsRoot, bool isVideo,
+		// if false it means is audio
 
 		string &httpStreamingFileFormat, string &ffmpegHttpStreamingParameter,
 
 		string &ffmpegFileFormatParameter,
 
-		string &ffmpegVideoCodecParameter, string &ffmpegVideoProfileParameter, string &ffmpegVideoOtherParameters, bool &twoPasses,
-		string &ffmpegVideoFrameRateParameter, string &ffmpegVideoKeyFramesRateParameter,
-		vector<tuple<string, int, int, int, string, string, string>> &videoBitRatesInfo,
+		string &ffmpegVideoCodecParameter, string &ffmpegVideoCodec, string &ffmpegVideoProfileParameter, string &ffmpegVideoOtherParameters,
+		bool &twoPasses, string &ffmpegVideoFrameRateParameter, string &ffmpegVideoKeyFramesRateParameter,
 
-		string &ffmpegAudioCodecParameter, string &ffmpegAudioOtherParameters, string &ffmpegAudioChannelsParameter,
-		string &ffmpegAudioSampleRateParameter, vector<string> &audioBitRatesInfo
+		vector<tuple<string, int, int, int, string, string, string>> &videoBitRatesInfo, string &ffmpegAudioCodecParameter, string &ffmpegAudioCodec,
+		string &ffmpegAudioOtherParameters, string &ffmpegAudioChannelsParameter, string &ffmpegAudioSampleRateParameter,
+		vector<string> &audioBitRatesInfo
 	);
 
 	static void addToArguments(string parameter, vector<string> &argumentList);
@@ -152,5 +150,3 @@ class FFMpegEncodingParameters
 
 	static void encodingVideoProfileValidation(string codec, string profile);
 };
-
-#endif

@@ -4719,6 +4719,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		string ffmpegFileFormatParameter = "";
 
 		string ffmpegVideoCodecParameter = "";
+		string ffmpegVideoCodec = "";
 		string ffmpegVideoProfileParameter = "";
 		string ffmpegVideoResolutionParameter = "";
 		int videoBitRateInKbps = -1;
@@ -4732,6 +4733,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
 
 		string ffmpegAudioCodecParameter = "";
+		string ffmpegAudioCodec = "";
 		string ffmpegAudioBitRateParameter = "";
 		string ffmpegAudioOtherParameters = "";
 		string ffmpegAudioChannelsParameter = "";
@@ -4749,11 +4751,11 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 					ffmpegFileFormatParameter,
 
-					ffmpegVideoCodecParameter, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses, ffmpegVideoFrameRateParameter,
-					ffmpegVideoKeyFramesRateParameter, videoBitRatesInfo,
+					ffmpegVideoCodecParameter, ffmpegVideoCodec, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses,
+					ffmpegVideoFrameRateParameter, ffmpegVideoKeyFramesRateParameter,
 
-					ffmpegAudioCodecParameter, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter, ffmpegAudioSampleRateParameter,
-					audioBitRatesInfo
+					videoBitRatesInfo, ffmpegAudioCodecParameter, ffmpegAudioCodec, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter,
+					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
 				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];
@@ -5413,6 +5415,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		string ffmpegFileFormatParameter;
 
 		string ffmpegVideoCodecParameter;
+		string ffmpegVideoCodec;
 		string ffmpegVideoProfileParameter;
 		string ffmpegVideoResolutionParameter;
 		int videoBitRateInKbps = -1;
@@ -5426,6 +5429,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
 
 		string ffmpegAudioCodecParameter;
+		string ffmpegAudioCodec;
 		string ffmpegAudioBitRateParameter;
 		string ffmpegAudioOtherParameters;
 		string ffmpegAudioChannelsParameter;
@@ -5443,11 +5447,11 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 					ffmpegFileFormatParameter,
 
-					ffmpegVideoCodecParameter, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses, ffmpegVideoFrameRateParameter,
-					ffmpegVideoKeyFramesRateParameter, videoBitRatesInfo,
+					ffmpegVideoCodecParameter, ffmpegVideoCodec, ffmpegVideoProfileParameter, ffmpegVideoOtherParameters, twoPasses,
+					ffmpegVideoFrameRateParameter, ffmpegVideoKeyFramesRateParameter,
 
-					ffmpegAudioCodecParameter, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter, ffmpegAudioSampleRateParameter,
-					audioBitRatesInfo
+					videoBitRatesInfo, ffmpegAudioCodecParameter, ffmpegAudioCodec, ffmpegAudioOtherParameters, ffmpegAudioChannelsParameter,
+					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
 				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];
@@ -5594,7 +5598,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			{
 				// FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegOutputArgumentList);
-				output.withVideoCodec(ffmpegVideoCodecParameter);
+				output.withVideoCodec(ffmpegVideoCodec);
 				// FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegOutputArgumentList);
 				output.addArgs(ffmpegVideoProfileParameter);
 				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegOutputArgumentList);
@@ -5677,7 +5681,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			{
 				// FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegOutputArgumentList);
-				output.withAudioCodec(ffmpegAudioCodecParameter);
+				output.withAudioCodec(ffmpegAudioCodec);
 				// FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegOutputArgumentList);
 				output.addArgs(ffmpegAudioBitRateParameter);
 				// FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegOutputArgumentList);
