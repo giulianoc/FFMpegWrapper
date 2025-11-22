@@ -18,8 +18,8 @@
 
 void FFMpegWrapper::generateFrameToIngest(
 	int64_t ingestionJobKey, string mmsAssetPathName, int64_t videoDurationInMilliSeconds, double startTimeInSeconds, string frameAssetPathName,
-	int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId
-)
+	int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback& ffmpegLineCallback
+	)
 {
 	_currentApiName = APIName::GenerateFrameToIngest;
 
@@ -68,48 +68,66 @@ void FFMpegWrapper::generateFrameToIngest(
 
 	// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
 
-	vector<string> ffmpegArgumentList;
-	ostringstream ffmpegArgumentListStream;
+	// vector<string> ffmpegArgumentList;
+	// ostringstream ffmpegArgumentListStream;
 
-	ffmpegArgumentList.push_back("ffmpeg");
+	FFMpegEngine ffMpegEngine;
+
+	// ffmpegArgumentList.push_back("ffmpeg");
 	// global options
-	ffmpegArgumentList.push_back("-y");
+	// ffmpegArgumentList.push_back("-y");
+	ffMpegEngine.addGlobalArg("-y");
 	// input options
-	ffmpegArgumentList.push_back("-i");
-	ffmpegArgumentList.push_back(mmsAssetPathName);
+	// ffmpegArgumentList.push_back("-i");
+	// ffmpegArgumentList.push_back(mmsAssetPathName);
+	ffMpegEngine.addInput(mmsAssetPathName);
+
 	// output options
-	ffmpegArgumentList.push_back("-ss");
-	ffmpegArgumentList.push_back(to_string(startTimeInSeconds));
-	{
-		ffmpegArgumentList.push_back("-vframes");
-		ffmpegArgumentList.push_back(to_string(1));
-	}
-	ffmpegArgumentList.push_back("-an");
-	ffmpegArgumentList.push_back("-s");
-	ffmpegArgumentList.push_back(to_string(imageWidth) + "x" + to_string(imageHeight));
-	ffmpegArgumentList.push_back(frameAssetPathName);
+	FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput(frameAssetPathName);
+	// ffmpegArgumentList.push_back("-ss");
+	// ffmpegArgumentList.push_back(to_string(startTimeInSeconds));
+	mainOutput.addArgs(std::format("-ss {}", startTimeInSeconds));
+	// {
+	// 	ffmpegArgumentList.push_back("-vframes");
+	// 	ffmpegArgumentList.push_back(to_string(1));
+	// }
+	mainOutput.addArg("-vframes 1");
+	// ffmpegArgumentList.push_back("-an");
+	// ffmpegArgumentList.push_back("-s");
+	// ffmpegArgumentList.push_back(to_string(imageWidth) + "x" + to_string(imageHeight));
+	// ffmpegArgumentList.push_back(frameAssetPathName);
+	mainOutput.addArgs(std::format("-an -s {}x{}", imageWidth, imageHeight));
 
 	try
 	{
 		chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-		if (!ffmpegArgumentList.empty())
-			copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+		// if (!ffmpegArgumentList.empty())
+		// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 		SPDLOG_INFO(
 			"generateFramesToIngest: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}",
-			ingestionJobKey, ffmpegArgumentListStream.str()
+			ingestionJobKey, ffMpegEngine.toSingleLine()
 		);
 
 		bool redirectionStdOutput = true;
 		bool redirectionStdError = true;
 
-		ProcessUtility::forkAndExec(
-			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-			iReturnedStatus
-		);
+		if (ffmpegLineCallback)
+			ProcessUtility::forkAndExecByCallback(
+				_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+			);
+		else
+		{
+			vector<string> args = ffMpegEngine.buildArgs(false);
+			ProcessUtility::forkAndExec(
+				_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+			);
+		}
 		processId.reset();
 		if (iReturnedStatus != 0)
 		{
@@ -118,7 +136,7 @@ void FFMpegWrapper::generateFrameToIngest(
 				", ingestionJobKey: {}"
 				", iReturnedStatus: {}"
 				", ffmpegArgumentList: {}",
-				ingestionJobKey, iReturnedStatus, ffmpegArgumentListStream.str()
+				ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 			);
 			SPDLOG_ERROR(errorMessage);
 
@@ -134,7 +152,7 @@ void FFMpegWrapper::generateFrameToIngest(
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}"
 			", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-			ingestionJobKey, ffmpegArgumentListStream.str(), chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
+			ingestionJobKey, ffMpegEngine.toSingleLine(), chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
 	catch (runtime_error &e)
@@ -151,7 +169,7 @@ void FFMpegWrapper::generateFrameToIngest(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 		else
 			errorMessage = std::format(
@@ -161,7 +179,7 @@ void FFMpegWrapper::generateFrameToIngest(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 		SPDLOG_ERROR(errorMessage);
 
@@ -189,7 +207,7 @@ void FFMpegWrapper::generateFrameToIngest(
 void FFMpegWrapper::generateFramesToIngest(
 	int64_t ingestionJobKey, int64_t encodingJobKey, string imagesDirectory, string imageBaseFileName, double startTimeInSeconds, int framesNumber,
 	string videoFilter, int periodInSeconds, bool mjpeg, int imageWidth, int imageHeight, string mmsAssetPathName,
-	int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId
+	int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback& ffmpegLineCallback
 )
 {
 	_currentApiName = APIName::GenerateFramesToIngest;
@@ -344,54 +362,65 @@ void FFMpegWrapper::generateFramesToIngest(
 	 */
 	// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
 
-	vector<string> ffmpegArgumentList;
-	ostringstream ffmpegArgumentListStream;
+	// vector<string> ffmpegArgumentList;
+	// ostringstream ffmpegArgumentListStream;
+	FFMpegEngine ffMpegEngine;
 
-	ffmpegArgumentList.push_back("ffmpeg");
+	// ffmpegArgumentList.push_back("ffmpeg");
 	// global options
-	ffmpegArgumentList.push_back("-y");
+	// ffmpegArgumentList.push_back("-y");
+	ffMpegEngine.addGlobalArg("-y");
 	// input options
-	ffmpegArgumentList.push_back("-i");
-	ffmpegArgumentList.push_back(mmsAssetPathName);
+	// ffmpegArgumentList.push_back("-i");
+	// ffmpegArgumentList.push_back(mmsAssetPathName);
+	ffMpegEngine.addInput(mmsAssetPathName);
 	// output options
-	ffmpegArgumentList.push_back("-ss");
-	ffmpegArgumentList.push_back(to_string(startTimeInSeconds));
+	FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput(imagesDirectory + "/" + localImageFileName);
+	// ffmpegArgumentList.push_back("-ss");
+	// ffmpegArgumentList.push_back(to_string(startTimeInSeconds));
+	mainOutput.addArgs(std::format("-ss {}", startTimeInSeconds));
 	if (framesNumber != -1)
 	{
-		ffmpegArgumentList.push_back("-vframes");
-		ffmpegArgumentList.push_back(to_string(framesNumber));
+		// ffmpegArgumentList.push_back("-vframes");
+		// ffmpegArgumentList.push_back(to_string(framesNumber));
+		mainOutput.addArgs(std::format("-vframes {}", framesNumber));
 	}
-	FFMpegEncodingParameters::addToArguments(videoFilterParameters, ffmpegArgumentList);
+	// FFMpegEncodingParameters::addToArguments(videoFilterParameters, ffmpegArgumentList);
+	mainOutput.addArgs(videoFilterParameters);
 	if (mjpeg)
 	{
-		ffmpegArgumentList.push_back("-f");
-		ffmpegArgumentList.push_back("mjpeg");
+		// ffmpegArgumentList.push_back("-f");
+		// ffmpegArgumentList.push_back("mjpeg");
+		mainOutput.addArgs("-f mjpeg");
 	}
-	ffmpegArgumentList.push_back("-an");
-	ffmpegArgumentList.push_back("-s");
-	ffmpegArgumentList.push_back(to_string(imageWidth) + "x" + to_string(imageHeight));
-	ffmpegArgumentList.push_back(imagesDirectory + "/" + localImageFileName);
+	// ffmpegArgumentList.push_back("-an");
+	// ffmpegArgumentList.push_back("-s");
+	// ffmpegArgumentList.push_back(to_string(imageWidth) + "x" + to_string(imageHeight));
+	// ffmpegArgumentList.push_back(imagesDirectory + "/" + localImageFileName);
+	mainOutput.addArgs(std::format("-an -s {}x{}", imageWidth, imageHeight));
+
 
 	try
 	{
 		chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-		if (!ffmpegArgumentList.empty())
-			copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+		// if (!ffmpegArgumentList.empty())
+		// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 		SPDLOG_INFO(
 			"generateFramesToIngest: Executing ffmpeg command"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}",
-			encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str()
+			encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 		);
 
 		bool redirectionStdOutput = true;
 		bool redirectionStdError = true;
 
-		ProcessUtility::forkAndExec(
-			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
+		ProcessUtility::forkAndExecByCallback(
+			_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+			redirectionStdOutput, redirectionStdError, processId,
 			iReturnedStatus
 		);
 		processId.reset();
@@ -403,7 +432,7 @@ void FFMpegWrapper::generateFramesToIngest(
 				", ingestionJobKey: {}"
 				", iReturnedStatus: {}"
 				", ffmpegArgumentList: {}",
-				encodingJobKey, ingestionJobKey, iReturnedStatus, ffmpegArgumentListStream.str()
+				encodingJobKey, ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 			);
 			SPDLOG_ERROR(errorMessage);
 
@@ -421,7 +450,7 @@ void FFMpegWrapper::generateFramesToIngest(
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}"
 			", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-			encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(),
+			encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 			chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
@@ -439,7 +468,7 @@ void FFMpegWrapper::generateFramesToIngest(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 		else
 			errorMessage = std::format(
@@ -449,7 +478,7 @@ void FFMpegWrapper::generateFramesToIngest(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 		SPDLOG_ERROR(errorMessage);
 

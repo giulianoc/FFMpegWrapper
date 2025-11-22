@@ -21,7 +21,8 @@ void FFMpegWrapper::encodeContent(
 	string mmsSourceAssetPathName, int64_t durationInMilliSeconds, string encodedStagingAssetPathName, json encodingProfileDetailsRoot,
 	bool isVideo, // if false it means is audio
 	json videoTracksRoot, json audioTracksRoot, int videoTrackIndexToBeUsed, int audioTrackIndexToBeUsed, json filtersRoot, int64_t physicalPathKey,
-	int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
+	int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
+	const ProcessUtility::LineCallback& ffmpegLineCallback
 )
 {
 	int iReturnedStatus = 0;
@@ -185,9 +186,9 @@ void FFMpegWrapper::encodeContent(
 
 			*/
 
-			vector<string> ffmpegArgumentList;
-			ostringstream ffmpegArgumentListStream;
-
+			// vector<string> ffmpegArgumentList;
+			// ostringstream ffmpegArgumentListStream;
+			FFMpegEngine ffMpegEngine;
 			{
 				bool noErrorIfExists = true;
 				bool recursive = true;
@@ -257,24 +258,26 @@ void FFMpegWrapper::encodeContent(
 			if (_twoPasses)
 			{
 				// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
-				ffmpegArgumentList.push_back("ffmpeg");
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding_audioGroup(
 					0, // YES two passes, first step
-					ffmpegArgumentList
+					ffMpegEngine
 				);
 
 				try
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command (first step)"
@@ -282,16 +285,25 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -302,7 +314,8 @@ void FFMpegWrapper::encodeContent(
 							", _outputFfmpegPathFileName: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffmpegArgumentListStream.str()
+							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus,
+							ffMpegEngine.toSingleLine()
 						);
 						SPDLOG_ERROR(errorMessage);
 
@@ -321,7 +334,7 @@ void FFMpegWrapper::encodeContent(
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(),
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -340,7 +353,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					else
@@ -352,7 +365,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -372,20 +385,23 @@ void FFMpegWrapper::encodeContent(
 						throw e;
 				}
 
-				ffmpegArgumentList.clear();
-				ffmpegArgumentListStream.clear();
+				ffMpegEngine.reset();
+				// ffmpegArgumentList.clear();
+				// ffmpegArgumentListStream.clear();
 
 				// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
-				ffmpegArgumentList.push_back("ffmpeg");
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding_audioGroup(
 					1, // YES two passes, second step
-					ffmpegArgumentList
+					ffMpegEngine
 				);
 
 				_currentlyAtSecondPass = true;
@@ -393,8 +409,8 @@ void FFMpegWrapper::encodeContent(
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command (second step)"
@@ -402,16 +418,25 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -422,7 +447,8 @@ void FFMpegWrapper::encodeContent(
 							", _outputFfmpegPathFileName: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffmpegArgumentListStream.str()
+							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus,
+							ffMpegEngine.toSingleLine()
 						);
 						SPDLOG_ERROR(errorMessage);
 
@@ -441,7 +467,7 @@ void FFMpegWrapper::encodeContent(
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(),
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -460,7 +486,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					else
@@ -472,7 +498,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -504,24 +530,26 @@ void FFMpegWrapper::encodeContent(
 			else
 			{
 				// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
-				ffmpegArgumentList.push_back("ffmpeg");
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding_audioGroup(
 					-1, // NO two passes
-					ffmpegArgumentList
+					ffMpegEngine
 				);
 
 				try
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command"
@@ -529,16 +557,25 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -549,7 +586,7 @@ void FFMpegWrapper::encodeContent(
 							", _outputFfmpegPathFileName: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffmpegArgumentListStream.str()
+							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
 						SPDLOG_ERROR(errorMessage);
 
@@ -568,7 +605,7 @@ void FFMpegWrapper::encodeContent(
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(),
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -587,7 +624,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					else
@@ -599,7 +636,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -653,7 +690,7 @@ void FFMpegWrapper::encodeContent(
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
 					", ffmpegArgumentList: {}",
-					encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str()
+					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
 				SPDLOG_ERROR(errorMessage);
 
@@ -665,11 +702,11 @@ void FFMpegWrapper::encodeContent(
 
 			ffmpegEncodingParameters.createManifestFile_audioGroup();
 		}
-		else if (ffmpegEncodingParameters._httpStreamingFileFormat != "")
+		else if (!ffmpegEncodingParameters._httpStreamingFileFormat.empty())
 		{
 			// hls or dash output
 
-			vector<string> ffmpegArgumentList;
+			// vector<string> ffmpegArgumentList;
 
 			{
 				SPDLOG_INFO(
@@ -689,29 +726,33 @@ void FFMpegWrapper::encodeContent(
 
 			if (_twoPasses)
 			{
+				FFMpegEngine ffMpegEngine;
+
 				// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
-				ffmpegArgumentList.push_back("ffmpeg");
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding(
 					0,	  // 0: YES two passes, first step
 					true, // outputFileToBeAdded
 					true, // videoResolutionToBeAdded
 					filtersRoot,
-					ffmpegArgumentList // out
+					ffMpegEngine // out
 				);
 
-				ostringstream ffmpegArgumentListStreamFirstStep;
+				// ostringstream ffmpegArgumentListStreamFirstStep;
 				try
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStreamFirstStep, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStreamFirstStep, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command (first step)"
@@ -719,16 +760,25 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStreamFirstStep.str()
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -739,7 +789,7 @@ void FFMpegWrapper::encodeContent(
 							", _outputFfmpegPathFileName: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffmpegArgumentListStreamFirstStep.str()
+							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
 						SPDLOG_ERROR(errorMessage);
 
@@ -757,7 +807,7 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						encodingJobKey, ingestionJobKey, ffmpegArgumentListStreamFirstStep.str(),
+						encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -776,7 +826,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStreamFirstStep.str(),
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							lastPartOfFfmpegOutputFile, e.what()
 						);
 					else
@@ -788,7 +838,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStreamFirstStep.str(),
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							lastPartOfFfmpegOutputFile, e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -808,31 +858,34 @@ void FFMpegWrapper::encodeContent(
 						throw e;
 				}
 
-				ffmpegArgumentList.clear();
+				ffMpegEngine.reset();
+				// ffmpegArgumentList.clear();
 
-				ffmpegArgumentList.push_back("ffmpeg");
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding(
 					1,	  // 1: YES two passes, second step
 					true, // outputFileToBeAdded
 					true, // videoResolutionToBeAdded
 					filtersRoot,
-					ffmpegArgumentList // out
+					ffMpegEngine // out
 				);
 
-				ostringstream ffmpegArgumentListStreamSecondStep;
+				// ostringstream ffmpegArgumentListStreamSecondStep;
 				_currentlyAtSecondPass = true;
 				try
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStreamSecondStep, " "));
+					// if (!ffmpegArgumentList.empty())
+					//	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStreamSecondStep, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command (second step)"
@@ -840,16 +893,25 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStreamSecondStep.str()
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -860,7 +922,7 @@ void FFMpegWrapper::encodeContent(
 							", _outputFfmpegPathFileName: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffmpegArgumentListStreamSecondStep.str()
+							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
 						SPDLOG_ERROR(errorMessage);
 
@@ -879,7 +941,7 @@ void FFMpegWrapper::encodeContent(
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStreamSecondStep.str(),
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -898,7 +960,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStreamSecondStep.str(),
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey,  ffMpegEngine.toSingleLine(),
 							lastPartOfFfmpegOutputFile, e.what()
 						);
 					else
@@ -910,7 +972,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStreamSecondStep.str(),
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							lastPartOfFfmpegOutputFile, e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -943,28 +1005,32 @@ void FFMpegWrapper::encodeContent(
 			}
 			else
 			{
-				ffmpegArgumentList.push_back("ffmpeg");
+				FFMpegEngine ffMpegEngine;
+
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding(
 					-1,	  // -1: NO two passes
 					true, // outputFileToBeAdded
 					true, // videoResolutionToBeAdded
 					filtersRoot,
-					ffmpegArgumentList // out
+					ffMpegEngine // out
 				);
 
-				ostringstream ffmpegArgumentListStream;
+				// ostringstream ffmpegArgumentListStream;
 				try
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command"
@@ -972,16 +1038,25 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -992,7 +1067,7 @@ void FFMpegWrapper::encodeContent(
 							", _outputFfmpegPathFileName: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffmpegArgumentListStream.str()
+							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
 						SPDLOG_ERROR(errorMessage);
 
@@ -1011,7 +1086,7 @@ void FFMpegWrapper::encodeContent(
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(),
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -1030,7 +1105,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					else
@@ -1042,7 +1117,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -1117,34 +1192,37 @@ void FFMpegWrapper::encodeContent(
 			 *		- ffmpeg -i ./1.mp4 -i ./2.mp4 -c copy -map 0 -map 1 ./3.mp4
 			 */
 
-			vector<string> ffmpegArgumentList;
-			ostringstream ffmpegArgumentListStream;
+			// vector<string> ffmpegArgumentList;
+			// ostringstream ffmpegArgumentListStream;
+			FFMpegEngine ffMpegEngine;
 
 			if (_twoPasses)
 			{
 				// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
 
-				ffmpegArgumentList.push_back("ffmpeg");
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding(
 					0,	  // 1: YES two passes, first step
 					true, // outputFileToBeAdded
 					true, // videoResolutionToBeAdded
 					filtersRoot,
-					ffmpegArgumentList // out
+					ffMpegEngine // out
 				);
 
 				try
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command"
@@ -1152,16 +1230,25 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -1172,7 +1259,7 @@ void FFMpegWrapper::encodeContent(
 							", _outputFfmpegPathFileName: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffmpegArgumentListStream.str()
+							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
 						SPDLOG_ERROR(errorMessage);
 
@@ -1191,7 +1278,7 @@ void FFMpegWrapper::encodeContent(
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(),
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -1210,7 +1297,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					else
@@ -1222,7 +1309,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -1242,22 +1329,25 @@ void FFMpegWrapper::encodeContent(
 						throw e;
 				}
 
-				ffmpegArgumentList.clear();
-				ffmpegArgumentListStream.clear();
+				ffMpegEngine.reset();
+				// ffmpegArgumentList.clear();
+				// ffmpegArgumentListStream.clear();
 
-				ffmpegArgumentList.push_back("ffmpeg");
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding(
 					1,	  // 1: YES two passes, second step
 					true, // outputFileToBeAdded
 					true, // videoResolutionToBeAdded
 					filtersRoot,
-					ffmpegArgumentList // out
+					ffMpegEngine // out
 				);
 
 				_currentlyAtSecondPass = true;
@@ -1265,8 +1355,8 @@ void FFMpegWrapper::encodeContent(
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command (second step)"
@@ -1274,16 +1364,25 @@ void FFMpegWrapper::encodeContent(
 						", ingestionJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -1294,7 +1393,7 @@ void FFMpegWrapper::encodeContent(
 							", _outputFfmpegPathFileName: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffmpegArgumentListStream.str()
+							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
 						SPDLOG_ERROR(errorMessage);
 
@@ -1313,7 +1412,7 @@ void FFMpegWrapper::encodeContent(
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(),
+						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -1332,7 +1431,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					else
@@ -1344,7 +1443,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -1408,28 +1507,30 @@ void FFMpegWrapper::encodeContent(
 			{
 				// used in case of multiple bitrate
 
-				ffmpegArgumentList.clear();
-				ffmpegArgumentList.push_back("ffmpeg");
+				// ffmpegArgumentList.clear();
+				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
-				ffmpegArgumentList.push_back("-y");
+				// ffmpegArgumentList.push_back("-y");
+				ffMpegEngine.addGlobalArg("-y");
 				// input options
-				ffmpegArgumentList.push_back("-i");
-				ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				// ffmpegArgumentList.push_back("-i");
+				// ffmpegArgumentList.push_back(mmsSourceAssetPathName);
+				ffMpegEngine.addInput(mmsSourceAssetPathName);
 
 				ffmpegEncodingParameters.applyEncoding(
 					-1,	  // -1: NO two passes
 					true, // outputFileToBeAdded
 					true, // videoResolutionToBeAdded
 					filtersRoot,
-					ffmpegArgumentList // out
+					ffMpegEngine // out
 				);
 
 				try
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
 						"encodeContent: Executing ffmpeg command"
@@ -1437,16 +1538,25 @@ void FFMpegWrapper::encodeContent(
 						", encodingJobKey: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}",
-						ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+						ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -1457,7 +1567,7 @@ void FFMpegWrapper::encodeContent(
 							", iReturnedStatus: {}"
 							", _outputFfmpegPathFileName: {}"
 							", ffmpegArgumentList: {}",
-							ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+							ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 						);
 
 						// to hide the ffmpeg staff
@@ -1478,7 +1588,7 @@ void FFMpegWrapper::encodeContent(
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(),
+						ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -1497,7 +1607,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					else
@@ -1509,7 +1619,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -1589,7 +1699,7 @@ void FFMpegWrapper::encodeContent(
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
 					", ffmpegArgumentList: {}",
-					encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str()
+					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
 				SPDLOG_ERROR(errorMessage);
 
@@ -1599,72 +1709,6 @@ void FFMpegWrapper::encodeContent(
 				throw runtime_error(errorMessage);
 			}
 		}
-	}
-	catch (FFMpegEncodingKilledByUser &e)
-	{
-		SPDLOG_ERROR(
-			"ffmpeg: ffmpeg encode failed"
-			", encodingJobKey: {}"
-			", ingestionJobKey: {}"
-			", physicalPathKey: {}"
-			", mmsSourceAssetPathName: {}"
-			", encodedStagingAssetPathName: {}"
-			", e.what(): {}",
-			encodingJobKey, ingestionJobKey, physicalPathKey, mmsSourceAssetPathName, encodedStagingAssetPathName, e.what()
-		);
-
-		if (fs::exists(encodedStagingAssetPathName))
-		{
-			SPDLOG_INFO(
-				"Remove"
-				", encodingJobKey: {}"
-				", ingestionJobKey: {}"
-				", encodedStagingAssetPathName: {}",
-				encodingJobKey, ingestionJobKey, encodedStagingAssetPathName
-			);
-
-			SPDLOG_INFO(
-				"Remove"
-				", encodedStagingAssetPathName: {}",
-				encodedStagingAssetPathName
-			);
-			fs::remove_all(encodedStagingAssetPathName);
-		}
-
-		throw e;
-	}
-	catch (runtime_error &e)
-	{
-		SPDLOG_ERROR(
-			"ffmpeg: ffmpeg encode failed"
-			", encodingJobKey: {}"
-			", ingestionJobKey: {}"
-			", physicalPathKey: {}"
-			", mmsSourceAssetPathName: {}"
-			", encodedStagingAssetPathName: {}"
-			", e.what(): {}",
-			encodingJobKey, ingestionJobKey, physicalPathKey, mmsSourceAssetPathName, encodedStagingAssetPathName, e.what()
-		);
-
-		if (fs::exists(encodedStagingAssetPathName))
-		{
-			SPDLOG_INFO(
-				"Remove"
-				", encodingJobKey: {}"
-				", ingestionJobKey: {}"
-				", encodedStagingAssetPathName: {}",
-				encodingJobKey, ingestionJobKey, encodedStagingAssetPathName
-			);
-
-			SPDLOG_INFO(
-				"Remove"
-				", encodedStagingAssetPathName: {}",
-				encodedStagingAssetPathName
-			);
-			fs::remove_all(encodedStagingAssetPathName);
-		}
-
-		throw e;
 	}
 	catch (exception &e)
 	{
@@ -1697,6 +1741,6 @@ void FFMpegWrapper::encodeContent(
 			fs::remove_all(encodedStagingAssetPathName);
 		}
 
-		throw e;
+		throw;
 	}
 }

@@ -26,11 +26,12 @@ void FFMpegWrapper::liveGrid(
 
 	json outputsRoot,
 
-	ProcessUtility::ProcessId &processId
+	ProcessUtility::ProcessId &processId,
+	const ProcessUtility::LineCallback& ffmpegLineCallback
 )
 {
-	vector<string> ffmpegArgumentList;
-	ostringstream ffmpegArgumentListStream;
+	// vector<string> ffmpegArgumentList;
+	// ostringstream ffmpegArgumentListStream;
 	int iReturnedStatus = 0;
 	string segmentListPath;
 	chrono::system_clock::time_point startFfmpegCommand;
@@ -48,6 +49,7 @@ void FFMpegWrapper::liveGrid(
 		*/
 	);
 
+	FFMpegEngine ffMpegEngine;
 	try
 	{
 		SPDLOG_INFO(
@@ -72,7 +74,7 @@ void FFMpegWrapper::liveGrid(
 			throw runtime_error(errorMessage);
 		}
 
-		vector<string> ffmpegOutputArgumentList;
+		// vector<string> ffmpegOutputArgumentList;
 		try
 		{
 			SPDLOG_INFO(
@@ -82,43 +84,30 @@ void FFMpegWrapper::liveGrid(
 				", outputsRoot.size: {}",
 				toString(_currentApiName), ingestionJobKey, encodingJobKey, outputsRoot.size()
 			);
+			optional<string> inputSelectedVideoMap;
+			optional<string> inputSelectedAudioMap;
+			optional<int32_t> inputDurationInSeconds;
 			outputsRootToFfmpeg(
 				ingestionJobKey, encodingJobKey, externalEncoder,
-				"",		 // otherOutputOptionsBecauseOfMaxWidth,
 				nullptr, // inputDrawTextDetailsRoot,
-				// inputVideoTracks, inputAudioTracks,
-				-1, // streamingDurationInSeconds,
-				outputsRoot, ffmpegOutputArgumentList
+				outputsRoot, ffMpegEngine, inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds
 			);
 
 			{
-				ostringstream ffmpegOutputArgumentListStream;
-				if (!ffmpegOutputArgumentList.empty())
-					copy(
-						ffmpegOutputArgumentList.begin(), ffmpegOutputArgumentList.end(),
-						ostream_iterator<string>(ffmpegOutputArgumentListStream, " ")
-					);
+				// ostringstream ffmpegOutputArgumentListStream;
+				// if (!ffmpegOutputArgumentList.empty())
+				// 	copy(
+				// 		ffmpegOutputArgumentList.begin(), ffmpegOutputArgumentList.end(),
+				// 		ostream_iterator<string>(ffmpegOutputArgumentListStream, " ")
+				// 	);
 				SPDLOG_INFO(
 					"{}: ffmpegOutputArgumentList"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
 					", ffmpegOutputArgumentList: {}",
-					toString(_currentApiName), ingestionJobKey, encodingJobKey, ffmpegOutputArgumentListStream.str()
+					toString(_currentApiName), ingestionJobKey, encodingJobKey, ffMpegEngine.toSingleLine()
 				);
 			}
-		}
-		catch (runtime_error &e)
-		{
-			string errorMessage = std::format(
-				"{}. Wrong output parameters"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", exception: {}",
-				toString(_currentApiName), ingestionJobKey, encodingJobKey, e.what()
-			);
-			SPDLOG_ERROR(errorMessage);
-
-			throw runtime_error(errorMessage);
 		}
 		catch (exception &e)
 		{
@@ -225,7 +214,7 @@ void FFMpegWrapper::liveGrid(
 
 		int inputChannelsNumber = inputChannelsRoot.size();
 
-		ffmpegArgumentList.push_back("ffmpeg");
+		// ffmpegArgumentList.push_back("ffmpeg");
 		// -re (input) Read input at native frame rate. By default ffmpeg attempts to read the input(s)
 		//		as fast as possible. This option will slow down the reading of the input(s)
 		//		to the native frame rate of the input(s). It is useful for real-time output
@@ -236,19 +225,23 @@ void FFMpegWrapper::liveGrid(
 		//		after this time has passed.
 		// -hls_list_size size: Set the maximum number of playlist entries. If set to 0 the list file
 		//		will contain all the segments. Default value is 5.
-		if (userAgent != "")
-		{
-			ffmpegArgumentList.push_back("-user_agent");
-			ffmpegArgumentList.push_back(userAgent);
-		}
-		ffmpegArgumentList.push_back("-re");
 		for (int inputChannelIndex = 0; inputChannelIndex < inputChannelsNumber; inputChannelIndex++)
 		{
 			json inputChannelRoot = inputChannelsRoot[inputChannelIndex];
 			string inputChannelURL = JSONUtils::asString(inputChannelRoot, "inputChannelURL", "");
 
-			ffmpegArgumentList.push_back("-i");
-			ffmpegArgumentList.push_back(inputChannelURL);
+			FFMpegEngine::Input mainInput = ffMpegEngine.addInput(inputChannelURL);
+			if (!userAgent.empty())
+			{
+				// ffmpegArgumentList.push_back("-user_agent");
+				// ffmpegArgumentList.push_back(userAgent);
+				mainInput.addArgs(std::format("-user_agent {}", userAgent));
+			}
+			// ffmpegArgumentList.push_back("-re");
+			mainInput.addArgs("-re");
+
+			// ffmpegArgumentList.push_back("-i");
+			// ffmpegArgumentList.push_back(inputChannelURL);
 		}
 		int gridRows = inputChannelsNumber / gridColumns;
 		if (inputChannelsNumber % gridColumns != 0)
@@ -368,12 +361,13 @@ void FFMpegWrapper::liveGrid(
 				ffmpegFilterComplex += ("vstack=inputs=" + to_string(gridRows) + ":shortest=1[outVideo]");
 			}
 
-			ffmpegArgumentList.push_back("-filter_complex");
-			ffmpegArgumentList.push_back(ffmpegFilterComplex);
+			// ffmpegArgumentList.push_back("-filter_complex");
+			// ffmpegArgumentList.push_back(ffmpegFilterComplex);
+			ffMpegEngine.addFilterComplex(ffmpegFilterComplex);
 		}
 
-		for (string parameter : ffmpegOutputArgumentList)
-			ffmpegArgumentList.push_back(parameter);
+		// for (string parameter : ffmpegOutputArgumentList)
+		// 	ffmpegArgumentList.push_back(parameter);
 
 		/*
 				int videoBitRateInKbps = -1;
@@ -712,8 +706,8 @@ void FFMpegWrapper::liveGrid(
 			}
 		}
 
-		if (!ffmpegArgumentList.empty())
-			copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+		// if (!ffmpegArgumentList.empty())
+		// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 		SPDLOG_INFO(
 			"liveGrid: Executing ffmpeg command"
@@ -721,7 +715,7 @@ void FFMpegWrapper::liveGrid(
 			", encodingJobKey: {}"
 			", _outputFfmpegPathFileName: {}"
 			", ffmpegArgumentList: {}",
-			ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+			ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 		);
 
 		startFfmpegCommand = chrono::system_clock::now();
@@ -729,9 +723,9 @@ void FFMpegWrapper::liveGrid(
 		bool redirectionStdOutput = true;
 		bool redirectionStdError = true;
 
-		ProcessUtility::forkAndExec(
-			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-			iReturnedStatus
+		ProcessUtility::forkAndExecByCallback(
+			_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+			redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
 		);
 		processId.reset();
 		if (iReturnedStatus != 0)
@@ -743,7 +737,7 @@ void FFMpegWrapper::liveGrid(
 				", iReturnedStatus: {}"
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}",
-				ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffmpegArgumentListStream.str()
+				ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 			);
 			SPDLOG_ERROR(errorMessage);
 
@@ -761,7 +755,7 @@ void FFMpegWrapper::liveGrid(
 			", encodingJobKey: {}"
 			", ffmpegArgumentList: {}"
 			", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-			ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(),
+			ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 			chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 
@@ -769,34 +763,20 @@ void FFMpegWrapper::liveGrid(
 		{
 			outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
 		}
-		catch (runtime_error &e)
-		{
-			string errorMessage = std::format(
-				"outputsRootToFfmpeg_clean failed"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, e.what()
-			);
-			SPDLOG_ERROR(errorMessage);
-
-			// throw e;
-		}
 		catch (exception &e)
 		{
-			string errorMessage = std::format(
+			SPDLOG_ERROR(
 				"outputsRootToFfmpeg_clean failed"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
 				", e.what(): {}",
 				ingestionJobKey, encodingJobKey, e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
 
 			// throw e;
 		}
 	}
-	catch (runtime_error &e)
+	catch (exception &e)
 	{
 		processId.reset();
 
@@ -806,7 +786,7 @@ void FFMpegWrapper::liveGrid(
 		{
 			errorMessage = string("ffmpeg: ffmpeg command failed because killed by the user") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 						   ", encodingJobKey: " + to_string(encodingJobKey) + ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName +
-						   ", ffmpegArgumentList: " + ffmpegArgumentListStream.str() + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile +
+						   ", ffmpegArgumentList: " + ffMpegEngine.toSingleLine() + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile +
 						   ", e.what(): " + e.what();
 		}
 		else
@@ -819,7 +799,7 @@ void FFMpegWrapper::liveGrid(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile, e.what()
+				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 
 			/*
@@ -870,29 +850,15 @@ void FFMpegWrapper::liveGrid(
 		{
 			outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
 		}
-		catch (runtime_error &e)
-		{
-			string errorMessage = std::format(
-				"outputsRootToFfmpeg_clean failed"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, e.what()
-			);
-			SPDLOG_ERROR(errorMessage);
-
-			// throw e;
-		}
 		catch (exception &e)
 		{
-			string errorMessage = std::format(
+			SPDLOG_ERROR(
 				"outputsRootToFfmpeg_clean failed"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
 				", e.what(): {}",
 				ingestionJobKey, encodingJobKey, e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
 
 			// throw e;
 		}

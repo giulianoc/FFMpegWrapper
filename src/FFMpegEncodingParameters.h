@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include "FFMpegEngine.h"
+
 #include <string>
 #ifndef SPDLOG_ACTIVE_LEVEL
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
@@ -106,6 +108,7 @@ class FFMpegEncodingParameters
 		// out (in append)
 		vector<string> &ffmpegArgumentList
 	);
+	void applyEncoding(int stepNumber, bool outputFileToBeAdded, bool videoResolutionToBeAdded, const json &filtersRoot, FFMpegEngine &ffMpegEngine);
 
 	void createManifestFile();
 
@@ -123,6 +126,7 @@ class FFMpegEncodingParameters
 		// out (in append)
 		vector<string> &ffmpegArgumentList
 	);
+	void applyEncoding_audioGroup(int stepNumber, FFMpegEngine &ffMpegEngine);
 
 	void createManifestFile_audioGroup();
 

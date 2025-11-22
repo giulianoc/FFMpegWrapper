@@ -24,7 +24,8 @@ void FFMpegWrapper::silentAudio(
 
 	json encodingProfileDetailsRoot,
 
-	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId
+	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
+	const ProcessUtility::LineCallback& ffmpegLineCallback
 )
 {
 	int iReturnedStatus = 0;
@@ -80,14 +81,15 @@ void FFMpegWrapper::silentAudio(
 			);
 		}
 
-		vector<string> ffmpegArgumentList;
-		ostringstream ffmpegArgumentListStream;
+		// vector<string> ffmpegArgumentList;
+		// ostringstream ffmpegArgumentListStream;
 
 		if (ffmpegEncodingParameters._httpStreamingFileFormat != "")
 		{
 		}
 		else
 		{
+			FFMpegEngine ffMpegEngine;
 			if (_twoPasses)
 			{
 			}
@@ -108,25 +110,34 @@ void FFMpegWrapper::silentAudio(
 					ffmpeg -f lavfi -i anullsrc -i video.mov -c:v copy -c:a aac -map 0:a -map 1:v -shortest output.mp4
 					*/
 
-					ffmpegArgumentList.push_back("ffmpeg");
+					// ffmpegArgumentList.push_back("ffmpeg");
 					// global options
-					ffmpegArgumentList.push_back("-y");
+					// ffmpegArgumentList.push_back("-y");
+					ffMpegEngine.addGlobalArg("-y");
 
 					// input options
-					ffmpegArgumentList.push_back("-f");
-					ffmpegArgumentList.push_back("lavfi");
-					ffmpegArgumentList.push_back("-i");
-					ffmpegArgumentList.push_back("anullsrc");
-					ffmpegArgumentList.push_back("-i");
-					ffmpegArgumentList.push_back(videoAssetPathName);
+					FFMpegEngine::Input input_1 = ffMpegEngine.addInput("anullsrc");
+					input_1.addArgs("-f lavfi");
+					FFMpegEngine::Input input_2 = ffMpegEngine.addInput(videoAssetPathName);
 
+					// ffmpegArgumentList.push_back("-f");
+					// ffmpegArgumentList.push_back("lavfi");
+					// ffmpegArgumentList.push_back("-i");
+					// ffmpegArgumentList.push_back("anullsrc");
+					// ffmpegArgumentList.push_back("-i");
+					// ffmpegArgumentList.push_back(videoAssetPathName);
+
+					FFMpegEngine::Output mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
 					// output options
-					ffmpegArgumentList.push_back("-map");
-					ffmpegArgumentList.push_back("0:a");
-					ffmpegArgumentList.push_back("-map");
-					ffmpegArgumentList.push_back("1:v");
+					// ffmpegArgumentList.push_back("-map");
+					// ffmpegArgumentList.push_back("0:a");
+					// ffmpegArgumentList.push_back("-map");
+					// ffmpegArgumentList.push_back("1:v");
+					mainOutput.map("0:a");
+					mainOutput.map("1:v");
 
-					ffmpegArgumentList.push_back("-shortest");
+					// ffmpegArgumentList.push_back("-shortest");
+					mainOutput.addArgs("-shortest");
 
 					if (encodingProfileDetailsRoot != nullptr)
 					{
@@ -134,18 +145,19 @@ void FFMpegWrapper::silentAudio(
 							-1,	  // -1: NO two passes
 							true, // outputFileToBeAdded
 							true, // videoResolutionToBeAdded
-							nullptr,
-							ffmpegArgumentList // out
+							nullptr, ffMpegEngine
 						);
 					}
 					else
 					{
-						ffmpegArgumentList.push_back("-c:v");
-						ffmpegArgumentList.push_back("copy");
-						ffmpegArgumentList.push_back("-c:a");
-						ffmpegArgumentList.push_back("aac"); // default
+						// ffmpegArgumentList.push_back("-c:v");
+						// ffmpegArgumentList.push_back("copy");
+						// ffmpegArgumentList.push_back("-c:a");
+						// ffmpegArgumentList.push_back("aac"); // default
+						mainOutput.withVideoCodec("copy");
+						mainOutput.withAudioCodec("aac");
 
-						ffmpegArgumentList.push_back(stagingEncodedAssetPathName);
+						// ffmpegArgumentList.push_back(stagingEncodedAssetPathName);
 					}
 				}
 				else if (addType == "begin")
@@ -154,17 +166,21 @@ void FFMpegWrapper::silentAudio(
 					begin:
 					ffmpeg -i video.mov -af "adelay=1s:all=true" -c:v copy -c:a aac output.mp4
 					*/
-					ffmpegArgumentList.push_back("ffmpeg");
+					// ffmpegArgumentList.push_back("ffmpeg");
 					// global options
-					ffmpegArgumentList.push_back("-y");
+					// ffmpegArgumentList.push_back("-y");
+					ffMpegEngine.addGlobalArg("-y");
 
 					// input options
-					ffmpegArgumentList.push_back("-i");
-					ffmpegArgumentList.push_back(videoAssetPathName);
+					// ffmpegArgumentList.push_back("-i");
+					// ffmpegArgumentList.push_back(videoAssetPathName);
+					ffMpegEngine.addInput(videoAssetPathName);
 
 					// output options
-					ffmpegArgumentList.push_back("-af");
-					ffmpegArgumentList.push_back("adelay=" + to_string(seconds) + "s:all=true");
+					FFMpegEngine::Output mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
+					// ffmpegArgumentList.push_back("-af");
+					// ffmpegArgumentList.push_back("adelay=" + to_string(seconds) + "s:all=true");
+					mainOutput.addArgs(std::format("-af adelay={}s:all=true", seconds));
 
 					if (encodingProfileDetailsRoot != nullptr)
 					{
@@ -172,56 +188,19 @@ void FFMpegWrapper::silentAudio(
 							-1,	  // -1: NO two passes
 							true, // outputFileToBeAdded
 							true, // videoResolutionToBeAdded
-							nullptr,
-							ffmpegArgumentList // out
+							nullptr, ffMpegEngine
 						);
 					}
 					else
 					{
-						ffmpegArgumentList.push_back("-c:v");
-						ffmpegArgumentList.push_back("copy");
-						ffmpegArgumentList.push_back("-c:a");
-						ffmpegArgumentList.push_back("aac"); // default
+						// ffmpegArgumentList.push_back("-c:v");
+						// ffmpegArgumentList.push_back("copy");
+						// ffmpegArgumentList.push_back("-c:a");
+						// ffmpegArgumentList.push_back("aac"); // default
+						mainOutput.addArgs("-c:v copy -c:a aac");
 
-						ffmpegArgumentList.push_back(stagingEncodedAssetPathName);
-					}
-				}
-				else // if (addType == "end")
-				{
-					/*
-					end:
-					ffmpeg -i video.mov -af "apad=pad_dur=1" -c:v copy -c:a aac output.mp4
-					*/
-					ffmpegArgumentList.push_back("ffmpeg");
-					// global options
-					ffmpegArgumentList.push_back("-y");
-
-					// input options
-					ffmpegArgumentList.push_back("-i");
-					ffmpegArgumentList.push_back(videoAssetPathName);
-
-					// output options
-					ffmpegArgumentList.push_back("-af");
-					ffmpegArgumentList.push_back("apad=pad_dur=" + to_string(seconds));
-
-					if (encodingProfileDetailsRoot != nullptr)
-					{
-						ffmpegEncodingParameters.applyEncoding(
-							-1,	  // -1: NO two passes
-							true, // outputFileToBeAdded
-							true, // videoResolutionToBeAdded
-							nullptr,
-							ffmpegArgumentList // out
-						);
-					}
-					else
-					{
-						ffmpegArgumentList.push_back("-c:v");
-						ffmpegArgumentList.push_back("copy");
-						ffmpegArgumentList.push_back("-c:a");
-						ffmpegArgumentList.push_back("aac"); // default
-
-						ffmpegArgumentList.push_back(stagingEncodedAssetPathName);
+						// ffmpegArgumentList.push_back(stagingEncodedAssetPathName);
+						mainOutput.setPath(stagingEncodedAssetPathName);
 					}
 				}
 
@@ -229,24 +208,33 @@ void FFMpegWrapper::silentAudio(
 				{
 					chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-					if (!ffmpegArgumentList.empty())
-						copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+					// if (!ffmpegArgumentList.empty())
+					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 					SPDLOG_INFO(
 						"{}: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
 						", ffmpegArgumentList: {}",
-						toString(_currentApiName), encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str()
+						toString(_currentApiName), encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 					);
 
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
 
-					ProcessUtility::forkAndExec(
-						_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-						iReturnedStatus
-					);
+					if (ffmpegLineCallback)
+						ProcessUtility::forkAndExecByCallback(
+							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+							redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
+						);
+					else
+					{
+						vector<string> args = ffMpegEngine.buildArgs(false);
+						ProcessUtility::forkAndExec(
+							_ffmpegPath + "/ffmpeg", args, _outputFfmpegPathFileName,
+							redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
+						);
+					}
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -256,7 +244,7 @@ void FFMpegWrapper::silentAudio(
 							", ingestionJobKey: {}"
 							", iReturnedStatus: {}"
 							", ffmpegArgumentList: {}",
-							toString(_currentApiName), encodingJobKey, ingestionJobKey, iReturnedStatus, ffmpegArgumentListStream.str()
+							toString(_currentApiName), encodingJobKey, ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
 
 						// to hide the ffmpeg staff
@@ -277,7 +265,7 @@ void FFMpegWrapper::silentAudio(
 						", ingestionJobKey: {}"
 						", ffmpegArgumentList: {}"
 						", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-						toString(_currentApiName), encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(),
+						toString(_currentApiName), encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 						chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 					);
 				}
@@ -296,7 +284,7 @@ void FFMpegWrapper::silentAudio(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					else
@@ -308,7 +296,7 @@ void FFMpegWrapper::silentAudio(
 							", ffmpegArgumentList: {}"
 							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -355,7 +343,7 @@ void FFMpegWrapper::silentAudio(
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
 					", ffmpegArgumentList: {}",
-					encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str()
+					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
 
 				// to hide the ffmpeg staff
@@ -369,64 +357,15 @@ void FFMpegWrapper::silentAudio(
 			}
 		}
 	}
-	catch (FFMpegEncodingKilledByUser &e)
-	{
-		SPDLOG_ERROR(
-			"{} ffmpeg failed"
-			", encodingJobKey: {}"
-			", ingestionJobKey: {}"
-			", stagingEncodedAssetPathName: {}",
-			toString(_currentApiName), encodingJobKey, ingestionJobKey, stagingEncodedAssetPathName + ", e.what(): " + e.what()
-		);
-
-		if (fs::exists(stagingEncodedAssetPathName))
-		{
-			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
-				"remove"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", stagingEncodedAssetPathName: {}",
-				ingestionJobKey, encodingJobKey, stagingEncodedAssetPathName
-			);
-			fs::remove_all(stagingEncodedAssetPathName);
-		}
-
-		throw e;
-	}
-	catch (runtime_error &e)
-	{
-		SPDLOG_ERROR(
-			"{} ffmpeg failed"
-			", encodingJobKey: {}"
-			", ingestionJobKey: {}"
-			", stagingEncodedAssetPathName: {}",
-			toString(_currentApiName), encodingJobKey, ingestionJobKey, stagingEncodedAssetPathName + ", e.what(): " + e.what()
-		);
-
-		if (fs::exists(stagingEncodedAssetPathName))
-		{
-			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
-				"remove"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", stagingEncodedAssetPathName: {}",
-				ingestionJobKey, encodingJobKey, stagingEncodedAssetPathName
-			);
-			fs::remove_all(stagingEncodedAssetPathName);
-		}
-
-		throw e;
-	}
 	catch (exception &e)
 	{
 		SPDLOG_ERROR(
 			"{} ffmpeg failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
-			", stagingEncodedAssetPathName: {}",
-			toString(_currentApiName), encodingJobKey, ingestionJobKey, stagingEncodedAssetPathName + ", e.what(): " + e.what()
+			", stagingEncodedAssetPathName: {}"
+			", e.what(): ",
+			toString(_currentApiName), encodingJobKey, ingestionJobKey, stagingEncodedAssetPathName, e.what()
 		);
 
 		if (fs::exists(stagingEncodedAssetPathName))
@@ -442,6 +381,6 @@ void FFMpegWrapper::silentAudio(
 			fs::remove_all(stagingEncodedAssetPathName);
 		}
 
-		throw e;
+		throw;
 	}
 }

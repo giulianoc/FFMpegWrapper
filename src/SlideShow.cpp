@@ -22,7 +22,8 @@ void FFMpegWrapper::slideShow(
 	int64_t ingestionJobKey, int64_t encodingJobKey, float durationOfEachSlideInSeconds, string frameRateMode, json encodingProfileDetailsRoot,
 	vector<string> &imagesSourcePhysicalPaths, vector<string> &audiosSourcePhysicalPaths,
 	float shortestAudioDurationInSeconds, // the shortest duration among the audios
-	string encodedStagingAssetPathName, ProcessUtility::ProcessId &processId
+	string encodedStagingAssetPathName, ProcessUtility::ProcessId &processId,
+	const ProcessUtility::LineCallback& ffmpegLineCallback
 )
 {
 	_currentApiName = APIName::SlideShow;
@@ -187,7 +188,11 @@ void FFMpegWrapper::slideShow(
 		slideshowListFile.close();
 	}
 
-	vector<string> ffmpegEncodingProfileArgumentList;
+	FFMpegEngine ffmpegEngine;
+
+	FFMpegEngine::Output mainOutput = ffmpegEngine.addOutput(encodedStagingAssetPathName);
+
+	// vector<string> ffmpegEncodingProfileArgumentList;
 	if (encodingProfileDetailsRoot != nullptr)
 	{
 		try
@@ -276,28 +281,42 @@ void FFMpegWrapper::slideShow(
 				);
 			}
 
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegEncodingProfileArgumentList);
+			// FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.withVideoCodec(ffmpegVideoCodec);
+			// FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegVideoProfileParameter);
+			// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegVideoBitRateParameter);
+			// FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegVideoOtherParameters);
+			// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegVideoMaxRateParameter);
+			// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegVideoBufSizeParameter);
+			// FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegVideoFrameRateParameter);
+			// FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegVideoKeyFramesRateParameter);
 			// we cannot have two video filters parameters (-vf), one is for the overlay.
 			// If it is needed we have to combine both using the same -vf parameter and using the
 			// comma (,) as separator. For now we will just comment it and the resolution will be the one
 			// coming from the video (no changes)
 			// FFMpegEncodingParameters::addToArguments(ffmpegVideoResolutionParameter, ffmpegEncodingProfileArgumentList);
-			ffmpegEncodingProfileArgumentList.push_back("-threads");
-			ffmpegEncodingProfileArgumentList.push_back("0");
-			FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegAudioChannelsParameter, ffmpegEncodingProfileArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegAudioSampleRateParameter, ffmpegEncodingProfileArgumentList);
+			// ffmpegEncodingProfileArgumentList.push_back("-threads");
+			// ffmpegEncodingProfileArgumentList.push_back("0");
+			mainOutput.addArgs("-threads 0");
+			// FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.withVideoCodec(ffmpegAudioCodec);
+			// FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegAudioBitRateParameter);
+			// FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegAudioOtherParameters);
+			// FFMpegEncodingParameters::addToArguments(ffmpegAudioChannelsParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegAudioChannelsParameter);
+			// FFMpegEncodingParameters::addToArguments(ffmpegAudioSampleRateParameter, ffmpegEncodingProfileArgumentList);
+			mainOutput.addArgs(ffmpegAudioSampleRateParameter);
 		}
-		catch (runtime_error &e)
+		catch (exception &e)
 		{
 			SPDLOG_ERROR(
 				"ffmpeg: encodingProfileParameter retrieving failed"
@@ -316,8 +335,13 @@ void FFMpegWrapper::slideShow(
 				", e.what(): {}",
 				ingestionJobKey, encodingJobKey, e.what()
 			);
-			throw e;
+			throw;
 		}
+	}
+	else
+	{
+		mainOutput.withVideoCodec("libx264");
+		mainOutput.addArgs("-r 25");
 	}
 
 	{
@@ -335,76 +359,84 @@ void FFMpegWrapper::slideShow(
 	// ffmpeg -f concat -safe 0 -i mylist.txt -c copy output
 
 	// https://www.imakewebsites.ca/posts/2016/10/30/ffmpeg-concatenating-with-image-sequences-and-audio/
-	vector<string> ffmpegArgumentList;
-	ostringstream ffmpegArgumentListStream;
+	// vector<string> ffmpegArgumentList;
+	// ostringstream ffmpegArgumentListStream;
 
-	ffmpegArgumentList.push_back("ffmpeg");
+	// ffmpegArgumentList.push_back("ffmpeg");
 	{
-		ffmpegArgumentList.push_back("-f");
-		ffmpegArgumentList.push_back("concat");
-		ffmpegArgumentList.push_back("-safe");
-		ffmpegArgumentList.push_back("0");
-		ffmpegArgumentList.push_back("-i");
-		ffmpegArgumentList.push_back(slideshowListImagesPathName);
+		FFMpegEngine::Input input = ffmpegEngine.addInput(slideshowListImagesPathName);
+		// ffmpegArgumentList.push_back("-f");
+		// ffmpegArgumentList.push_back("concat");
+		// ffmpegArgumentList.push_back("-safe");
+		// ffmpegArgumentList.push_back("0");
+		input.addArgs("-f concat -safe 0");
+		// ffmpegArgumentList.push_back("-i");
+		// ffmpegArgumentList.push_back(slideshowListImagesPathName);
 	}
 	if (audiosSourcePhysicalPaths.size() == 1)
 	{
-		ffmpegArgumentList.push_back("-i");
-		ffmpegArgumentList.push_back(audiosSourcePhysicalPaths[0]);
+		// ffmpegArgumentList.push_back("-i");
+		// ffmpegArgumentList.push_back(audiosSourcePhysicalPaths[0]);
+		ffmpegEngine.addInput(audiosSourcePhysicalPaths[0]);
 	}
 	else if (audiosSourcePhysicalPaths.size() > 1)
 	{
-		ffmpegArgumentList.push_back("-f");
-		ffmpegArgumentList.push_back("concat");
-		ffmpegArgumentList.push_back("-safe");
-		ffmpegArgumentList.push_back("0");
-		ffmpegArgumentList.push_back("-i");
-		ffmpegArgumentList.push_back(slideshowListAudiosPathName);
+		FFMpegEngine::Input input = ffmpegEngine.addInput(slideshowListAudiosPathName);
+		// ffmpegArgumentList.push_back("-f");
+		// ffmpegArgumentList.push_back("concat");
+		// ffmpegArgumentList.push_back("-safe");
+		// ffmpegArgumentList.push_back("0");
+		input.addArgs("-f concat -safe 0");
+		// ffmpegArgumentList.push_back("-i");
+		// ffmpegArgumentList.push_back(slideshowListAudiosPathName);
 	}
 
 	// encoding parameters
-	if (encodingProfileDetailsRoot != nullptr)
-	{
-		for (string parameter : ffmpegEncodingProfileArgumentList)
-			FFMpegEncodingParameters::addToArguments(parameter, ffmpegArgumentList);
-	}
-	else
-	{
-		ffmpegArgumentList.push_back("-c:v");
-		ffmpegArgumentList.push_back("libx264");
-		ffmpegArgumentList.push_back("-r");
-		ffmpegArgumentList.push_back("25");
-	}
+	// if (encodingProfileDetailsRoot != nullptr)
+	// {
+	// 	for (string parameter : ffmpegEncodingProfileArgumentList)
+	// 		FFMpegEncodingParameters::addToArguments(parameter, ffmpegArgumentList);
+	// }
+	// else
+	// {
+	// 	ffmpegArgumentList.push_back("-c:v");
+	// 	ffmpegArgumentList.push_back("libx264");
+	// 	ffmpegArgumentList.push_back("-r");
+	// 	ffmpegArgumentList.push_back("25");
+	// }
 
-	ffmpegArgumentList.push_back("-fps_mode");
-	ffmpegArgumentList.push_back(frameRateMode);
-	ffmpegArgumentList.push_back("-pix_fmt");
+	// ffmpegArgumentList.push_back("-fps_mode");
+	// ffmpegArgumentList.push_back(frameRateMode);
+	mainOutput.addArgs(std::format("-fps_mode {}", frameRateMode));
+	// ffmpegArgumentList.push_back("-pix_fmt");
 	// yuv420p: the only option for broad compatibility
-	ffmpegArgumentList.push_back("yuv420p");
+	// ffmpegArgumentList.push_back("yuv420p");
+	mainOutput.addArgs("-pix_fmt yuv420p");
 	if (audiosSourcePhysicalPaths.size() > 0)
-		ffmpegArgumentList.push_back("-shortest");
-	ffmpegArgumentList.push_back(encodedStagingAssetPathName);
+		// ffmpegArgumentList.push_back("-shortest");
+		mainOutput.addArgs("-shortest");
+	// ffmpegArgumentList.push_back(encodedStagingAssetPathName);
 
 	try
 	{
 		chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-		if (!ffmpegArgumentList.empty())
-			copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+		// if (!ffmpegArgumentList.empty())
+		// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 		SPDLOG_INFO(
 			"slideShow: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}",
-			ingestionJobKey, ffmpegArgumentListStream.str()
+			ingestionJobKey, ffmpegEngine.toSingleLine()
 		);
 
 		bool redirectionStdOutput = true;
 		bool redirectionStdError = true;
 
-		ProcessUtility::forkAndExec(
-			_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-			iReturnedStatus
+		ProcessUtility::forkAndExecByCallback(
+			_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
+			redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
 		);
 		processId.reset();
 		if (iReturnedStatus != 0)
@@ -414,7 +446,7 @@ void FFMpegWrapper::slideShow(
 				", ingestionJobKey: {}"
 				", iReturnedStatus: {}"
 				", ffmpegArgumentList: {}",
-				ingestionJobKey, iReturnedStatus, ffmpegArgumentListStream.str()
+				ingestionJobKey, iReturnedStatus, ffmpegEngine.toSingleLine()
 			);
 
 			// to hide the ffmpeg staff
@@ -429,10 +461,10 @@ void FFMpegWrapper::slideShow(
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}"
 			", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-			ingestionJobKey, ffmpegArgumentListStream.str(), chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
+			ingestionJobKey, ffmpegEngine.toSingleLine(), chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
-	catch (runtime_error &e)
+	catch (exception &e)
 	{
 		processId.reset();
 
@@ -447,7 +479,7 @@ void FFMpegWrapper::slideShow(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffmpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 		else
 			errorMessage = std::format(
@@ -458,7 +490,7 @@ void FFMpegWrapper::slideShow(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffmpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 		SPDLOG_ERROR(errorMessage);
 

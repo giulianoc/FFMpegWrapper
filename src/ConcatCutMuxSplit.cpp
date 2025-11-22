@@ -730,11 +730,11 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 	// because FFmpeg will re-encode the video and start with an I-frame.
 	// There is an option to encode only a little part of the video,
 	// see https://stackoverflow.com/questions/63548027/cut-a-video-in-between-key-frames-without-re-encoding-the-full-video-using-ffpme
-	int64_t encodingJobKey, json encodingProfileDetailsRoot, string startTime, string endTime, int framesNumber, string stagingEncodedAssetPathName,
-	ProcessUtility::ProcessId &processId
+	int64_t encodingJobKey, const json& encodingProfileDetailsRoot, string startTime, string endTime, int framesNumber,
+	string stagingEncodedAssetPathName, ProcessUtility::ProcessId &processId,
+	const ProcessUtility::LineCallback& ffmpegLineCallback
 )
 {
-
 	_currentApiName = APIName::CutFrameAccurateWithEncoding;
 
 	setStatus(
@@ -807,7 +807,11 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 			throw runtime_error(errorMessage);
 		}
 
-		vector<string> ffmpegEncodingProfileArgumentList;
+		FFMpegEngine ffMpegEngine;
+
+		FFMpegEngine::Output mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
+
+		// vector<string> ffmpegEncodingProfileArgumentList;
 		{
 			try
 			{
@@ -897,28 +901,42 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 					SPDLOG_WARN(errorMessage);
 				}
 
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegEncodingProfileArgumentList);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.withVideoCodec(ffmpegVideoCodec);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegVideoProfileParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegVideoBitRateParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegVideoOtherParameters);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegVideoMaxRateParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegVideoBufSizeParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegVideoFrameRateParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegVideoKeyFramesRateParameter);
 				// we cannot have two video filters parameters (-vf), one is for the overlay.
 				// If it is needed we have to combine both using the same -vf parameter and using the
 				// comma (,) as separator. For now we will just comment it and the resolution will be the one
 				// coming from the video (no changes)
 				// FFMpegEncodingParameters::addToArguments(ffmpegVideoResolutionParameter, ffmpegEncodingProfileArgumentList);
-				ffmpegEncodingProfileArgumentList.push_back("-threads");
-				ffmpegEncodingProfileArgumentList.push_back("0");
-				FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegAudioChannelsParameter, ffmpegEncodingProfileArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegAudioSampleRateParameter, ffmpegEncodingProfileArgumentList);
+				// ffmpegEncodingProfileArgumentList.push_back("-threads");
+				// ffmpegEncodingProfileArgumentList.push_back("0");
+				mainOutput.addArgs("-threads 0");
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.withVideoCodec(ffmpegAudioCodec);
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegAudioBitRateParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegAudioOtherParameters);
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioChannelsParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegAudioChannelsParameter);
+				// FFMpegEncodingParameters::addToArguments(ffmpegAudioSampleRateParameter, ffmpegEncodingProfileArgumentList);
+				mainOutput.addArgs(ffmpegAudioSampleRateParameter);
 			}
-			catch (runtime_error &e)
+			catch (exception &e)
 			{
 				string errorMessage = std::format(
 					"encodingProfileParameter retrieving failed"
@@ -929,38 +947,44 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 				);
 				SPDLOG_ERROR(errorMessage);
 
-				throw e;
+				throw;
 			}
 		}
 
-		vector<string> ffmpegArgumentList;
-		ostringstream ffmpegArgumentListStream;
+		// vector<string> ffmpegArgumentList;
+		// ostringstream ffmpegArgumentListStream;
 		{
-			ffmpegArgumentList.push_back("ffmpeg");
+			// ffmpegArgumentList.push_back("ffmpeg");
 			// global options
-			ffmpegArgumentList.push_back("-y");
+			// ffmpegArgumentList.push_back("-y");
+			ffMpegEngine.addGlobalArg("-y");
 			// input options
-			ffmpegArgumentList.push_back("-i");
-			ffmpegArgumentList.push_back(sourceVideoAssetPathName);
-			ffmpegArgumentList.push_back("-ss");
-			ffmpegArgumentList.push_back(startTime);
+			// ffmpegArgumentList.push_back("-i");
+			// ffmpegArgumentList.push_back(sourceVideoAssetPathName);
+			ffMpegEngine.addInput(sourceVideoAssetPathName);
+
+			// ffmpegArgumentList.push_back("-ss");
+			// ffmpegArgumentList.push_back(startTime);
+			mainOutput.addArgs(std::format("-ss {}", startTime));
 			if (framesNumber != -1)
 			{
-				ffmpegArgumentList.push_back("-vframes");
-				ffmpegArgumentList.push_back(to_string(framesNumber));
+				// ffmpegArgumentList.push_back("-vframes");
+				// ffmpegArgumentList.push_back(to_string(framesNumber));
+				mainOutput.addArgs(std::format("-vframes {}", framesNumber));
 			}
 			else
 			{
-				ffmpegArgumentList.push_back("-to");
-				ffmpegArgumentList.push_back(endTime);
+				// ffmpegArgumentList.push_back("-to");
+				// ffmpegArgumentList.push_back(endTime);
+				mainOutput.addArgs(std::format("-to {}", endTime));
 			}
 			// ffmpegArgumentList.push_back("-async");
 			// ffmpegArgumentList.push_back(to_string(1));
 
-			for (string parameter : ffmpegEncodingProfileArgumentList)
-				FFMpegEncodingParameters::addToArguments(parameter, ffmpegArgumentList);
+			// for (string parameter : ffmpegEncodingProfileArgumentList)
+			// 	FFMpegEncodingParameters::addToArguments(parameter, ffmpegArgumentList);
 
-			ffmpegArgumentList.push_back(stagingEncodedAssetPathName);
+			// ffmpegArgumentList.push_back(stagingEncodedAssetPathName);
 
 			int iReturnedStatus = 0;
 
@@ -968,23 +992,23 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 			{
 				chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-				if (!ffmpegArgumentList.empty())
-					copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
+				// if (!ffmpegArgumentList.empty())
+				// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
 				SPDLOG_INFO(
 					"cut with reencoding: Executing ffmpeg command"
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
 					", ffmpegArgumentList: {}",
-					encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str()
+					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
 
 				bool redirectionStdOutput = true;
 				bool redirectionStdError = true;
 
-				ProcessUtility::forkAndExec(
-					_ffmpegPath + "/ffmpeg", ffmpegArgumentList, _outputFfmpegPathFileName, redirectionStdOutput, redirectionStdError, processId,
-					iReturnedStatus
+				ProcessUtility::forkAndExecByCallback(
+					_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
+					redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
 				);
 				processId.reset();
 				if (iReturnedStatus != 0)
@@ -995,7 +1019,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 						", ingestionJobKey: {}"
 						", iReturnedStatus: {}"
 						", ffmpegArgumentList: {}",
-						encodingJobKey, ingestionJobKey, iReturnedStatus, ffmpegArgumentListStream.str()
+						encodingJobKey, ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 					);
 					SPDLOG_ERROR(errorMessage);
 
@@ -1017,7 +1041,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 					", ingestionJobKey: {}"
 					", ffmpegArgumentList: {}"
 					", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-					encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(),
+					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 					chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 				);
 			}
@@ -1036,7 +1060,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 						", ffmpegArgumentList: {}"
 						", lastPartOfFfmpegOutputFile: {}"
 						", e.what(): {}",
-						_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+						_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 						e.what()
 					);
 				else
@@ -1048,7 +1072,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 						", ffmpegArgumentList: {}"
 						", lastPartOfFfmpegOutputFile: {}"
 						", e.what(): {}",
-						_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffmpegArgumentListStream.str(), lastPartOfFfmpegOutputFile,
+						_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
 						e.what()
 					);
 				SPDLOG_ERROR(errorMessage);
@@ -1073,76 +1097,6 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 			);
 			fs::remove_all(_outputFfmpegPathFileName);
 		}
-	}
-	catch (FFMpegEncodingKilledByUser &e)
-	{
-		SPDLOG_ERROR(
-			"ffmpeg: ffmpeg cut with reencoding failed"
-			", encodingJobKey: {}"
-			", ingestionJobKey: {}"
-			", sourceVideoAssetPathName: {}"
-			", stagingEncodedAssetPathName: {}"
-			", e.what(): {}",
-			encodingJobKey, ingestionJobKey, sourceVideoAssetPathName, stagingEncodedAssetPathName, e.what()
-		);
-
-		if (fs::exists(stagingEncodedAssetPathName))
-		{
-			SPDLOG_INFO(
-				"Remove"
-				", encodingJobKey: {}"
-				", ingestionJobKey: {}"
-				", stagingEncodedAssetPathName: {}",
-				encodingJobKey, ingestionJobKey, stagingEncodedAssetPathName
-			);
-
-			// file in case of .3gp content OR directory in case of IPhone content
-			{
-				SPDLOG_INFO(
-					"Remove"
-					", stagingEncodedAssetPathName: {}",
-					stagingEncodedAssetPathName
-				);
-				fs::remove_all(stagingEncodedAssetPathName);
-			}
-		}
-
-		throw e;
-	}
-	catch (runtime_error &e)
-	{
-		SPDLOG_ERROR(
-			"ffmpeg: ffmpeg cut with reencoding failed"
-			", encodingJobKey: {}"
-			", ingestionJobKey: {}"
-			", sourceVideoAssetPathName: {}"
-			", stagingEncodedAssetPathName: {}"
-			", e.what(): {}",
-			encodingJobKey, ingestionJobKey, sourceVideoAssetPathName, stagingEncodedAssetPathName, e.what()
-		);
-
-		if (fs::exists(stagingEncodedAssetPathName))
-		{
-			SPDLOG_INFO(
-				"Remove"
-				", encodingJobKey: {}"
-				", ingestionJobKey: {}"
-				", stagingEncodedAssetPathName: {}",
-				encodingJobKey, ingestionJobKey, stagingEncodedAssetPathName
-			);
-
-			// file in case of .3gp content OR directory in case of IPhone content
-			{
-				SPDLOG_INFO(
-					"Remove"
-					", stagingEncodedAssetPathName: {}",
-					stagingEncodedAssetPathName
-				);
-				fs::remove_all(stagingEncodedAssetPathName);
-			}
-		}
-
-		throw e;
 	}
 	catch (exception &e)
 	{
@@ -1176,7 +1130,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 			}
 		}
 
-		throw e;
+		throw;
 	}
 }
 
