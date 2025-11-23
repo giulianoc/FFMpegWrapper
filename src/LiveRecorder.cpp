@@ -1965,6 +1965,7 @@ void FFMpegWrapper::liveRecorder(
 }
 */
 
+/*
 void FFMpegWrapper::liveRecorder2(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string& segmentListPathName, const string& recordedFileNamePrefix,
 
@@ -2009,11 +2010,9 @@ void FFMpegWrapper::liveRecorder2(
 
 	setStatus(
 		ingestionJobKey, encodingJobKey
-		/*
-		videoDurationInMilliSeconds,
-		mmsAssetPathName
-		stagingEncodedAssetPathName
-		*/
+		// videoDurationInMilliSeconds,
+		// mmsAssetPathName
+		// stagingEncodedAssetPathName
 	);
 
 	vector<string> ffmpegArgumentList;
@@ -2027,23 +2026,6 @@ void FFMpegWrapper::liveRecorder2(
 	try
 	{
 		segmentListPath = StringUtils::uriPathPrefix(segmentListPathName, true);
-		/*
-		size_t segmentListPathIndex = segmentListPathName.find_last_of("/");
-		if (segmentListPathIndex == string::npos)
-		{
-			string errorMessage = std::format(
-				"No segmentListPath find in the segment path name"
-				", ingestionJobKey: {}"
-				", encodingJobKey: {}"
-				", segmentListPathName: {}",
-				ingestionJobKey, encodingJobKey, segmentListPathName
-			);
-			SPDLOG_ERROR(errorMessage);
-
-			throw runtime_error(errorMessage);
-		}
-		segmentListPath = segmentListPathName.substr(0, segmentListPathIndex);
-		*/
 
 		// directory is created by EncoderVideoAudioProxy using MMSStorage::getStagingAssetPathName
 		// I saw just once that the directory was not created and the liveencoder remains in the loop
@@ -2729,43 +2711,6 @@ void FFMpegWrapper::liveRecorder2(
 				}
 			}
 		}
-
-		/*
-		// liveRecording exit before unexpectly
-		if (endFfmpegCommand - startFfmpegCommand < chrono::seconds(utcRecordingPeriodEnd - utcNow - 60))
-		{
-			char		sEndFfmpegCommand [64];
-
-			time_t	utcEndFfmpegCommand = chrono::system_clock::to_time_t(endFfmpegCommand);
-			tm		tmUtcEndFfmpegCommand;
-			localtime_r (&utcEndFfmpegCommand, &tmUtcEndFfmpegCommand);
-			sprintf (sEndFfmpegCommand, "%04d-%02d-%02d-%02d-%02d-%02d",
-				tmUtcEndFfmpegCommand. tm_year + 1900,
-				tmUtcEndFfmpegCommand. tm_mon + 1,
-				tmUtcEndFfmpegCommand. tm_mday,
-				tmUtcEndFfmpegCommand. tm_hour,
-				tmUtcEndFfmpegCommand. tm_min,
-				tmUtcEndFfmpegCommand. tm_sec);
-
-			string debugOutputFfmpegPathFileName =
-				_ffmpegTempDir + "/"
-				+ to_string(ingestionJobKey) + "_"
-				+ to_string(encodingJobKey) + "_"
-				+ sEndFfmpegCommand
-				+ ".liveRecorder.log.debug"
-				;
-
-			info(__FILEREF__ + "Coping"
-				+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-				+ ", encodingJobKey: " + to_string(encodingJobKey)
-				+ ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName
-				+ ", debugOutputFfmpegPathFileName: " + debugOutputFfmpegPathFileName
-				);
-			fs::copy(_outputFfmpegPathFileName, debugOutputFfmpegPathFileName);
-
-			throw runtime_error("liveRecording exit before unexpectly");
-		}
-		*/
 	}
 	catch (exception &e)
 	{
@@ -2865,6 +2810,7 @@ void FFMpegWrapper::liveRecorder2(
 
 	renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 }
+*/
 
 void FFMpegWrapper::liveRecorder(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string& segmentListPathName, const string& recordedFileNamePrefix,
@@ -2896,7 +2842,7 @@ void FFMpegWrapper::liveRecorder(
 
 	json framesToBeDetectedRoot,
 
-	const ProcessUtility::LineCallback& ffmpegLineCallback,
+	const ProcessUtility::LineCallback& ffmpegLineCallback, FFMpegEngine::CallbackData& ffmpegCallbackData,
 
 	ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 )
@@ -3541,14 +3487,13 @@ void FFMpegWrapper::liveRecorder(
 
 			if (iReturnedStatus != 0)
 			{
-				string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+				// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 				// Exiting normally, received signal 3.
 				// 2023-02-18: ho verificato che SIGQUIT non ha funzionato e il processo non si è stoppato,
 				//	mentre ha funzionato SIGTERM, per cui ora sto usando SIGTERM
-				if (lastPartOfFfmpegOutputFile.find("signal 3") != string::npos // SIGQUIT
-					|| lastPartOfFfmpegOutputFile.find("signal: 3") != string::npos ||
-					lastPartOfFfmpegOutputFile.find("signal 15") != string::npos // SIGTERM
-					|| lastPartOfFfmpegOutputFile.find("signal: 15") != string::npos)
+				if (*ffmpegCallbackData.signal == 3 // SIGQUIT
+					|| *ffmpegCallbackData.signal == 15 // SIGTERM
+					)
 				{
 					sigQuitOrTermReceived = true;
 
@@ -3559,10 +3504,10 @@ void FFMpegWrapper::liveRecorder(
 						", iReturnedStatus: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
-						", lastPartOfFfmpegOutputFile: {}"
+						", signal: {}"
 						", difference between real and expected duration: {}",
 						ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(),
-						lastPartOfFfmpegOutputFile, realDuration - streamingDuration
+						*ffmpegCallbackData.signal, realDuration - streamingDuration
 					);
 					SPDLOG_ERROR(errorMessage);
 
@@ -3737,7 +3682,7 @@ void FFMpegWrapper::liveRecorder(
 	{
 		processId.reset();
 
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 			errorMessage = std::format(
@@ -3746,9 +3691,8 @@ void FFMpegWrapper::liveRecorder(
 				", encodingJobKey: {}"
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}"
-				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(), e.what()
 			);
 		else
 			errorMessage = std::format(
@@ -3757,9 +3701,8 @@ void FFMpegWrapper::liveRecorder(
 				", encodingJobKey: {}"
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}"
-				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(), e.what()
 			);
 		SPDLOG_ERROR(errorMessage);
 
@@ -3821,12 +3764,11 @@ void FFMpegWrapper::liveRecorder(
 
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 			throw FFMpegEncodingKilledByUser();
-		else if (lastPartOfFfmpegOutputFile.find("403 Forbidden") != string::npos)
+		if (ffmpegCallbackData.urlForbidden)
 			throw FFMpegURLForbidden();
-		else if (lastPartOfFfmpegOutputFile.find("404 Not Found") != string::npos)
+		if (ffmpegCallbackData.urlNotFound)
 			throw FFMpegURLNotFound();
-		else
-			throw;
+		throw;
 	}
 
 	renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);

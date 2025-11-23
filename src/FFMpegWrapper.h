@@ -274,7 +274,7 @@ class FFMpegWrapper
 		const string& segmenterType, // streamSegmenter or hlsSegmenter
 		const json& outputsRoot,
 		json framesToBeDetectedRoot,
-		const ProcessUtility::LineCallback& ffmpegLineCallback,
+		const ProcessUtility::LineCallback& ffmpegLineCallback, FFMpegEngine::CallbackData& ffmpegCallbackData,
 		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 	);
 
@@ -304,7 +304,8 @@ class FFMpegWrapper
 	void liveProxy(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 		json *inputsRoot, const json &outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
-		const ProcessUtility::LineCallback &ffmpegLineCallback, long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
+		const ProcessUtility::LineCallback &ffmpegLineCallback, FFMpegEngine::CallbackData& ffmpegCallbackData,
+		long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
 	);
 
 	void liveProxy2(

@@ -22,6 +22,7 @@
 #include <fstream>
 #include <regex>
 
+/*
 void FFMpegWrapper::liveProxy2(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 	json *inputsRoot, json outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
@@ -40,11 +41,9 @@ void FFMpegWrapper::liveProxy2(
 
 	setStatus(
 		ingestionJobKey, encodingJobKey
-		/*
-		videoDurationInMilliSeconds,
-		mmsAssetPathName
-		stagingEncodedAssetPathName
-		*/
+		// videoDurationInMilliSeconds,
+		// mmsAssetPathName
+		// stagingEncodedAssetPathName
 	);
 
 	// Creating multi outputs: https://trac.ffmpeg.org/wiki/Creating%20multiple%20outputs
@@ -259,7 +258,7 @@ void FFMpegWrapper::liveProxy2(
 				ingestionJobKey, encodingJobKey, externalEncoder, currentInputRoot, maxStreamingDurationInMinutes, ffmpegInputArgumentList
 			);
 			tie(streamingDurationInSeconds, otherOutputOptionsBecauseOfMaxWidth, endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart,
-				inputFiltersRoot /*, inputVideoTracks, inputAudioTracks*/) = inputDetails;
+				inputFiltersRoot) = inputDetails;
 
 			{
 				ostringstream ffmpegInputArgumentListStream;
@@ -849,11 +848,12 @@ void FFMpegWrapper::liveProxy2(
 		}
 	}
 }
+*/
 
 void FFMpegWrapper::liveProxy(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 	json *inputsRoot, const json& outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
-	const ProcessUtility::LineCallback& ffmpegLineCallback,
+	const ProcessUtility::LineCallback& ffmpegLineCallback, FFMpegEngine::CallbackData& ffmpegCallbackData,
 	long *numberOfRestartBecauseOfFailure, bool keepOutputLog
 )
 {
@@ -1227,6 +1227,9 @@ void FFMpegWrapper::liveProxy(
 			bool redirectionStdOutput = true;
 			bool redirectionStdError = true;
 
+			// prima di ogni chiamata (ffmpeg) viene resettato ffmpegCallbackData.
+			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData
+			ffmpegCallbackData.reset();
 			ProcessUtility::forkAndExecByCallback(
 				_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
 				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
@@ -1345,7 +1348,7 @@ void FFMpegWrapper::liveProxy(
 
 			bool stoppedBySigQuitOrTerm = false;
 
-			string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+			// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 			string errorMessage;
 			if (iReturnedStatus == 9) // 9 means: SIGKILL
 			{
@@ -1357,10 +1360,9 @@ void FFMpegWrapper::liveProxy(
 					", currentNumberOfRepeatingSameInput: {}"
 					", _outputFfmpegPathFileName: {}"
 					", ffmpegArgumentList: {}"
-					", lastPartOfFfmpegOutputFile: {}"
 					", e.what(): {}",
 					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
-					ffmpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+					ffmpegEngine.toSingleLine(), e.what()
 				);
 			}
 			else
@@ -1371,10 +1373,9 @@ void FFMpegWrapper::liveProxy(
 				//	Child has exit abnormally because of an uncaught signal. Terminating signal: 3
 				// 2023-02-18: ho verificato che SIGQUIT non ha funzionato e il processo non si è stoppato,
 				//	mentre ha funzionato SIGTERM, per cui ora sto usando SIGTERM
-				if (lastPartOfFfmpegOutputFile.find("signal 3") != string::npos // SIGQUIT
-					|| lastPartOfFfmpegOutputFile.find("signal: 3") != string::npos ||
-					lastPartOfFfmpegOutputFile.find("signal 15") != string::npos // SIGTERM
-					|| lastPartOfFfmpegOutputFile.find("signal: 15") != string::npos)
+				if (*ffmpegCallbackData.signal == 3 // SIGQUIT
+					|| *ffmpegCallbackData.signal == 15 // SIGTERM
+					)
 				{
 					stoppedBySigQuitOrTerm = true;
 
@@ -1386,10 +1387,10 @@ void FFMpegWrapper::liveProxy(
 						", currentNumberOfRepeatingSameInput: {}"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
-						", lastPartOfFfmpegOutputFile: {}"
+						", signal: {}"
 						", e.what(): {}",
 						ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
-						ffmpegEngine.toSingleLine(), regex_replace(lastPartOfFfmpegOutputFile, regex("\n"), " "), e.what()
+						ffmpegEngine.toSingleLine(), *ffmpegCallbackData.signal, e.what()
 					);
 				}
 				else
@@ -1403,11 +1404,10 @@ void FFMpegWrapper::liveProxy(
 						", ffmpegCommandDuration (secs): @{}@"
 						", _outputFfmpegPathFileName: {}"
 						", ffmpegArgumentList: {}"
-						", lastPartOfFfmpegOutputFile: {}"
 						", e.what(): {}",
 						ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput,
 						chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - startFfmpegCommand).count(), _outputFfmpegPathFileName,
-						ffmpegEngine.toSingleLine(), regex_replace(lastPartOfFfmpegOutputFile, regex("\n"), " "), e.what()
+						ffmpegEngine.toSingleLine(), e.what()
 					);
 				}
 			}
@@ -1474,40 +1474,26 @@ void FFMpegWrapper::liveProxy(
 			{
 				outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
 			}
-			catch (runtime_error &e)
+			catch (exception &ex)
 			{
 				SPDLOG_ERROR(
 					"outputsRootToFfmpeg_clean failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
 					", e.what(): {}",
-					ingestionJobKey, encodingJobKey, e.what()
+					ingestionJobKey, encodingJobKey, ex.what()
 				);
-
-				// throw e;
-			}
-			catch (exception &e)
-			{
-				SPDLOG_ERROR(
-					"outputsRootToFfmpeg_clean failed"
-					", ingestionJobKey: {}"
-					", encodingJobKey: {}"
-					", e.what(): {}",
-					ingestionJobKey, encodingJobKey, e.what()
-				);
-
-				// throw e;
 			}
 
 			// next code will decide to throw an exception or not (we are in an error scenario)
 
 			if (iReturnedStatus == 9) // 9 means: SIGKILL
 				throw FFMpegEncodingKilledByUser();
-			else if (lastPartOfFfmpegOutputFile.find("403 Forbidden") != string::npos)
+			if (ffmpegCallbackData.urlForbidden)
 				throw FFMpegURLForbidden();
-			else if (lastPartOfFfmpegOutputFile.find("404 Not Found") != string::npos)
+			if (ffmpegCallbackData.urlNotFound)
 				throw FFMpegURLNotFound();
-			else if (!stoppedBySigQuitOrTerm)
+			if (!stoppedBySigQuitOrTerm)
 			{
 				// see the comment before 'while'
 				if (
