@@ -3475,6 +3475,10 @@ void FFMpegWrapper::liveRecorder(
 
 			startFfmpegCommand = chrono::system_clock::now();
 
+			// prima di ogni chiamata (ffmpeg) viene resettato ffmpegCallbackData.
+			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData.
+			// forkAndExecByCallback puo essere rieseguito a seguito di un restart
+			ffmpegCallbackData.reset();
 			ProcessUtility::forkAndExecByCallback(
 				_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
 				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus

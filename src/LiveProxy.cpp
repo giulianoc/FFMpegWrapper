@@ -1228,7 +1228,8 @@ void FFMpegWrapper::liveProxy(
 			bool redirectionStdError = true;
 
 			// prima di ogni chiamata (ffmpeg) viene resettato ffmpegCallbackData.
-			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData
+			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData.
+			// forkAndExecByCallback puo essere rieseguito a seguito di un restart o per un nuovo input
 			ffmpegCallbackData.reset();
 			ProcessUtility::forkAndExecByCallback(
 				_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
