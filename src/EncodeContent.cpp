@@ -22,7 +22,7 @@ void FFMpegWrapper::encodeContent(
 	bool isVideo, // if false it means is audio
 	json videoTracksRoot, json audioTracksRoot, int videoTrackIndexToBeUsed, int audioTrackIndexToBeUsed, json filtersRoot, int64_t physicalPathKey,
 	int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
-	const ProcessUtility::LineCallback& ffmpegLineCallback
+	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 )
 {
 	int iReturnedStatus = 0;
@@ -288,9 +288,14 @@ void FFMpegWrapper::encodeContent(
 						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -304,6 +309,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -342,7 +348,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -351,9 +357,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
 					else
@@ -363,9 +368,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -421,9 +425,14 @@ void FFMpegWrapper::encodeContent(
 						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -437,6 +446,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -475,7 +485,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -484,9 +494,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
 					else
@@ -496,9 +505,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -560,9 +568,14 @@ void FFMpegWrapper::encodeContent(
 						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -576,6 +589,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -613,7 +627,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -622,9 +636,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
 					else
@@ -634,9 +647,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
@@ -763,9 +775,14 @@ void FFMpegWrapper::encodeContent(
 						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -779,6 +796,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -815,7 +833,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -824,10 +842,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
-							lastPartOfFfmpegOutputFile, e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					else
 						errorMessage = std::format(
@@ -836,10 +852,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
-							lastPartOfFfmpegOutputFile, e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
 
@@ -896,9 +910,14 @@ void FFMpegWrapper::encodeContent(
 						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -912,6 +931,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -949,7 +969,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -958,10 +978,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey,  ffMpegEngine.toSingleLine(),
-							lastPartOfFfmpegOutputFile, e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey,  ffMpegEngine.toSingleLine(), e.what()
 						);
 					else
 						errorMessage = std::format(
@@ -970,10 +988,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
-							lastPartOfFfmpegOutputFile, e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
 
@@ -1041,9 +1057,14 @@ void FFMpegWrapper::encodeContent(
 						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -1057,6 +1078,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -1094,7 +1116,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -1103,10 +1125,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					else
 						errorMessage = std::format(
@@ -1115,10 +1135,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
 
@@ -1233,9 +1251,14 @@ void FFMpegWrapper::encodeContent(
 						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -1249,6 +1272,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -1286,7 +1310,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -1295,10 +1319,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					else
 						errorMessage = std::format(
@@ -1307,10 +1329,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
 
@@ -1367,9 +1387,14 @@ void FFMpegWrapper::encodeContent(
 						encodingJobKey, ingestionJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -1383,6 +1408,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -1420,7 +1446,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -1429,10 +1455,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					else
 						errorMessage = std::format(
@@ -1441,10 +1465,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
 
@@ -1541,9 +1563,14 @@ void FFMpegWrapper::encodeContent(
 						ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -1557,6 +1584,7 @@ void FFMpegWrapper::encodeContent(
 							redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -1596,7 +1624,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -1605,10 +1633,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					else
 						errorMessage = std::format(
@@ -1617,10 +1643,8 @@ void FFMpegWrapper::encodeContent(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
 

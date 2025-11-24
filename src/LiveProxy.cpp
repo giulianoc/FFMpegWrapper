@@ -853,7 +853,7 @@ void FFMpegWrapper::liveProxy2(
 void FFMpegWrapper::liveProxy(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 	json *inputsRoot, const json& outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
-	const ProcessUtility::LineCallback& ffmpegLineCallback, FFMpegEngine::CallbackData& ffmpegCallbackData,
+	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
 	long *numberOfRestartBecauseOfFailure, bool keepOutputLog
 )
 {
@@ -1051,7 +1051,7 @@ void FFMpegWrapper::liveProxy(
 				getNextLiveProxyInput(ingestionJobKey, encodingJobKey, inputsRoot, inputsRootMutex, currentInputIndex, timedInput, &currentInputRoot)
 		   ) != -1)
 	{
-		FFMpegEngine ffmpegEngine;
+		FFMpegEngine ffMpegEngine;
 		optional<string> inputSelectedVideoMap;
 		optional<string> inputSelectedAudioMap;
 		optional<int32_t> inputDurationInSeconds;
@@ -1086,7 +1086,7 @@ void FFMpegWrapper::liveProxy(
 
 			tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> inputDetails =
 				liveProxyInput(ingestionJobKey, encodingJobKey, externalEncoder,
-				currentInputRoot, maxStreamingDurationInMinutes, ffmpegEngine);
+				currentInputRoot, maxStreamingDurationInMinutes, ffMpegEngine);
 			tie(endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart,
 				inputFiltersRoot, inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds) = inputDetails;
 
@@ -1105,7 +1105,7 @@ void FFMpegWrapper::liveProxy(
 					", externalEncoder: {}"
 					", currentInputRoot: {}"
 					", ffmpegInputArgumentList: {}",
-					ingestionJobKey, encodingJobKey, externalEncoder, JSONUtils::toString(currentInputRoot), ffmpegEngine.toSingleLine()
+					ingestionJobKey, encodingJobKey, externalEncoder, JSONUtils::toString(currentInputRoot), ffMpegEngine.toSingleLine()
 				);
 			}
 		}
@@ -1138,7 +1138,7 @@ void FFMpegWrapper::liveProxy(
 			outputsRootToFfmpeg(
 				ingestionJobKey, encodingJobKey, externalEncoder, inputFiltersRoot,
 				// inputVideoTracks, inputAudioTracks,
-				outputsRoot, ffmpegEngine,
+				outputsRoot, ffMpegEngine,
 				inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds
 			);
 
@@ -1156,7 +1156,7 @@ void FFMpegWrapper::liveProxy(
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
 					", ffmpegOutputArgumentList: {}",
-					ingestionJobKey, encodingJobKey, ffmpegEngine.toSingleLine()
+					ingestionJobKey, encodingJobKey, ffMpegEngine.toSingleLine()
 				);
 			}
 		}
@@ -1219,7 +1219,7 @@ void FFMpegWrapper::liveProxy(
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}",
 				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
-				ffmpegEngine.toSingleLine()
+				ffMpegEngine.toSingleLine()
 			);
 
 			startFfmpegCommand = chrono::system_clock::now();
@@ -1231,10 +1231,13 @@ void FFMpegWrapper::liveProxy(
 			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData.
 			// forkAndExecByCallback puo essere rieseguito a seguito di un restart o per un nuovo input
 			ffmpegCallbackData.reset();
-			ProcessUtility::forkAndExecByCallback(
-				_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
+			ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+				std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+				ffmpegCallbackData, _outputFfmpegPathFileName);
+			/* ProcessUtility::forkAndExecByCallback(
+				_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
 				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
-			);
+			); */
 			processId.reset();
 
 			endFfmpegCommand = chrono::system_clock::now();
@@ -1251,7 +1254,7 @@ void FFMpegWrapper::liveProxy(
 					", _outputFfmpegPathFileName: {}"
 					", ffmpegArgumentList: {}",
 					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, iReturnedStatus, _outputFfmpegPathFileName,
-					ffmpegEngine.toSingleLine()
+					ffMpegEngine.toSingleLine()
 				);
 				SPDLOG_ERROR(errorMessage);
 
@@ -1275,7 +1278,7 @@ void FFMpegWrapper::liveProxy(
 				", currentNumberOfRepeatingSameInput: {}"
 				", ffmpegArgumentList: {}"
 				", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, ffmpegEngine.toSingleLine(),
+				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, ffMpegEngine.toSingleLine(),
 				chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 			);
 
@@ -1363,7 +1366,7 @@ void FFMpegWrapper::liveProxy(
 					", ffmpegArgumentList: {}"
 					", e.what(): {}",
 					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
-					ffmpegEngine.toSingleLine(), e.what()
+					ffMpegEngine.toSingleLine(), e.what()
 				);
 			}
 			else
@@ -1374,8 +1377,8 @@ void FFMpegWrapper::liveProxy(
 				//	Child has exit abnormally because of an uncaught signal. Terminating signal: 3
 				// 2023-02-18: ho verificato che SIGQUIT non ha funzionato e il processo non si è stoppato,
 				//	mentre ha funzionato SIGTERM, per cui ora sto usando SIGTERM
-				if (*ffmpegCallbackData.signal == 3 // SIGQUIT
-					|| *ffmpegCallbackData.signal == 15 // SIGTERM
+				if (*ffmpegCallbackData->getSignal() == 3 // SIGQUIT
+					|| *ffmpegCallbackData->getSignal() == 15 // SIGTERM
 					)
 				{
 					stoppedBySigQuitOrTerm = true;
@@ -1391,7 +1394,7 @@ void FFMpegWrapper::liveProxy(
 						", signal: {}"
 						", e.what(): {}",
 						ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
-						ffmpegEngine.toSingleLine(), *ffmpegCallbackData.signal, e.what()
+						ffMpegEngine.toSingleLine(), *ffmpegCallbackData->getSignal(), e.what()
 					);
 				}
 				else
@@ -1408,7 +1411,7 @@ void FFMpegWrapper::liveProxy(
 						", e.what(): {}",
 						ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput,
 						chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - startFfmpegCommand).count(), _outputFfmpegPathFileName,
-						ffmpegEngine.toSingleLine(), e.what()
+						ffMpegEngine.toSingleLine(), e.what()
 					);
 				}
 			}
@@ -1490,9 +1493,9 @@ void FFMpegWrapper::liveProxy(
 
 			if (iReturnedStatus == 9) // 9 means: SIGKILL
 				throw FFMpegEncodingKilledByUser();
-			if (ffmpegCallbackData.urlForbidden)
+			if (ffmpegCallbackData->getUrlForbidden())
 				throw FFMpegURLForbidden();
-			if (ffmpegCallbackData.urlNotFound)
+			if (ffmpegCallbackData->getUrlNotFound())
 				throw FFMpegURLNotFound();
 			if (!stoppedBySigQuitOrTerm)
 			{
@@ -3155,7 +3158,7 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 
 tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> FFMpegWrapper::liveProxyInput(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
-	FFMpegEngine &ffmpegEngine
+	FFMpegEngine &ffMpegEngine
 )
 {
 	string endlessPlaylistListPathName;
@@ -3493,8 +3496,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			//	-nostdin: Disabling interaction on standard input, it is useful, for example, if ffmpeg is
 			//		in the background process group
 			// ffmpegInputArgumentList.push_back("-nostdin");
-			ffmpegEngine.addGlobalArg("-nostdin");
-			auto& mainInput = ffmpegEngine.addInput();
+			ffMpegEngine.addGlobalArg("-nostdin");
+			auto& mainInput = ffMpegEngine.addInput();
 			if (userAgentToBeUsed)
 			{
 				// ffmpegInputArgumentList.push_back("-user_agent");
@@ -3691,7 +3694,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 				// audio
 				{
-					auto& audioInput = ffmpegEngine.addInput();
+					auto& audioInput = ffMpegEngine.addInput();
 
 					// ffmpegInputArgumentList.push_back("-f");
 					// ffmpegInputArgumentList.push_back("alsa");
@@ -3747,7 +3750,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									}
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
-									auto& imageInput = ffmpegEngine.addInput();
+									auto& imageInput = ffMpegEngine.addInput();
 									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
 								}
 								else
@@ -3766,7 +3769,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									}
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
-									auto& imageInput = ffmpegEngine.addInput();
+									auto& imageInput = ffMpegEngine.addInput();
 									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
 								}
 							}
@@ -3865,9 +3868,9 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			//	-nostdin: Disabling interaction on standard input, it is useful, for example, if ffmpeg is
 			//		in the background process group
 			// ffmpegInputArgumentList.push_back("-nostdin");
-			ffmpegEngine.addGlobalArg("-nostdin");
+			ffMpegEngine.addGlobalArg("-nostdin");
 
-			auto& mainInput = ffmpegEngine.addInput();
+			auto& mainInput = ffMpegEngine.addInput();
 
 			// ffmpegInputArgumentList.push_back("-re");
 			mainInput.addArg("-re");
@@ -3920,7 +3923,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									}
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
-									auto& imageInput = ffmpegEngine.addInput();
+									auto& imageInput = ffMpegEngine.addInput();
 									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
 								}
 								else
@@ -3939,7 +3942,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									}
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
-									auto& imageInput = ffmpegEngine.addInput();
+									auto& imageInput = ffMpegEngine.addInput();
 									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
 								}
 							}
@@ -4069,9 +4072,9 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			//	-nostdin: Disabling interaction on standard input, it is useful, for example, if ffmpeg is
 			//		in the background process group
 			// ffmpegInputArgumentList.push_back("-nostdin");
-			ffmpegEngine.addGlobalArg("-nostdin");
+			ffMpegEngine.addGlobalArg("-nostdin");
 
-			auto& mainInput = ffmpegEngine.addInput();
+			auto& mainInput = ffMpegEngine.addInput();
 
 			// ffmpegInputArgumentList.push_back("-re");
 			mainInput.addArg("-re");
@@ -4328,7 +4331,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									}
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
-									auto& imageInput = ffmpegEngine.addInput();
+									auto& imageInput = ffMpegEngine.addInput();
 									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
 								}
 								else
@@ -4347,7 +4350,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									}
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
-									auto& imageInput = ffmpegEngine.addInput();
+									auto& imageInput = ffMpegEngine.addInput();
 									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
 								}
 							}
@@ -4479,7 +4482,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			// ffmpegInputArgumentList.push_back(to_string(streamLoopNumber));
 			// ffmpegInputArgumentList.push_back("-i");
 			// ffmpegInputArgumentList.push_back(mmsSourceVideoAssetPathName);
-			auto& mainInput = ffmpegEngine.addInput();
+			auto& mainInput = ffMpegEngine.addInput();
 			mainInput.addArgs(std::format("-re -stream_loop {}", streamLoopNumber));
 			if (inputDurationInSeconds)
 				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
@@ -4517,7 +4520,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								}
 								// ffmpegInputArgumentList.push_back("-i");
 								// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
-								auto& imageInput = ffmpegEngine.addInput();
+								auto& imageInput = ffMpegEngine.addInput();
 								imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
 							}
 							else
@@ -4536,7 +4539,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								}
 								// ffmpegInputArgumentList.push_back("-i");
 								// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
-								auto& imageInput = ffmpegEngine.addInput();
+								auto& imageInput = ffMpegEngine.addInput();
 								imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
 							}
 						}

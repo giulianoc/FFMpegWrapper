@@ -99,7 +99,7 @@ class FFMpegWrapper
 		// if false it means is audio
 		json videoTracksRoot, json audioTracksRoot, int videoTrackIndexToBeUsed, int audioTrackIndexToBeUsed, json filtersRoot,
 		int64_t physicalPathKey, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
-		const ProcessUtility::LineCallback &ffmpegLineCallback
+		shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void overlayImageOnVideo(
@@ -107,14 +107,14 @@ class FFMpegWrapper
 		string imagePosition_X_InPixel, string imagePosition_Y_InPixel,
 		// string encodedFileName,
 		string stagingEncodedAssetPathName, json encodingProfileDetailsRoot, int64_t encodingJobKey, int64_t ingestionJobKey,
-		ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void overlayTextOnVideo(
 		string mmsSourceVideoAssetPathName, int64_t videoDurationInMilliSeconds,
 
 		json drawTextDetailsRoot, json encodingProfileDetailsRoot, string stagingEncodedAssetPathName, int64_t encodingJobKey,
-		int64_t ingestionJobKey, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		int64_t ingestionJobKey, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void videoSpeed(
@@ -125,7 +125,7 @@ class FFMpegWrapper
 		json encodingProfileDetailsRoot,
 
 		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
-		const ProcessUtility::LineCallback &ffmpegLineCallback
+		shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void pictureInPicture(
@@ -133,7 +133,7 @@ class FFMpegWrapper
 		int64_t overlayVideoDurationInMilliSeconds, bool soundOfMain, const string &overlayPosition_X_InPixel,
 		const string &overlayPosition_Y_InPixel, const string &overlay_Width_InPixel, const string &overlay_Height_InPixel,
 		const json &encodingProfileDetailsRoot, string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey,
-		ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void introOutroOverlay(
@@ -147,7 +147,7 @@ class FFMpegWrapper
 		json encodingProfileDetailsRoot,
 
 		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
-		const ProcessUtility::LineCallback &ffmpegLineCallback
+		shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void introOverlay(
@@ -161,7 +161,7 @@ class FFMpegWrapper
 		json encodingProfileDetailsRoot,
 
 		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
-		const ProcessUtility::LineCallback &ffmpegLineCallback
+		shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void outroOverlay(
@@ -175,14 +175,14 @@ class FFMpegWrapper
 		json encodingProfileDetailsRoot,
 
 		string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
-		const ProcessUtility::LineCallback &ffmpegLineCallback
+		shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void silentAudio(
 		string videoAssetPathName, int64_t videoDurationInMilliSeconds, string addType,
 		// entireTrack, begin, end
 		int seconds, json encodingProfileDetailsRoot, string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey,
-		ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	double getEncodingProgress();
@@ -218,13 +218,13 @@ class FFMpegWrapper
 
 	void generateFrameToIngest(
 		int64_t ingestionJobKey, string mmsAssetPathName, int64_t videoDurationInMilliSeconds, double startTimeInSeconds, string frameAssetPathName,
-		int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void generateFramesToIngest(
 		int64_t ingestionJobKey, int64_t encodingJobKey, string imagesDirectory, string imageBaseFileName, double startTimeInSeconds,
 		int framesNumber, string videoFilter, int periodInSeconds, bool mjpeg, int imageWidth, int imageHeight, string mmsAssetPathName,
-		int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void concat(int64_t ingestionJobKey, bool isVideo, vector<string> &sourcePhysicalPaths, string concatenatedMediaPathName);
@@ -237,7 +237,7 @@ class FFMpegWrapper
 		int64_t ingestionJobKey, int64_t encodingJobKey, float durationOfEachSlideInSeconds, string frameRateMode, json encodingProfileDetailsRoot,
 		vector<string> &imagesSourcePhysicalPaths, vector<string> &audiosSourcePhysicalPaths, float shortestAudioDurationInSeconds,
 		// the shortest duration among the audios
-		string encodedStagingAssetPathName, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		string encodedStagingAssetPathName, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void cutWithoutEncoding(
@@ -253,7 +253,7 @@ class FFMpegWrapper
 		// If you re-encode your video when you cut/trim, then you get a frame-accurate cut
 		// because FFmpeg will re-encode the video and start with an I-frame.
 		int64_t encodingJobKey, const json &encodingProfileDetailsRoot, string startTime, string endTime, int framesNumber,
-		string stagingEncodedAssetPathName, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		string stagingEncodedAssetPathName, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void extractTrackMediaToIngest(
@@ -261,20 +261,15 @@ class FFMpegWrapper
 	);
 
 	void liveRecorder(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string& segmentListPathName, const string& recordedFileNamePrefix,
-		const string& otherInputOptions,
-		const string& streamSourceType, // IP_PULL, TV, IP_PUSH, CaptureLive
-		string liveURL,
-		int pushListenTimeout,
-		int captureLive_videoDeviceNumber, const string& captureLive_videoInputFormat, int captureLive_frameRate, int captureLive_width, int captureLive_height,
-		int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
-		bool utcTimeOverlay,
-		const string_view& userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
-		int segmentDurationInSeconds, const string& outputFileFormat,
-		const string& segmenterType, // streamSegmenter or hlsSegmenter
-		const json& outputsRoot,
-		json framesToBeDetectedRoot,
-		const ProcessUtility::LineCallback& ffmpegLineCallback, FFMpegEngine::CallbackData& ffmpegCallbackData,
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string &segmentListPathName,
+		const string &recordedFileNamePrefix, const string &otherInputOptions, const string &streamSourceType,
+		// IP_PULL, TV, IP_PUSH, CaptureLive
+		string liveURL, int pushListenTimeout, int captureLive_videoDeviceNumber, const string &captureLive_videoInputFormat,
+		int captureLive_frameRate, int captureLive_width, int captureLive_height, int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
+		bool utcTimeOverlay, const string_view &userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd, int segmentDurationInSeconds,
+		const string &outputFileFormat, const string &segmenterType,
+		// streamSegmenter or hlsSegmenter
+		const json &outputsRoot, json framesToBeDetectedRoot, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
 		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 	);
 
@@ -304,8 +299,7 @@ class FFMpegWrapper
 	void liveProxy(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 		json *inputsRoot, const json &outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
-		const ProcessUtility::LineCallback &ffmpegLineCallback, FFMpegEngine::CallbackData& ffmpegCallbackData,
-		long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
+		shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData, long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
 	);
 
 	void liveProxy2(
@@ -324,7 +318,7 @@ class FFMpegWrapper
 
 		json outputsRoot,
 
-		ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback &ffmpegLineCallback
+		ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void changeFileFormat(
@@ -561,7 +555,7 @@ class FFMpegWrapper
 
 	tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> liveProxyInput(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
-		FFMpegEngine &ffmpegEngine
+		FFMpegEngine &ffMpegEngine
 	);
 
 	void outputsRootToFfmpeg(

@@ -27,7 +27,7 @@ void FFMpegWrapper::liveGrid(
 	json outputsRoot,
 
 	ProcessUtility::ProcessId &processId,
-	const ProcessUtility::LineCallback& ffmpegLineCallback
+	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 )
 {
 	// vector<string> ffmpegArgumentList;
@@ -720,13 +720,19 @@ void FFMpegWrapper::liveGrid(
 
 		startFfmpegCommand = chrono::system_clock::now();
 
+		if (ffmpegCallbackData)
+			ffmpegCallbackData->reset();
+		ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+			std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+			ffmpegCallbackData, _outputFfmpegPathFileName);
+		/*
 		bool redirectionStdOutput = true;
 		bool redirectionStdError = true;
-
 		ProcessUtility::forkAndExecByCallback(
 			_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
 			redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
 		);
+		*/
 		processId.reset();
 		if (iReturnedStatus != 0)
 		{

@@ -2842,7 +2842,7 @@ void FFMpegWrapper::liveRecorder(
 
 	json framesToBeDetectedRoot,
 
-	const ProcessUtility::LineCallback& ffmpegLineCallback, FFMpegEngine::CallbackData& ffmpegCallbackData,
+	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
 
 	ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
 )
@@ -2865,7 +2865,7 @@ void FFMpegWrapper::liveRecorder(
 		*/
 	);
 
-	FFMpegEngine ffmpegEngine;
+	FFMpegEngine ffMpegEngine;
 	// vector<string> ffmpegArgumentList;
 	// ostringstream ffmpegArgumentListStream;
 	int iReturnedStatus = 0;
@@ -3064,7 +3064,7 @@ void FFMpegWrapper::liveRecorder(
 
 		// ffmpegArgumentList.emplace_back("ffmpeg");
 
-		auto& mainInput = ffmpegEngine.addInput();
+		auto& mainInput = ffMpegEngine.addInput();
 
 		if (userAgentToBeUsed)
 			mainInput.addArgs(std::format("-user_agent {}", userAgent));
@@ -3172,7 +3172,7 @@ void FFMpegWrapper::liveRecorder(
 
 			// audio
 			{
-				auto& audioInput = ffmpegEngine.addInput(std::format("hw:{}", captureLive_audioDeviceNumber));
+				auto& audioInput = ffMpegEngine.addInput(std::format("hw:{}", captureLive_audioDeviceNumber));
 
 				audioInput.addArgs("-f alsa -thread_queue_size 2048");
 				// ffmpegArgumentList.emplace_back("-f");
@@ -3204,7 +3204,7 @@ void FFMpegWrapper::liveRecorder(
 				{
 					string picturePathName = JSONUtils::asString(frameToBeDetectedRoot, "picturePathName", "");
 
-					auto& pictureInput = ffmpegEngine.addInput(picturePathName);
+					auto& pictureInput = ffMpegEngine.addInput(picturePathName);
 					pictureInput.addArgs("-r 1 -loop 1");
 					// ffmpegArgumentList.emplace_back("-r");
 					// ffmpegArgumentList.emplace_back("1");
@@ -3226,7 +3226,7 @@ void FFMpegWrapper::liveRecorder(
 		// 	ffmpegArgumentList.push_back(to_string(streamingDuration));
 		// }
 
-		auto& mainOutput = ffmpegEngine.addOutput();
+		auto& mainOutput = ffMpegEngine.addOutput();
 
 		if (utcTimeOverlay)
 		{
@@ -3385,7 +3385,7 @@ void FFMpegWrapper::liveRecorder(
 		outputsRootToFfmpeg(
 			ingestionJobKey, encodingJobKey, externalEncoder,
 			nullptr, // inputDrawTextDetailsRoot,
-			outputsRoot, ffmpegEngine, inputSelectedVideoMap,
+			outputsRoot, ffMpegEngine, inputSelectedVideoMap,
 			inputSelectedAudioMap, inputDurationInSeconds
 		);
 
@@ -3414,10 +3414,10 @@ void FFMpegWrapper::liveRecorder(
 						int videoCrop_X = JSONUtils::asInt(frameToBeDetectedRoot, "videoCrop_X", -1);
 						int videoCrop_Y = JSONUtils::asInt(frameToBeDetectedRoot, "videoCrop_Y", -1);
 
-						ffmpegEngine.addFilterComplex(std::format(
+						ffMpegEngine.addFilterComplex(std::format(
 							"[0:v]crop=w={}:h={}:x={}:y={}[CROPPED]",
 							width, height, videoCrop_X, videoCrop_Y));
-						ffmpegEngine.addFilterComplex(std::format(
+						ffMpegEngine.addFilterComplex(std::format(
 							"[CROPPED][{}:v]blend=difference:shortest=1,blackframe=amount={}:threshold={}[differenceOut_{}]",
 							pictureIndex + 1, amount, threshold, pictureIndex + 1
 							));
@@ -3428,7 +3428,7 @@ void FFMpegWrapper::liveRecorder(
 					}
 					else
 					{
-						ffmpegEngine.addFilterComplex(std::format(
+						ffMpegEngine.addFilterComplex(std::format(
 						"[0:v][{}:v]blend=difference:shortest=1,blackframe=amount={}:threshold={}[differenceOut_{}]",
 						pictureIndex + 1, amount, threshold, pictureIndex + 1));
 						// filter = "[0:v][" + to_string(pictureIndex + 1) + ":v]" +
@@ -3467,7 +3467,7 @@ void FFMpegWrapper::liveRecorder(
 				", encodingJobKey: {}"
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}",
-				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine()
+				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 			);
 
 			bool redirectionStdOutput = true;
@@ -3478,11 +3478,17 @@ void FFMpegWrapper::liveRecorder(
 			// prima di ogni chiamata (ffmpeg) viene resettato ffmpegCallbackData.
 			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData.
 			// forkAndExecByCallback puo essere rieseguito a seguito di un restart
-			ffmpegCallbackData.reset();
+			if (ffmpegCallbackData)
+				ffmpegCallbackData->reset();
+			ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+				std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+				ffmpegCallbackData, _outputFfmpegPathFileName);
+			/*
 			ProcessUtility::forkAndExecByCallback(
-				_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
+				_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
 				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 			);
+			*/
 			processId.reset();
 
 			endFfmpegCommand = chrono::system_clock::now();
@@ -3495,8 +3501,8 @@ void FFMpegWrapper::liveRecorder(
 				// Exiting normally, received signal 3.
 				// 2023-02-18: ho verificato che SIGQUIT non ha funzionato e il processo non si è stoppato,
 				//	mentre ha funzionato SIGTERM, per cui ora sto usando SIGTERM
-				if (*ffmpegCallbackData.signal == 3 // SIGQUIT
-					|| *ffmpegCallbackData.signal == 15 // SIGTERM
+				if (*ffmpegCallbackData->getSignal() == 3 // SIGQUIT
+					|| *ffmpegCallbackData->getSignal() == 15 // SIGTERM
 					)
 				{
 					sigQuitOrTermReceived = true;
@@ -3510,8 +3516,8 @@ void FFMpegWrapper::liveRecorder(
 						", ffmpegArgumentList: {}"
 						", signal: {}"
 						", difference between real and expected duration: {}",
-						ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(),
-						*ffmpegCallbackData.signal, realDuration - streamingDuration
+						ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
+						*ffmpegCallbackData->getSignal(), realDuration - streamingDuration
 					);
 					SPDLOG_ERROR(errorMessage);
 
@@ -3559,7 +3565,7 @@ void FFMpegWrapper::liveRecorder(
 								", iReturnedStatus: {}"
 								", _outputFfmpegPathFileName: {}"
 								", ffmpegArgumentList: {}",
-								ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine()
+								ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 							);
 						}
 
@@ -3575,7 +3581,7 @@ void FFMpegWrapper::liveRecorder(
 					", _outputFfmpegPathFileName: {}"
 					", ffmpegArgumentList: {}"
 					", difference between real and expected duration: {}",
-					ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(),
+					ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 					realDuration - streamingDuration
 				);
 				SPDLOG_ERROR(errorMessage);
@@ -3593,7 +3599,7 @@ void FFMpegWrapper::liveRecorder(
 			", encodingJobKey: {}"
 			", ffmpegArgumentList: {}"
 			", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-			ingestionJobKey, encodingJobKey, ffmpegEngine.toSingleLine(),
+			ingestionJobKey, encodingJobKey, ffMpegEngine.toSingleLine(),
 			chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 
@@ -3696,7 +3702,7 @@ void FFMpegWrapper::liveRecorder(
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}"
 				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(), e.what()
+				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), e.what()
 			);
 		else
 			errorMessage = std::format(
@@ -3706,7 +3712,7 @@ void FFMpegWrapper::liveRecorder(
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}"
 				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffmpegEngine.toSingleLine(), e.what()
+				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), e.what()
 			);
 		SPDLOG_ERROR(errorMessage);
 
@@ -3768,9 +3774,9 @@ void FFMpegWrapper::liveRecorder(
 
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 			throw FFMpegEncodingKilledByUser();
-		if (ffmpegCallbackData.urlForbidden)
+		if (ffmpegCallbackData->getUrlForbidden())
 			throw FFMpegURLForbidden();
-		if (ffmpegCallbackData.urlNotFound)
+		if (ffmpegCallbackData->getUrlNotFound())
 			throw FFMpegURLNotFound();
 		throw;
 	}

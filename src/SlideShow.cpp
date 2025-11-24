@@ -22,8 +22,7 @@ void FFMpegWrapper::slideShow(
 	int64_t ingestionJobKey, int64_t encodingJobKey, float durationOfEachSlideInSeconds, string frameRateMode, json encodingProfileDetailsRoot,
 	vector<string> &imagesSourcePhysicalPaths, vector<string> &audiosSourcePhysicalPaths,
 	float shortestAudioDurationInSeconds, // the shortest duration among the audios
-	string encodedStagingAssetPathName, ProcessUtility::ProcessId &processId,
-	const ProcessUtility::LineCallback& ffmpegLineCallback
+	string encodedStagingAssetPathName, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 )
 {
 	_currentApiName = APIName::SlideShow;
@@ -188,9 +187,9 @@ void FFMpegWrapper::slideShow(
 		slideshowListFile.close();
 	}
 
-	FFMpegEngine ffmpegEngine;
+	FFMpegEngine ffMpegEngine;
 
-	FFMpegEngine::Output mainOutput = ffmpegEngine.addOutput(encodedStagingAssetPathName);
+	FFMpegEngine::Output mainOutput = ffMpegEngine.addOutput(encodedStagingAssetPathName);
 
 	// vector<string> ffmpegEncodingProfileArgumentList;
 	if (encodingProfileDetailsRoot != nullptr)
@@ -364,7 +363,7 @@ void FFMpegWrapper::slideShow(
 
 	// ffmpegArgumentList.push_back("ffmpeg");
 	{
-		FFMpegEngine::Input input = ffmpegEngine.addInput(slideshowListImagesPathName);
+		FFMpegEngine::Input input = ffMpegEngine.addInput(slideshowListImagesPathName);
 		// ffmpegArgumentList.push_back("-f");
 		// ffmpegArgumentList.push_back("concat");
 		// ffmpegArgumentList.push_back("-safe");
@@ -377,11 +376,11 @@ void FFMpegWrapper::slideShow(
 	{
 		// ffmpegArgumentList.push_back("-i");
 		// ffmpegArgumentList.push_back(audiosSourcePhysicalPaths[0]);
-		ffmpegEngine.addInput(audiosSourcePhysicalPaths[0]);
+		ffMpegEngine.addInput(audiosSourcePhysicalPaths[0]);
 	}
 	else if (audiosSourcePhysicalPaths.size() > 1)
 	{
-		FFMpegEngine::Input input = ffmpegEngine.addInput(slideshowListAudiosPathName);
+		FFMpegEngine::Input input = ffMpegEngine.addInput(slideshowListAudiosPathName);
 		// ffmpegArgumentList.push_back("-f");
 		// ffmpegArgumentList.push_back("concat");
 		// ffmpegArgumentList.push_back("-safe");
@@ -428,16 +427,22 @@ void FFMpegWrapper::slideShow(
 			"slideShow: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}",
-			ingestionJobKey, ffmpegEngine.toSingleLine()
+			ingestionJobKey, ffMpegEngine.toSingleLine()
 		);
 
+		if (ffmpegCallbackData)
+			ffmpegCallbackData->reset();
+		ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+			std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+			ffmpegCallbackData, _outputFfmpegPathFileName);
+		/*
 		bool redirectionStdOutput = true;
 		bool redirectionStdError = true;
-
 		ProcessUtility::forkAndExecByCallback(
-			_ffmpegPath + "/ffmpeg", ffmpegEngine.buildArgs(true), ffmpegLineCallback,
+			_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
 			redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
 		);
+		*/
 		processId.reset();
 		if (iReturnedStatus != 0)
 		{
@@ -446,7 +451,7 @@ void FFMpegWrapper::slideShow(
 				", ingestionJobKey: {}"
 				", iReturnedStatus: {}"
 				", ffmpegArgumentList: {}",
-				ingestionJobKey, iReturnedStatus, ffmpegEngine.toSingleLine()
+				ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 			);
 
 			// to hide the ffmpeg staff
@@ -461,7 +466,7 @@ void FFMpegWrapper::slideShow(
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}"
 			", @FFMPEG statistics@ - ffmpegCommandDuration (secs): @{}@",
-			ingestionJobKey, ffmpegEngine.toSingleLine(), chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
+			ingestionJobKey, ffMpegEngine.toSingleLine(), chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
 	catch (exception &e)
@@ -479,7 +484,7 @@ void FFMpegWrapper::slideShow(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffmpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 		else
 			errorMessage = std::format(
@@ -490,7 +495,7 @@ void FFMpegWrapper::slideShow(
 				", ffmpegArgumentList: {}"
 				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffmpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
 			);
 		SPDLOG_ERROR(errorMessage);
 

@@ -26,7 +26,7 @@ void FFMpegWrapper::pictureInPicture(
 	const json& encodingProfileDetailsRoot,
 
 	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
-	const ProcessUtility::LineCallback& ffmpegLineCallback
+	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 )
 {
 
@@ -318,14 +318,20 @@ void FFMpegWrapper::pictureInPicture(
 						encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					ProcessUtility::forkAndExecByCallback(
 						_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
 						redirectionStdOutput, redirectionStdError, processId,
 						iReturnedStatus
 					);
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
@@ -364,7 +370,7 @@ void FFMpegWrapper::pictureInPicture(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -373,10 +379,8 @@ void FFMpegWrapper::pictureInPicture(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					else
 						errorMessage = std::format(
@@ -385,10 +389,8 @@ void FFMpegWrapper::pictureInPicture(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
 

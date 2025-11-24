@@ -25,7 +25,7 @@ void FFMpegWrapper::silentAudio(
 	json encodingProfileDetailsRoot,
 
 	string stagingEncodedAssetPathName, int64_t encodingJobKey, int64_t ingestionJobKey, ProcessUtility::ProcessId &processId,
-	const ProcessUtility::LineCallback& ffmpegLineCallback
+	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 )
 {
 	int iReturnedStatus = 0;
@@ -219,9 +219,14 @@ void FFMpegWrapper::silentAudio(
 						toString(_currentApiName), encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 					);
 
+					if (ffmpegCallbackData)
+						ffmpegCallbackData->reset();
+					ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+						std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+						ffmpegCallbackData, _outputFfmpegPathFileName);
+					/*
 					bool redirectionStdOutput = true;
 					bool redirectionStdError = true;
-
 					if (ffmpegLineCallback)
 						ProcessUtility::forkAndExecByCallback(
 							_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -235,6 +240,7 @@ void FFMpegWrapper::silentAudio(
 							redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
 						);
 					}
+					*/
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{

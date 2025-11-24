@@ -732,7 +732,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 	// see https://stackoverflow.com/questions/63548027/cut-a-video-in-between-key-frames-without-re-encoding-the-full-video-using-ffpme
 	int64_t encodingJobKey, const json& encodingProfileDetailsRoot, string startTime, string endTime, int framesNumber,
 	string stagingEncodedAssetPathName, ProcessUtility::ProcessId &processId,
-	const ProcessUtility::LineCallback& ffmpegLineCallback
+	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 )
 {
 	_currentApiName = APIName::CutFrameAccurateWithEncoding;
@@ -1003,13 +1003,19 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
 
+				if (ffmpegCallbackData)
+					ffmpegCallbackData->reset();
+				ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+					std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+					ffmpegCallbackData, _outputFfmpegPathFileName);
+				/*
 				bool redirectionStdOutput = true;
 				bool redirectionStdError = true;
-
 				ProcessUtility::forkAndExecByCallback(
 					_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
 					redirectionStdOutput, redirectionStdError, processId,iReturnedStatus
 				);
+				*/
 				processId.reset();
 				if (iReturnedStatus != 0)
 				{

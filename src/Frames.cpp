@@ -18,7 +18,7 @@
 
 void FFMpegWrapper::generateFrameToIngest(
 	int64_t ingestionJobKey, string mmsAssetPathName, int64_t videoDurationInMilliSeconds, double startTimeInSeconds, string frameAssetPathName,
-	int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback& ffmpegLineCallback
+	int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	)
 {
 	_currentApiName = APIName::GenerateFrameToIngest;
@@ -112,9 +112,14 @@ void FFMpegWrapper::generateFrameToIngest(
 			ingestionJobKey, ffMpegEngine.toSingleLine()
 		);
 
+		if (ffmpegCallbackData)
+			ffmpegCallbackData->reset();
+		ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+			std::format(", ingestionJobKey: {}", ingestionJobKey),
+			ffmpegCallbackData, _outputFfmpegPathFileName);
+		/*
 		bool redirectionStdOutput = true;
 		bool redirectionStdError = true;
-
 		if (ffmpegLineCallback)
 			ProcessUtility::forkAndExecByCallback(
 				_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
@@ -128,6 +133,7 @@ void FFMpegWrapper::generateFrameToIngest(
 				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 			);
 		}
+		*/
 		processId.reset();
 		if (iReturnedStatus != 0)
 		{
@@ -159,7 +165,7 @@ void FFMpegWrapper::generateFrameToIngest(
 	{
 		processId.reset();
 
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 			errorMessage = std::format(
@@ -167,9 +173,8 @@ void FFMpegWrapper::generateFrameToIngest(
 				", _outputFfmpegPathFileName: {}"
 				", ingestionJobKey: {}"
 				", ffmpegArgumentList: {}"
-				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 			);
 		else
 			errorMessage = std::format(
@@ -177,9 +182,8 @@ void FFMpegWrapper::generateFrameToIngest(
 				", _outputFfmpegPathFileName: {}"
 				", ingestionJobKey: {}"
 				", ffmpegArgumentList: {}"
-				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 			);
 		SPDLOG_ERROR(errorMessage);
 
@@ -207,7 +211,7 @@ void FFMpegWrapper::generateFrameToIngest(
 void FFMpegWrapper::generateFramesToIngest(
 	int64_t ingestionJobKey, int64_t encodingJobKey, string imagesDirectory, string imageBaseFileName, double startTimeInSeconds, int framesNumber,
 	string videoFilter, int periodInSeconds, bool mjpeg, int imageWidth, int imageHeight, string mmsAssetPathName,
-	int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId, const ProcessUtility::LineCallback& ffmpegLineCallback
+	int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 )
 {
 	_currentApiName = APIName::GenerateFramesToIngest;
@@ -415,14 +419,20 @@ void FFMpegWrapper::generateFramesToIngest(
 			encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 		);
 
+		if (ffmpegCallbackData)
+			ffmpegCallbackData->reset();
+		ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+			std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+			ffmpegCallbackData, _outputFfmpegPathFileName);
+		/*
 		bool redirectionStdOutput = true;
 		bool redirectionStdError = true;
-
 		ProcessUtility::forkAndExecByCallback(
 			_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
 			redirectionStdOutput, redirectionStdError, processId,
 			iReturnedStatus
 		);
+		*/
 		processId.reset();
 		if (iReturnedStatus != 0)
 		{
