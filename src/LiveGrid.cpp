@@ -786,13 +786,13 @@ void FFMpegWrapper::liveGrid(
 	{
 		processId.reset();
 
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 		{
 			errorMessage = string("ffmpeg: ffmpeg command failed because killed by the user") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 						   ", encodingJobKey: " + to_string(encodingJobKey) + ", _outputFfmpegPathFileName: " + _outputFfmpegPathFileName +
-						   ", ffmpegArgumentList: " + ffMpegEngine.toSingleLine() + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile +
+						   ", ffmpegArgumentList: " + ffMpegEngine.toSingleLine() +
 						   ", e.what(): " + e.what();
 		}
 		else
@@ -803,9 +803,8 @@ void FFMpegWrapper::liveGrid(
 				", encodingJobKey: {}"
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}"
-				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), e.what()
 			);
 
 			/*
@@ -871,12 +870,12 @@ void FFMpegWrapper::liveGrid(
 
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 			throw FFMpegEncodingKilledByUser();
-		else if (lastPartOfFfmpegOutputFile.find("403 Forbidden") != string::npos)
+		if (ffmpegCallbackData->getUrlForbidden())
 			throw FFMpegURLForbidden();
-		else if (lastPartOfFfmpegOutputFile.find("404 Not Found") != string::npos)
+		if (ffmpegCallbackData->getUrlNotFound())
 			throw FFMpegURLNotFound();
 		else
-			throw e;
+			throw;
 	}
 
 	renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);

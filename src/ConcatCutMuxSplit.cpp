@@ -235,11 +235,11 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 	}
 	catch (runtime_error &e)
 	{
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		// 2020-07-20: log of ffmpegExecuteCommand commented because already added into the catched exception
 		string errorMessage = string("ffmpeg: ffmpeg command failed")
 							  // + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand
-							  + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile + ", e.what(): " + e.what();
+							  + ", e.what(): " + e.what();
 		SPDLOG_ERROR(errorMessage);
 
 		SPDLOG_INFO(
@@ -404,9 +404,9 @@ void FFMpegWrapper::splitVideoInChunks(
 	}
 	catch (runtime_error &e)
 	{
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage = string("ffmpeg: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile +
+							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand +
 							  ", e.what(): " + e.what();
 		SPDLOG_ERROR(errorMessage);
 
@@ -698,9 +698,9 @@ void FFMpegWrapper::cutWithoutEncoding(
 	}
 	catch (runtime_error &e)
 	{
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage = string("ffmpeg: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand + ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile +
+							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand +
 							  ", e.what(): " + e.what();
 		SPDLOG_ERROR(errorMessage);
 
@@ -1055,7 +1055,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 			{
 				processId.reset();
 
-				string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+				// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 				string errorMessage;
 				if (iReturnedStatus == 9) // 9 means: SIGKILL
 					errorMessage = std::format(
@@ -1064,9 +1064,8 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
 						", ffmpegArgumentList: {}"
-						", lastPartOfFfmpegOutputFile: {}"
 						", e.what(): {}",
-						_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
+						_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 						e.what()
 					);
 				else
@@ -1076,9 +1075,8 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
 						", ffmpegArgumentList: {}"
-						", lastPartOfFfmpegOutputFile: {}"
 						", e.what(): {}",
-						_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
+						_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 						e.what()
 					);
 				SPDLOG_ERROR(errorMessage);
@@ -1253,13 +1251,12 @@ void FFMpegWrapper::extractTrackMediaToIngest(
 	}
 	catch (runtime_error &e)
 	{
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage = std::format(
 			"ffmpeg: ffmpeg command failed"
 			", ffmpegExecuteCommand: {}"
-			", lastPartOfFfmpegOutputFile: {}"
 			", e.what(): {}",
-			ffmpegExecuteCommand, lastPartOfFfmpegOutputFile, e.what()
+			ffmpegExecuteCommand, e.what()
 		);
 		SPDLOG_ERROR(errorMessage);
 

@@ -185,15 +185,9 @@ class FFMpegWrapper
 		ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
-	double getEncodingProgress();
-
 	time_t getOutputFFMpegFileLastModificationTime();
 	uintmax_t getOutputFFMpegFileSize();
 	string getOutputFfmpegPathFileName() const;
-	bool nonMonotonousDTSInOutputLog();
-	bool forbiddenErrorInOutputLog();
-	// bool areRealTimeInfoChanged(int maxMilliSecondsToWait);
-	tuple<long, long, double, double, int> getRealTimeInfoByOutputLog();
 
 	tuple<int64_t, long, json> getMediaInfo(
 		int64_t ingestionJobKey, bool isMMSAssetPathName, int timeoutInSeconds, string mediaSource,
@@ -332,7 +326,7 @@ class FFMpegWrapper
 	static void encodingVideoCodecValidation(string codec);
 
 	pair<string, string> retrieveStreamingYouTubeURL(int64_t ingestionJobKey, string youTubeURL);
-	void retrieveLocalInputDevices(vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices);
+	// void retrieveLocalInputDevices(vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices);
 	bool ffmpegExecutableExist();
 
 	static bool isNumber(int64_t ingestionJobKey, string number);
@@ -572,7 +566,7 @@ class FFMpegWrapper
 	);
 	void outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, json outputsRoot, bool externalEncoder);
 
-	string getLastPartOfFile(string pathFileName, int lastCharsToBeRead);
+	// string getLastPartOfFile(string pathFileName, int lastCharsToBeRead);
 
 	// long getFrameByOutputLog(string ffmpegEncodingStatus);
 	// long getSizeByOutputLog(string ffmpegEncodingStatus);

@@ -16,6 +16,7 @@
 #include <fstream>
 #include <regex>
 
+/*
 void FFMpegWrapper::retrieveLocalInputDevices(
 	vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices
 )
@@ -48,21 +49,19 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 				ffmpegExecuteCommand
 			);
 			int executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
-			/*
-			 * ffmpeg ritorna un errore perchè non riceve uno stream di input valido (-i "")
-			if (executeCommandStatus != 0)
-			{
-				string errorMessage = std::format(
-					"retrieveLocalInputDevices failed"
-					", executeCommandStatus: {}"
-					", ffmpegExecuteCommand: {}",
-					executeCommandStatus, ffmpegExecuteCommand
-				);
-				SPDLOG_ERROR(errorMessage);
+			// ffmpeg ritorna un errore perchè non riceve uno stream di input valido (-i "")
+			// if (executeCommandStatus != 0)
+			// {
+			// 	string errorMessage = std::format(
+			// 		"retrieveLocalInputDevices failed"
+			// 		", executeCommandStatus: {}"
+			// 		", ffmpegExecuteCommand: {}",
+			// 		executeCommandStatus, ffmpegExecuteCommand
+			// 	);
+			// 	SPDLOG_ERROR(errorMessage);
 
-				throw runtime_error(errorMessage);
-			}
-			*/
+			// 	throw runtime_error(errorMessage);
+			// }
 
 			chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
@@ -224,3 +223,4 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 		SPDLOG_ERROR(errorMessage);
 	}
 }
+*/

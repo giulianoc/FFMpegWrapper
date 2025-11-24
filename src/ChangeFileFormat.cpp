@@ -156,13 +156,12 @@ void FFMpegWrapper::changeFileFormat(
 	}
 	catch (runtime_error &e)
 	{
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage = std::format(
 			"ffmpeg: ffmpeg command failed"
 			", ffmpegExecuteCommand: {}"
-			", lastPartOfFfmpegOutputFile: {}"
 			", e.what(): {}",
-			ffmpegExecuteCommand, lastPartOfFfmpegOutputFile, e.what()
+			ffmpegExecuteCommand, e.what()
 		);
 		SPDLOG_ERROR(errorMessage);
 

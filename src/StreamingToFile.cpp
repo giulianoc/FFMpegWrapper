@@ -127,15 +127,14 @@ void FFMpegWrapper::streamingToFile(int64_t ingestionJobKey, bool regenerateTime
 			ingestionJobKey, ffmpegExecuteCommand, chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
-	catch (runtime_error &e)
+	catch (exception &e)
 	{
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		SPDLOG_ERROR(
 			"ffmpeg: ffmpeg command failed"
 			", ffmpegExecuteCommand: {}"
-			", lastPartOfFfmpegOutputFile: {}"
 			", e.what(): {}",
-			ffmpegExecuteCommand, lastPartOfFfmpegOutputFile, e.what()
+			ffmpegExecuteCommand, e.what()
 		);
 
 		SPDLOG_INFO(
@@ -172,11 +171,11 @@ Error opening input file
 https://player.vimeo.com/progressive_redirect/download/830622686/container/24656461-f99e-4335-9c99-2a1806c2d7bc/2879f8e3-588c0b73/episodio_%232_scotto%20%281080p%29.mp4?expires=1716885089&loc=external&signature=3d8bb844b1b2f124925067a3f717edf4be86b7a060511a8042763409b8e8f05b.
 Error opening input files: Server returned 4XX Client Error, but not one of 40{0,1,3,4}
 		 */
-		size_t pos = lastPartOfFfmpegOutputFile.rfind("Error opening input files: Server returned 4XX");
-		if (pos != string::npos)
-			throw runtime_error(std::format("streamingToFile: {}", lastPartOfFfmpegOutputFile.substr(pos)));
-		else
-			throw e;
+		// size_t pos = lastPartOfFfmpegOutputFile.rfind("Error opening input files: Server returned 4XX");
+		// if (pos != string::npos)
+		// 	throw runtime_error(std::format("streamingToFile: {}", lastPartOfFfmpegOutputFile.substr(pos)));
+		// else
+			throw;
 	}
 
 	SPDLOG_INFO(

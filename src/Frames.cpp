@@ -468,7 +468,7 @@ void FFMpegWrapper::generateFramesToIngest(
 	{
 		processId.reset();
 
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 			errorMessage = std::format(
@@ -476,9 +476,8 @@ void FFMpegWrapper::generateFramesToIngest(
 				", _outputFfmpegPathFileName: {}"
 				", ingestionJobKey: {}"
 				", ffmpegArgumentList: {}"
-				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 			);
 		else
 			errorMessage = std::format(
@@ -486,9 +485,8 @@ void FFMpegWrapper::generateFramesToIngest(
 				", _outputFfmpegPathFileName: {}"
 				", ingestionJobKey: {}"
 				", ffmpegArgumentList: {}"
-				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile, e.what()
+				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 			);
 		SPDLOG_ERROR(errorMessage);
 

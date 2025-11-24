@@ -279,7 +279,7 @@ void FFMpegWrapper::silentAudio(
 				{
 					processId.reset();
 
-					string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+					// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 					string errorMessage;
 					if (iReturnedStatus == 9) // 9 means: SIGKILL
 						errorMessage = std::format(
@@ -288,10 +288,8 @@ void FFMpegWrapper::silentAudio(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					else
 						errorMessage = std::format(
@@ -300,10 +298,8 @@ void FFMpegWrapper::silentAudio(
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
 							", ffmpegArgumentList: {}"
-							", lastPartOfFfmpegOutputFile: {}"
 							", e.what(): {}",
-							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), lastPartOfFfmpegOutputFile,
-							e.what()
+							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
 					SPDLOG_ERROR(errorMessage);
 

@@ -189,11 +189,11 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 	{
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(detailsPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(detailsPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage = string("getMediaInfo: Executed ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 							  ", ffprobeExecuteCommand: " + ffprobeExecuteCommand + ", @FFMPEG statistics@ - duration (secs): @" +
 							  to_string(chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()) + "@" +
-							  ", lastPartOfFfmpegOutputFile: " + lastPartOfFfmpegOutputFile + ", e.what(): " + e.what();
+							  ", e.what(): " + e.what();
 		SPDLOG_ERROR(errorMessage);
 
 		SPDLOG_INFO(
@@ -999,16 +999,15 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 	{
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(detailsPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(detailsPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage = std::format(
 			"getNearestKeyFrameTime: Executed ffmpeg command failed"
 			", ingestionJobKey: {}"
 			", ffprobeExecuteCommand: {}"
 			", @FFMPEG statistics@ - duration (secs): @{}@"
-			", lastPartOfFfmpegOutputFile: {}"
 			", e.what(): {}",
 			ingestionJobKey, ffprobeExecuteCommand, chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count(),
-			lastPartOfFfmpegOutputFile, e.what()
+			e.what()
 		);
 		SPDLOG_ERROR(errorMessage);
 
@@ -1294,14 +1293,13 @@ int FFMpegWrapper::probeChannel(int64_t ingestionJobKey, string url)
 	}
 	catch (runtime_error &e)
 	{
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(outputProbePathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(outputProbePathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage = std::format(
 			"ffmpeg: probe command failed"
 			", ingestionJobKey: {}"
 			", probeExecuteCommand: {}"
-			", lastPartOfFfmpegOutputFile: {}"
 			", e.what(): {}",
-			ingestionJobKey, probeExecuteCommand, lastPartOfFfmpegOutputFile, e.what()
+			ingestionJobKey, probeExecuteCommand, e.what()
 		);
 		SPDLOG_ERROR(errorMessage);
 
@@ -1415,15 +1413,14 @@ void FFMpegWrapper::getLiveStreamingInfo(
 	}
 	catch (runtime_error &e)
 	{
-		string lastPartOfFfmpegOutputFile = getLastPartOfFile(outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
+		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage = std::format(
 			"getLiveStreamingInfo failed"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
 			", ffmpegExecuteCommand: {}"
-			", lastPartOfFfmpegOutputFile: {}"
 			", e.what(): {}",
-			ingestionJobKey, encodingJobKey, ffmpegExecuteCommand, lastPartOfFfmpegOutputFile, e.what()
+			ingestionJobKey, encodingJobKey, ffmpegExecuteCommand, e.what()
 		);
 		SPDLOG_ERROR(errorMessage);
 

@@ -51,19 +51,12 @@ pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestio
 				// it could be also that the live is not available
 				// ERROR: f2vW_XyTW4o: YouTube said: This live stream recording is not available.
 
-				string lastPartOfFfmpegOutputFile;
-				if (fs::exists(detailsYouTubeProfilesPath))
-					lastPartOfFfmpegOutputFile = getLastPartOfFile(detailsYouTubeProfilesPath, _charsToBeReadFromFfmpegErrorOutput);
-				else
-					lastPartOfFfmpegOutputFile = string("file not found: ") + detailsYouTubeProfilesPath;
-
 				string errorMessage = std::format(
 					"retrieveStreamingYouTubeURL: youTube command failed"
 					", ingestionJobKey: {}"
 					", executeCommandStatus: {}"
-					", youTubeExecuteCommand: {}"
-					", lastPartOfFfmpegOutputFile: {}",
-					ingestionJobKey, executeCommandStatus, youTubeExecuteCommand, lastPartOfFfmpegOutputFile
+					", youTubeExecuteCommand: {}",
+					ingestionJobKey, executeCommandStatus, youTubeExecuteCommand
 				);
 				SPDLOG_ERROR(errorMessage);
 
