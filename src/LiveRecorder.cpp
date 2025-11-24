@@ -3470,9 +3470,6 @@ void FFMpegWrapper::liveRecorder(
 				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 			);
 
-			bool redirectionStdOutput = true;
-			bool redirectionStdError = true;
-
 			startFfmpegCommand = chrono::system_clock::now();
 
 			// prima di ogni chiamata (ffmpeg) viene resettato ffmpegCallbackData.
@@ -3484,6 +3481,8 @@ void FFMpegWrapper::liveRecorder(
 				std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
 				ffmpegCallbackData, _outputFfmpegPathFileName);
 			/*
+			bool redirectionStdOutput = true;
+			bool redirectionStdError = true;
 			ProcessUtility::forkAndExecByCallback(
 				_ffmpegPath + "/ffmpeg", ffMpegEngine.buildArgs(true), ffmpegLineCallback,
 				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
