@@ -3467,7 +3467,7 @@ void FFMpegWrapper::liveRecorder(
 				", encodingJobKey: {}"
 				", _outputFfmpegPathFileName: {}"
 				", ffmpegArgumentList: {}",
-				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
+				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(true)
 			);
 
 			startFfmpegCommand = chrono::system_clock::now();
