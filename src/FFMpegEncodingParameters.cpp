@@ -1110,7 +1110,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						// ffmpegArgumentList.push_back("-pass");
 						// ffmpegArgumentList.push_back("1");
 						// ffmpegArgumentList.push_back("-passlogfile");
-						mainOutput.addArgs("-thread 0 -pass 1 -passlogfile");
+						mainOutput.addArgs("-threads 0 -pass 1 -passlogfile");
 						{
 							string ffmpegPassLogPathFileName =
 								regex_replace(ffmpegTemplatePassLogPathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
@@ -1267,7 +1267,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						// ffmpegArgumentList.push_back("-pass");
 						// ffmpegArgumentList.push_back("2");
 						// ffmpegArgumentList.push_back("-passlogfile");
-						mainOutput.addArgs("-thread 0 -pass 2 -passlogfile");
+						mainOutput.addArgs("-threads 0 -pass 2 -passlogfile");
 						{
 							string ffmpegPassLogPathFileName =
 								regex_replace(ffmpegTemplatePassLogPathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
@@ -1362,7 +1362,7 @@ void FFMpegEncodingParameters::applyEncoding(
 					}
 					// ffmpegArgumentList.push_back("-threads");
 					// ffmpegArgumentList.push_back("0");
-					mainOutput.addArgs("-thread 0");
+					mainOutput.addArgs("-threads 0");
 					// FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 					mainOutput.withAudioCodec(_ffmpegAudioCodec);
 					if (_audioBitRatesInfo.size() > videoIndex)
@@ -1499,7 +1499,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						// ffmpegArgumentList.push_back("-pass");
 						// ffmpegArgumentList.push_back("1");
 						// ffmpegArgumentList.push_back("-passlogfile");
-						mainOutput.addArgs("-thread 0 -pass 1 -passlogfile");
+						mainOutput.addArgs("-threads 0 -pass 1 -passlogfile");
 						{
 							string ffmpegPassLogPathFileName =
 								regex_replace(ffmpegTemplatePassLogPathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
@@ -1616,7 +1616,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						// ffmpegArgumentList.push_back("-pass");
 						// ffmpegArgumentList.push_back("2");
 						// ffmpegArgumentList.push_back("-passlogfile");
-						mainOutput.addArgs("-thread 0 -pass 2 -passlogfile");
+						mainOutput.addArgs("-threads 0 -pass 2 -passlogfile");
 						{
 							string ffmpegPassLogPathFileName =
 								regex_replace(ffmpegTemplatePassLogPathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
@@ -1736,7 +1736,7 @@ void FFMpegEncodingParameters::applyEncoding(
 							}
 							// ffmpegArgumentList.push_back("-threads");
 							// ffmpegArgumentList.push_back("0");
-							mainOutput.addArgs("-thread 0");
+							mainOutput.addArgs("-threads 0");
 							// FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 							mainOutput.withVideoCodec(_ffmpegVideoCodec);
 							if (_audioBitRatesInfo.size() > videoIndex)
@@ -1815,7 +1815,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						// 		ffmpegArgumentList);
 						// ffmpegArgumentList.push_back("-threads");
 						// ffmpegArgumentList.push_back("0");
-						mainOutput.addArgs("-thread 0");
+						mainOutput.addArgs("-threads 0");
 						// FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						mainOutput.withAudioCodec(_ffmpegAudioCodec);
 						// if (_audioBitRatesInfo.size() > videoIndex)
@@ -1871,7 +1871,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						}
 						// ffmpegArgumentList.push_back("-threads");
 						// ffmpegArgumentList.push_back("0");
-						mainOutput.addArgs("-thread 0");
+						mainOutput.addArgs("-threads 0");
 						// FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						mainOutput.withAudioCodec(_ffmpegAudioCodec);
 						// FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
