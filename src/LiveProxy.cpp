@@ -1230,7 +1230,7 @@ void FFMpegWrapper::liveProxy(
 			// prima di ogni chiamata (ffmpeg) viene resettato ffmpegCallbackData.
 			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData.
 			// forkAndExecByCallback puo essere rieseguito a seguito di un restart o per un nuovo input
-			ffmpegCallbackData.reset();
+			ffmpegCallbackData->reset();
 			ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
 				std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
 				ffmpegCallbackData, _outputFfmpegPathFileName);
