@@ -189,6 +189,7 @@ void FFMpegWrapper::encodeContent(
 			// vector<string> ffmpegArgumentList;
 			// ostringstream ffmpegArgumentListStream;
 			FFMpegEngine ffMpegEngine;
+			ffMpegEngine.setDurationMilliSeconds(durationInMilliSeconds);
 			{
 				bool noErrorIfExists = true;
 				bool recursive = true;
@@ -739,6 +740,7 @@ void FFMpegWrapper::encodeContent(
 			if (_twoPasses)
 			{
 				FFMpegEngine ffMpegEngine;
+				ffMpegEngine.setDurationMilliSeconds(durationInMilliSeconds);
 
 				// ffmpeg <global-options> <input-options> -i <input> <output-options> <output>
 				// ffmpegArgumentList.push_back("ffmpeg");
@@ -1022,6 +1024,7 @@ void FFMpegWrapper::encodeContent(
 			else
 			{
 				FFMpegEngine ffMpegEngine;
+				ffMpegEngine.setDurationMilliSeconds(durationInMilliSeconds);
 
 				// ffmpegArgumentList.push_back("ffmpeg");
 				// global options
@@ -1213,6 +1216,7 @@ void FFMpegWrapper::encodeContent(
 			// vector<string> ffmpegArgumentList;
 			// ostringstream ffmpegArgumentListStream;
 			FFMpegEngine ffMpegEngine;
+			ffMpegEngine.setDurationMilliSeconds(durationInMilliSeconds);
 
 			if (_twoPasses)
 			{
