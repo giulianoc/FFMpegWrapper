@@ -1024,6 +1024,13 @@ void FFMpegWrapper::encodeContent(
 			else
 			{
 				FFMpegEngine ffMpegEngine;
+				SPDLOG_INFO(
+					"encodeContent: setting duration"
+					", encodingJobKey: {}"
+					", ingestionJobKey: {}"
+					", durationInMilliSeconds: {}",
+					encodingJobKey, ingestionJobKey, durationInMilliSeconds
+				);
 				ffMpegEngine.setDurationMilliSeconds(durationInMilliSeconds);
 
 				// ffmpegArgumentList.push_back("ffmpeg");
