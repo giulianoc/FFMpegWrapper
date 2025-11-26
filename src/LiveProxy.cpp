@@ -1561,7 +1561,7 @@ void FFMpegWrapper::liveProxy(
 					else
 					{
 						SPDLOG_INFO(
-							"Command is executed again"
+							"Command is executed again, sleeping for"
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
 							", currentNumberOfRepeatingSameInput: {}"
@@ -1631,6 +1631,13 @@ void FFMpegWrapper::liveProxy(
 				//	To avoid this problem, we add here (ffmpeg client) a delay to wait ffmpeg server to starts
 				//	Based on my statistics I think 2 seconds should be enought
 				int sleepInSecondsToBeSureServerIsRunning = 2;
+				SPDLOG_INFO(
+					"Command is executed again, sleeping for"
+					", ingestionJobKey: {}"
+					", encodingJobKey: {}"
+					", sleepInSecondsToBeSureServerIsRunning: {}",
+					ingestionJobKey, encodingJobKey, sleepInSecondsToBeSureServerIsRunning
+				);
 				this_thread::sleep_for(chrono::seconds(sleepInSecondsToBeSureServerIsRunning));
 			}
 		}
