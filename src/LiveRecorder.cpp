@@ -3067,7 +3067,10 @@ void FFMpegWrapper::liveRecorder(
 		auto& mainInput = ffMpegEngine.addInput();
 
 		if (userAgentToBeUsed)
-			mainInput.addArgs(std::format("-user_agent {}", userAgent));
+		{
+			mainInput.addArg("-user_agent");
+			mainInput.addArg(userAgent);
+		}
 		// {
 		// 	ffmpegArgumentList.emplace_back("-user_agent");
 		// 	ffmpegArgumentList.push_back(userAgent);

@@ -1115,7 +1115,7 @@ void FFMpegEncodingParameters::applyEncoding(
 							string ffmpegPassLogPathFileName =
 								regex_replace(ffmpegTemplatePassLogPathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
 							// ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
-							mainOutput.addArgs(ffmpegPassLogPathFileName);
+							mainOutput.addArg(ffmpegPassLogPathFileName);
 						}
 
 						// 2020-01-20: I removed the hls file format parameter
@@ -1250,7 +1250,8 @@ void FFMpegEncodingParameters::applyEncoding(
 								regex_replace(segmentTemplatePathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
 							// ffmpegArgumentList.push_back("-hls_segment_filename");
 							// ffmpegArgumentList.push_back(segmentPathFileName);
-							mainOutput.addArgs(std::format("-hls_segment_filename {}", segmentPathFileName));
+							mainOutput.addArg("-hls_segment_filename");
+							mainOutput.addArg(segmentPathFileName);
 						}
 
 						{
@@ -1272,7 +1273,7 @@ void FFMpegEncodingParameters::applyEncoding(
 							string ffmpegPassLogPathFileName =
 								regex_replace(ffmpegTemplatePassLogPathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
 							// ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
-							mainOutput.addArgs(ffmpegPassLogPathFileName);
+							mainOutput.addArg(ffmpegPassLogPathFileName);
 						}
 					}
 				}
@@ -1397,7 +1398,8 @@ void FFMpegEncodingParameters::applyEncoding(
 								regex_replace(segmentTemplatePathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
 							// ffmpegArgumentList.push_back("-hls_segment_filename");
 							// ffmpegArgumentList.push_back(segmentPathFileName);
-							mainOutput.addArgs((std::format("-hls_segment_filename {}", segmentPathFileName)));
+							mainOutput.addArg("-hls_segment_filename");
+							mainOutput.addArg(segmentPathFileName);
 						}
 
 						{
@@ -1621,7 +1623,7 @@ void FFMpegEncodingParameters::applyEncoding(
 							string ffmpegPassLogPathFileName =
 								regex_replace(ffmpegTemplatePassLogPathFileName, regex(_multiTrackTemplateVariable), to_string(videoHeight));
 							// ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
-							mainOutput.addArgs(ffmpegPassLogPathFileName);
+							mainOutput.addArg(ffmpegPassLogPathFileName);
 						}
 						// FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						mainOutput.withAudioCodec(_ffmpegAudioCodec);
@@ -2483,7 +2485,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 														 to_string(_ingestionJobKey) + "_" + to_string(_encodingJobKey) + "_%04d.ts";
 							// ffmpegArgumentList.push_back("-hls_segment_filename");
 							// ffmpegArgumentList.push_back(segmentPathFileName);
-							audioOutput.addArgs(std::format("-hls_segment_filename {}", segmentPathFileName));
+							audioOutput.addArg("-hls_segment_filename");
+							audioOutput.addArg(segmentPathFileName);
 						}
 
 						// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
@@ -2530,7 +2533,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// ffmpegArgumentList.push_back("1");
 				// ffmpegArgumentList.push_back("-passlogfile");
 				// ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
-				videoOutput.addArgs(std::format("-threads 0 -pass 1 -passlogfile {}", ffmpegPassLogPathFileName));
+				videoOutput.addArgs("-threads 0 -pass 1 -passlogfile");
+				videoOutput.addArg(ffmpegPassLogPathFileName);
 				// 2020-01-20: I removed the hls file format parameter because it was not working
 				//	and added -f mp4. At the end it has to generate just the log file
 				//	to be used in the second step
@@ -2584,7 +2588,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 														 to_string(_ingestionJobKey) + "_" + to_string(_encodingJobKey) + "_%04d.ts";
 							// ffmpegArgumentList.push_back("-hls_segment_filename");
 							// ffmpegArgumentList.push_back(segmentPathFileName);
-							audioOutput.addArgs(std::format("-hls_segment_filename {}", segmentPathFileName));
+							audioOutput.addArg("-hls_segment_filename");
+							audioOutput.addArg(segmentPathFileName);
 						}
 
 						// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
@@ -2632,7 +2637,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// ffmpegArgumentList.push_back("2");
 				// ffmpegArgumentList.push_back("-passlogfile");
 				// ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
-				videoOutput.addArgs(std::format("-threads 0 -pass 2 -passlogfile {}", ffmpegPassLogPathFileName));
+				videoOutput.addArgs("-threads 0 -pass 2 -passlogfile");
+				videoOutput.addArg(ffmpegPassLogPathFileName);
 
 				// FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegHttpStreamingParameter);
@@ -2650,7 +2656,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 												 "_" + to_string(_encodingJobKey) + "_%04d.ts";
 					// ffmpegArgumentList.push_back("-hls_segment_filename");
 					// ffmpegArgumentList.push_back(segmentPathFileName);
-					videoOutput.addArgs(std::format("-hls_segment_filename {}", segmentPathFileName));
+					videoOutput.addArg("-hls_segment_filename");
+					videoOutput.addArg(segmentPathFileName);
 				}
 
 				// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
@@ -2702,7 +2709,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 													 to_string(_ingestionJobKey) + "_" + to_string(_encodingJobKey) + "_%04d.ts";
 						// ffmpegArgumentList.push_back("-hls_segment_filename");
 						// ffmpegArgumentList.push_back(segmentPathFileName);
-						audioOutput.addArgs(std::format("-hls_segment_filename {}", segmentPathFileName));
+						audioOutput.addArgs("-hls_segment_filename");
+						audioOutput.addArg(segmentPathFileName);
 					}
 
 					// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
@@ -2763,7 +2771,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 											 to_string(_encodingJobKey) + "_%04d.ts";
 				// ffmpegArgumentList.push_back("-hls_segment_filename");
 				// ffmpegArgumentList.push_back(segmentPathFileName);
-				videoOutput.addArgs(std::format("-hls_segment_filename {}", segmentPathFileName));
+				videoOutput.addArg("-hls_segment_filename");
+				videoOutput.addArg(segmentPathFileName);
 			}
 
 			// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);

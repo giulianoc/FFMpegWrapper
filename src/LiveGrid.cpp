@@ -235,10 +235,11 @@ void FFMpegWrapper::liveGrid(
 			{
 				// ffmpegArgumentList.push_back("-user_agent");
 				// ffmpegArgumentList.push_back(userAgent);
-				mainInput.addArgs(std::format("-user_agent {}", userAgent));
+				mainInput.addArg("-user_agent");
+				mainInput.addArg(userAgent);
 			}
 			// ffmpegArgumentList.push_back("-re");
-			mainInput.addArgs("-re");
+			mainInput.addArg("-re");
 
 			// ffmpegArgumentList.push_back("-i");
 			// ffmpegArgumentList.push_back(inputChannelURL);

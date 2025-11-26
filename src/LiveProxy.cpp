@@ -3505,7 +3505,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			{
 				// ffmpegInputArgumentList.push_back("-user_agent");
 				// ffmpegInputArgumentList.push_back(userAgent);
-				mainInput.addArgs(std::format("-user_agent {}", userAgent));
+				mainInput.addArg("-user_agent");
+				mainInput.addArg(userAgent);
 			}
 			if (inputDurationInSeconds)
 				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
