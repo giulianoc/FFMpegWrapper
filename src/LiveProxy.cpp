@@ -3603,14 +3603,16 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				{
 					// this is a file
 
+					FFMpegEngine::Input& fileInput = ffMpegEngine.addInput();
+
 					// ffmpegInputArgumentList.push_back("-stream_loop");
 					// // number of times input stream shall be looped. Loop 0 means no loop, loop -1 means infinite loop
 					// ffmpegInputArgumentList.push_back("-1");
-					mainInput.addArgs("-stream_loop -1");
+					fileInput.addArgs("-stream_loop -1");
 
 					// ffmpegInputArgumentList.push_back("-i");
 					// ffmpegInputArgumentList.push_back(useVideoTrackFromPhysicalPathName);
-					mainInput.setSource(useVideoTrackFromPhysicalPathName);
+					fileInput.setSource(useVideoTrackFromPhysicalPathName);
 
 					// ffmpegInputArgumentList.push_back("-map");
 					// ffmpegInputArgumentList.push_back("0:a");
