@@ -3298,7 +3298,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		}
 		*/
 
-		if (streamSourceType == "IP_PULL" && maxWidth != -1)
+		if (false && streamSourceType == "IP_PULL" && maxWidth != -1)
 		{
 			try
 			{
