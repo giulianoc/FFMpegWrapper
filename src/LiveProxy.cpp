@@ -1254,7 +1254,7 @@ void FFMpegWrapper::liveProxy(
 					", _outputFfmpegPathFileName: {}"
 					", ffmpegArgumentList: {}",
 					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, iReturnedStatus, _outputFfmpegPathFileName,
-					ffMpegEngine.toSingleLine()
+					ffMpegEngine.toSingleLine(true)
 				);
 				SPDLOG_ERROR(errorMessage);
 
