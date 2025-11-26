@@ -1231,16 +1231,16 @@ void FFMpegWrapper::liveProxy(
 			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData.
 			// forkAndExecByCallback puo essere rieseguito a seguito di un restart o per un nuovo input
 			ffmpegCallbackData->reset();
+			/*
 			ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
 				std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
 				ffmpegCallbackData, _outputFfmpegPathFileName);
-			/*
+			 */
 			vector<string> ffmpegArgs = ffMpegEngine.buildArgs(false);
 			ProcessUtility::forkAndExec(
 				_ffmpegPath + "/ffmpeg", ffmpegArgs, _outputFfmpegPathFileName,
 				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
 			);
-			 */
 			processId.reset();
 
 			endFfmpegCommand = chrono::system_clock::now();
