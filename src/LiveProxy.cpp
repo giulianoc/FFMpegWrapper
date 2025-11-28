@@ -2810,7 +2810,7 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 
 								CurlWrapper::downloadFile(
 									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
-									std::format(", ingestionJobKey: {}", ingestionJobKey), 120 /* timeoutInSeconds */, 1 /* maxRetryNumber */
+									std::format(", ingestionJobKey: {}", ingestionJobKey), 240, 1 /* maxRetryNumber */
 								);
 							}
 							catch (exception &e)
@@ -4247,7 +4247,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 								CurlWrapper::downloadFile(
 									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
-									std::format(", ingestionJobKey: {}", ingestionJobKey), 120 /* timeoutInSeconds */, 1 /* maxRetryNumber */
+									std::format(", ingestionJobKey: {}", ingestionJobKey), 240, 1 /* maxRetryNumber */
 								);
 							}
 							catch (exception &e)
