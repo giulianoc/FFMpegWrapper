@@ -2742,11 +2742,13 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 					throw runtime_error(errorMessage);
 				}
 				playlistListFile << "ffconcat version 1.0" << endl;
-				for (string sourcePhysicalReference : sources)
+				for (int sourceIndex = 0; sourceIndex < sources.size(); sourceIndex++)
 				{
 					// sourcePhysicalReference will be:
 					//	a URL in case of externalEncoder
 					//	a storage path name in case of a local encoder
+
+					string sourcePhysicalReference = sources[sourceIndex];
 
 					if (externalEncoder)
 					{
@@ -2834,9 +2836,10 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
 							", _ffmpegEndlessRecursivePlaylist: {}"
-							", sourcePhysicalReference: {}"
+							", sourcePhysicalReference: {} ({}/{})"
 							", content: file '{}'",
-							ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, sourcePhysicalReference, destBinaryFileName
+							ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, sourcePhysicalReference,
+							sourceIndex, sources.size(), destBinaryFileName
 						);
 					}
 					else
@@ -2871,9 +2874,9 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 				playlistListFile << "file '" << endlessPlaylistListFileName << "'" << endl;
 				playlistListFile.close();
 
-				ffmpegInputArgumentList.push_back("-f");
-				ffmpegInputArgumentList.push_back("concat");
-				ffmpegInputArgumentList.push_back("-i");
+				ffmpegInputArgumentList.emplace_back("-f");
+				ffmpegInputArgumentList.emplace_back("concat");
+				ffmpegInputArgumentList.emplace_back("-i");
 				ffmpegInputArgumentList.push_back(endlessPlaylistListPathName);
 			}
 
