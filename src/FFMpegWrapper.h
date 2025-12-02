@@ -261,7 +261,7 @@ class FFMpegWrapper
 		string liveURL, int pushListenTimeout, int captureLive_videoDeviceNumber, const string &captureLive_videoInputFormat,
 		int captureLive_frameRate, int captureLive_width, int captureLive_height, int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
 		bool utcTimeOverlay, const string_view &userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd, int segmentDurationInSeconds,
-		const string &outputFileFormat, const string &segmenterType,
+		const string &outputFileFormat, const string& otherOutputOptions, const string &segmenterType,
 		// streamSegmenter or hlsSegmenter
 		const json &outputsRoot, json framesToBeDetectedRoot, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
 		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure

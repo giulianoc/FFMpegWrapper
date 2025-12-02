@@ -2836,6 +2836,7 @@ void FFMpegWrapper::liveRecorder(
 	const string_view& userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
 
 	int segmentDurationInSeconds, const string& outputFileFormat,
+	const string& otherOutputOptions,
 	const string& segmenterType, // streamSegmenter or hlsSegmenter
 
 	const json& outputsRoot,
@@ -3263,8 +3264,13 @@ void FFMpegWrapper::liveRecorder(
 		{
 			// this is to get all video/audio tracks
 			mainOutput.map("0:v").map("0:a");
-			mainOutput.withVideoCodec("copy");
-			mainOutput.withAudioCodec("copy");
+
+			// ad esempio potrebbe essere usato per aggiungere il mapping della traccia dei timecode
+			if (!otherOutputOptions.empty())
+				mainOutput.addArgs(otherOutputOptions);
+
+			// copia tutto cio che è stato mappato
+			mainOutput.setCopyAllTracks(true);
 
 			// this is to get all video tracks
 			// ffmpegArgumentList.emplace_back("-map");
