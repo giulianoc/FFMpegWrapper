@@ -852,7 +852,7 @@ void FFMpegWrapper::liveProxy2(
 
 void FFMpegWrapper::liveProxy(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
-	json *inputsRoot, const json& outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
+	json *inputsRoot, const json& outputsRoot, ProcessUtility::ProcessId &processId, optional<chrono::system_clock::time_point>& proxyStart,
 	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
 	long *numberOfRestartBecauseOfFailure, bool keepOutputLog
 )
@@ -1532,12 +1532,12 @@ void FFMpegWrapper::liveProxy(
 						if (utcProxyPeriodStart != -1)
 						{
 							if (chrono::system_clock::from_time_t(utcProxyPeriodStart) < chrono::system_clock::now())
-								*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+								proxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
 							else
-								*pProxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
+								proxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
 						}
 						else
-							*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+							proxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
 					}
 				}
 				else
@@ -1580,12 +1580,12 @@ void FFMpegWrapper::liveProxy(
 							if (utcProxyPeriodStart != -1)
 							{
 								if (chrono::system_clock::from_time_t(utcProxyPeriodStart) < chrono::system_clock::now())
-									*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+									proxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
 								else
-									*pProxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
+									proxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
 							}
 							else
-								*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+								proxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
 						}
 
 						currentInputIndex--;
@@ -1603,12 +1603,12 @@ void FFMpegWrapper::liveProxy(
 					if (utcProxyPeriodStart != -1)
 					{
 						if (chrono::system_clock::from_time_t(utcProxyPeriodStart) < chrono::system_clock::now())
-							*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+							proxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
 						else
-							*pProxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
+							proxyStart = chrono::system_clock::from_time_t(utcProxyPeriodStart) + chrono::seconds(pushListenTimeout);
 					}
 					else
-						*pProxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
+						proxyStart = chrono::system_clock::now() + chrono::seconds(pushListenTimeout);
 				}
 
 				// 2022-10-21: this is the scenario where the LiveProxy playlist is changed (signal: 3)

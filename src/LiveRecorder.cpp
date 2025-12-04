@@ -2845,7 +2845,8 @@ void FFMpegWrapper::liveRecorder(
 
 	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
 
-	ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
+	ProcessUtility::ProcessId &processId, optional<chrono::system_clock::time_point>& recordingStart,
+	long *numberOfRestartBecauseOfFailure
 )
 {
 	_currentApiName = APIName::LiveRecorder;
@@ -3535,9 +3536,9 @@ void FFMpegWrapper::liveRecorder(
 					// we will set again the pRecordingStart variable
 					{
 						if (chrono::system_clock::from_time_t(utcRecordingPeriodStart) < chrono::system_clock::now())
-							*pRecordingStart = chrono::system_clock::now() + chrono::seconds(localPushListenTimeout);
+							recordingStart = chrono::system_clock::now() + chrono::seconds(localPushListenTimeout);
 						else
-							*pRecordingStart = chrono::system_clock::from_time_t(utcRecordingPeriodStart) + chrono::seconds(localPushListenTimeout);
+							recordingStart = chrono::system_clock::from_time_t(utcRecordingPeriodStart) + chrono::seconds(localPushListenTimeout);
 					}
 
 					{

@@ -264,7 +264,8 @@ class FFMpegWrapper
 		const string &outputFileFormat, const string& otherOutputOptions, const string &segmenterType,
 		// streamSegmenter or hlsSegmenter
 		const json &outputsRoot, json framesToBeDetectedRoot, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
-		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
+		ProcessUtility::ProcessId &processId, optional<chrono::system_clock::time_point>& recordingStart,
+		long *numberOfRestartBecauseOfFailure
 	);
 
 	void liveRecorder2(
@@ -292,7 +293,7 @@ class FFMpegWrapper
 
 	void liveProxy(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
-		json *inputsRoot, const json &outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
+		json *inputsRoot, const json &outputsRoot, ProcessUtility::ProcessId &processId, optional<chrono::system_clock::time_point>& proxyStart,
 		shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData, long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
 	);
 
@@ -537,12 +538,7 @@ class FFMpegWrapper
 		json *newInputRoot
 	);
 
-	tuple<
-		long, string, string, int, int64_t, json
-		// vector<tuple<int, int64_t, string, string, int, int, string, long>>,
-		// vector<tuple<int, int64_t, string, long, int, long, string>>
-		>
-	liveProxyInput(
+	tuple<long, string, string, int, int64_t, json> liveProxyInput(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
 		vector<string> &ffmpegInputArgumentList
 	);
