@@ -1224,8 +1224,8 @@ void FFMpegWrapper::liveProxy(
 
 			startFfmpegCommand = chrono::system_clock::now();
 
-			bool redirectionStdOutput = true;
-			bool redirectionStdError = true;
+			// bool redirectionStdOutput = true;
+			// bool redirectionStdError = true;
 
 			// prima di ogni chiamata (ffmpeg) viene resettato ffmpegCallbackData.
 			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData.
@@ -1374,8 +1374,7 @@ void FFMpegWrapper::liveProxy(
 			}
 			else
 			{
-				// signal: 3 is what the LiveProxy playlist is changed and
-				//		we need to use the new playlist
+				// signal: 3 is when the LiveProxy playlist is changed and we need to use the new playlist
 				// lastPartOfFfmpegOutputFile is like:
 				//	Child has exit abnormally because of an uncaught signal. Terminating signal: 3
 				// 2023-02-18: ho verificato che SIGQUIT non ha funzionato e il processo non si è stoppato,

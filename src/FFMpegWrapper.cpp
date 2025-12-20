@@ -16,7 +16,7 @@
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
 
-FFMpegWrapper::FFMpegWrapper(json configuration)
+FFMpegWrapper::FFMpegWrapper(json configuration) : _currentApiName()
 {
 	_ffmpegPath = JSONUtils::asString(configuration["ffmpeg"], "path", ".");
 	SPDLOG_DEBUG(
