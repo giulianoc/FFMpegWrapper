@@ -329,7 +329,7 @@ class FFMpegWrapper
 	static void encodingVideoCodecValidation(string codec);
 
 	pair<string, string> retrieveStreamingYouTubeURL(int64_t ingestionJobKey, string youTubeURL);
-	// void retrieveLocalInputDevices(vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices);
+	void retrieveLocalInputDevices(vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices);
 	bool ffmpegExecutableExist();
 
 	static bool isNumber(int64_t ingestionJobKey, string number);

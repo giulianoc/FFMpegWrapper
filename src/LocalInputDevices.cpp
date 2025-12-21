@@ -16,7 +16,6 @@
 #include <fstream>
 #include <regex>
 
-/*
 void FFMpegWrapper::retrieveLocalInputDevices(
 	vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices
 )
@@ -75,13 +74,11 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 		}
 		catch (exception &e)
 		{
-			string lastPartOfFfmpegOutputFile = getLastPartOfFile(outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 			string errorMessage = std::format(
 				"retrieveLocalInputDevices failed"
 				", ffmpegExecuteCommand: {}"
-				", lastPartOfFfmpegOutputFile: {}"
 				", e.what(): {}",
-				ffmpegExecuteCommand, lastPartOfFfmpegOutputFile, e.what()
+				ffmpegExecuteCommand, e.what()
 			);
 			SPDLOG_ERROR(errorMessage);
 
@@ -95,7 +92,7 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 				fs::remove_all(outputFfmpegPathFileName);
 			}
 
-			throw e;
+			throw;
 		}
 
 		try
@@ -223,4 +220,3 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 		SPDLOG_ERROR(errorMessage);
 	}
 }
-*/

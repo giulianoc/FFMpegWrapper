@@ -33,7 +33,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		ingestionJobKey, isMMSAssetPathName, mediaSource
 	);
 
-	if (mediaSource == "")
+	if (mediaSource.empty())
 	{
 		string errorMessage = std::format(
 			"Media Source is wrong"
@@ -98,7 +98,8 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 		string mediaSourceLowerCase;
 		mediaSourceLowerCase.resize(mediaSource.size());
-		transform(mediaSource.begin(), mediaSource.end(), mediaSourceLowerCase.begin(), [](unsigned char c) { return tolower(c); });
+		ranges::transform(mediaSource, mediaSourceLowerCase.begin(),
+			[](unsigned char c) { return tolower(c); });
 
 		// 2023-01-23: udp è stato verificato con udp://@239.255.1.1:8013 (tv dig terr)
 		if (mediaSourceLowerCase.find("udp://") != string::npos)
@@ -169,10 +170,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				errorMessage = string("getMediaInfo command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey);
 				throw runtime_error(errorMessage);
 			}
-			else
-			{
-				executeDone = true;
-			}
+			executeDone = true;
 		}
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
