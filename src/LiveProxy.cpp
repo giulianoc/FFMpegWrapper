@@ -4988,7 +4988,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 
 		// output file
-		if (outputType == "CDN_AWS" || outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
+		if (outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
 		{
 			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
 			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
@@ -5733,7 +5733,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 
 		// output file
-		if (outputType == "CDN_AWS" || outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
+		if (outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
 		{
 			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
 			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
