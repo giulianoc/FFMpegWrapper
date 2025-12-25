@@ -778,7 +778,7 @@ void FFMpegWrapper::liveRecorder(
 					ffmpegArgumentList.push_back(manifestFilePathName);
 				}
 			}
-			else if (outputType == "CDN_AWS" || outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
+			else if (outputType == "RTMP_Channel")
 			{
 				// 2022-09-01: scenario: mando un m3u8 multi tracce ricevuto da HWM (serie C)
 				//	verso un rtmp della CDN77, mi fallisce perchè un flv/rtmp non puo' essere

@@ -4988,11 +4988,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 
 		// output file
-		if (outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
+		if (outputType == "RTMP_Channel")
 		{
 			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
-			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
-			if (rtmpUrl == "" && srtUrl == "")
+			if (rtmpUrl.empty())
 			{
 				string errorMessage = std::format(
 					"rtmpUrl/srtUrl cannot be empty"
@@ -5069,15 +5068,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			// right now it is fixed flv, it means cdnURL will be like "rtmp://...."
 			ffmpegOutputArgumentList.push_back("-f");
-			if (rtmpUrl != "")
 			{
 				ffmpegOutputArgumentList.push_back("flv");
 				ffmpegOutputArgumentList.push_back(rtmpUrl);
-			}
-			else
-			{
-				ffmpegOutputArgumentList.push_back("mpegts");
-				ffmpegOutputArgumentList.push_back(srtUrl);
 			}
 		}
 		else if (outputType == "SRT_Channel")
@@ -5733,11 +5726,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 
 		// output file
-		if (outputType == "CDN_CDN77" || outputType == "RTMP_Channel")
+		if (outputType == "RTMP_Channel")
 		{
 			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
-			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
-			if (rtmpUrl.empty() && srtUrl.empty())
+			if (rtmpUrl.empty())
 			{
 				string errorMessage = std::format(
 					"rtmpUrl/srtUrl cannot be empty"
@@ -5826,19 +5818,11 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			// right now it is fixed flv, it means cdnURL will be like "rtmp://...."
 			// ffmpegOutputArgumentList.push_back("-f");
-			if (!rtmpUrl.empty())
 			{
 				// ffmpegOutputArgumentList.push_back("flv");
 				output.addArgs("-f flv");
 				// ffmpegOutputArgumentList.push_back(rtmpUrl);
 				output.setPath(rtmpUrl);
-			}
-			else
-			{
-				// ffmpegOutputArgumentList.push_back("mpegts");
-				output.addArgs("-f mpegts");
-				// ffmpegOutputArgumentList.push_back(srtUrl);
-				output.setPath(srtUrl);
 			}
 		}
 		else if (outputType == "SRT_Channel")
