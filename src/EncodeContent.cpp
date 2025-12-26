@@ -235,7 +235,7 @@ void FFMpegWrapper::encodeContent(
 					{
 						json videoTrack = videoTracksRoot[0];
 
-						videoTrackDirectoryName = to_string(JSONUtils::asInt(videoTrack, "trackIndex"));
+						videoTrackDirectoryName = to_string(JSONUtils::asInt32(videoTrack, "trackIndex"));
 					}
 
 					string videoPathName = std::format("{}/{}", encodedStagingAssetPathName, videoTrackDirectoryName);

@@ -1084,11 +1084,9 @@ void FFMpegWrapper::liveProxy(
 				ingestionJobKey, encodingJobKey, inputsRoot->size(), timedInput, currentInputIndex
 			);
 
-			tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> inputDetails =
-				liveProxyInput(ingestionJobKey, encodingJobKey, externalEncoder,
+			tie(endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart, inputFiltersRoot, inputSelectedVideoMap,
+				inputSelectedAudioMap, inputDurationInSeconds) = liveProxyInput(ingestionJobKey, encodingJobKey, externalEncoder,
 				currentInputRoot, maxStreamingDurationInMinutes, ffMpegEngine);
-			tie(endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart,
-				inputFiltersRoot, inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds) = inputDetails;
 
 			{
 				/*
@@ -1852,7 +1850,7 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 
 		int maxWidth = -1;
 		field = "maxWidth";
-		maxWidth = JSONUtils::asInt(streamInputRoot, field, -1);
+		maxWidth = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		string url;
 		field = "url";
@@ -1869,7 +1867,7 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 		userAgent = JSONUtils::asString(streamInputRoot, field, "");
 
 		field = "pushListenTimeout";
-		pushListenTimeout = JSONUtils::asInt(streamInputRoot, field, -1);
+		pushListenTimeout = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		string otherInputOptions;
 		field = "otherInputOptions";
@@ -1881,27 +1879,27 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 
 		int captureLive_frameRate = -1;
 		field = "captureFrameRate";
-		captureLive_frameRate = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_frameRate = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_width = -1;
 		field = "captureWidth";
-		captureLive_width = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_width = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_height = -1;
 		field = "captureHeight";
-		captureLive_height = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_height = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_videoDeviceNumber = -1;
 		field = "captureVideoDeviceNumber";
-		captureLive_videoDeviceNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_videoDeviceNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_channelsNumber = -1;
 		field = "captureChannelsNumber";
-		captureLive_channelsNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_channelsNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_audioDeviceNumber = -1;
 		field = "captureAudioDeviceNumber";
-		captureLive_audioDeviceNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_audioDeviceNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		SPDLOG_INFO(
 			"liveProxy: setting dynamic -map option"
@@ -3224,7 +3222,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 		int maxWidth = -1;
 		field = "maxWidth";
-		maxWidth = JSONUtils::asInt(streamInputRoot, field, -1);
+		maxWidth = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		string url;
 		field = "url";
@@ -3241,7 +3239,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		userAgent = JSONUtils::asString(streamInputRoot, field, "");
 
 		field = "pushListenTimeout";
-		pushListenTimeout = JSONUtils::asInt(streamInputRoot, field, -1);
+		pushListenTimeout = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		string otherInputOptions;
 		field = "otherInputOptions";
@@ -3253,27 +3251,27 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 		int captureLive_frameRate = -1;
 		field = "captureFrameRate";
-		captureLive_frameRate = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_frameRate = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_width = -1;
 		field = "captureWidth";
-		captureLive_width = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_width = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_height = -1;
 		field = "captureHeight";
-		captureLive_height = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_height = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_videoDeviceNumber = -1;
 		field = "captureVideoDeviceNumber";
-		captureLive_videoDeviceNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_videoDeviceNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_channelsNumber = -1;
 		field = "captureChannelsNumber";
-		captureLive_channelsNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_channelsNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		int captureLive_audioDeviceNumber = -1;
 		field = "captureAudioDeviceNumber";
-		captureLive_audioDeviceNumber = JSONUtils::asInt(streamInputRoot, field, -1);
+		captureLive_audioDeviceNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
 
 		SPDLOG_INFO(
 			"liveProxy: setting dynamic -map option"
@@ -5106,8 +5104,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		{
 			string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
 			string manifestFileName = JSONUtils::asString(outputRoot, "manifestFileName", "");
-			int segmentDurationInSeconds = JSONUtils::asInt(outputRoot, "segmentDurationInSeconds", 10);
-			int playlistEntriesNumber = JSONUtils::asInt(outputRoot, "playlistEntriesNumber", 5);
+			int segmentDurationInSeconds = JSONUtils::asInt32(outputRoot, "segmentDurationInSeconds", 10);
+			int playlistEntriesNumber = JSONUtils::asInt32(outputRoot, "playlistEntriesNumber", 5);
 
 			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
 
@@ -5871,8 +5869,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		{
 			string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
 			string manifestFileName = JSONUtils::asString(outputRoot, "manifestFileName", "");
-			int segmentDurationInSeconds = JSONUtils::asInt(outputRoot, "segmentDurationInSeconds", 10);
-			int playlistEntriesNumber = JSONUtils::asInt(outputRoot, "playlistEntriesNumber", 5);
+			int segmentDurationInSeconds = JSONUtils::asInt32(outputRoot, "segmentDurationInSeconds", 10);
+			int playlistEntriesNumber = JSONUtils::asInt32(outputRoot, "playlistEntriesNumber", 5);
 
 			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
 

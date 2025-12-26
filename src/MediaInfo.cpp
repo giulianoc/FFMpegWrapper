@@ -403,7 +403,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				trackIndex = JSONUtils::asInt(streamRoot, field, 0);
+				trackIndex = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "codec_name";
 				if (!JSONUtils::isMetadataPresent(streamRoot, field))
@@ -462,7 +462,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				videoWidth = JSONUtils::asInt(streamRoot, field, 0);
+				videoWidth = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "height";
 				if (!JSONUtils::isMetadataPresent(streamRoot, field))
@@ -478,7 +478,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				videoHeight = JSONUtils::asInt(streamRoot, field, 0);
+				videoHeight = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "avg_frame_rate";
 				if (!JSONUtils::isMetadataPresent(streamRoot, field))
@@ -575,7 +575,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				trackIndex = JSONUtils::asInt(streamRoot, field, 0);
+				trackIndex = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "codec_name";
 				if (!JSONUtils::isMetadataPresent(streamRoot, field))
@@ -623,7 +623,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				audioChannels = JSONUtils::asInt(streamRoot, field, 0);
+				audioChannels = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "bit_rate";
 				if (!JSONUtils::isMetadataPresent(streamRoot, field))

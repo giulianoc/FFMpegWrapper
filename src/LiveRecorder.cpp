@@ -516,8 +516,8 @@ void FFMpegWrapper::liveRecorder(
 			bool isVideo = encodingProfileContentType == "Video" ? true : false;
 			string otherOutputOptions = JSONUtils::asString(outputRoot, "otherOutputOptions", "");
 
-			int videoTrackIndexToBeUsed = JSONUtils::asInt(outputRoot, "videoTrackIndexToBeUsed", -1);
-			int audioTrackIndexToBeUsed = JSONUtils::asInt(outputRoot, "audioTrackIndexToBeUsed", -1);
+			int videoTrackIndexToBeUsed = JSONUtils::asInt32(outputRoot, "videoTrackIndexToBeUsed", -1);
+			int audioTrackIndexToBeUsed = JSONUtils::asInt32(outputRoot, "audioTrackIndexToBeUsed", -1);
 
 			FFMpegFilters ffmpegFilters(_ffmpegTtfFontDir);
 
@@ -540,8 +540,8 @@ void FFMpegWrapper::liveRecorder(
 
 				string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
 				string manifestFileName = JSONUtils::asString(outputRoot, "manifestFileName", "");
-				int playlistEntriesNumber = JSONUtils::asInt(outputRoot, "playlistEntriesNumber", 5);
-				int localSegmentDurationInSeconds = JSONUtils::asInt(outputRoot, "segmentDurationInSeconds", 10);
+				int playlistEntriesNumber = JSONUtils::asInt32(outputRoot, "playlistEntriesNumber", 5);
+				int localSegmentDurationInSeconds = JSONUtils::asInt32(outputRoot, "segmentDurationInSeconds", 10);
 
 				// filter to be managed with the others
 				string ffmpegVideoResolutionParameter;
@@ -1018,8 +1018,8 @@ void FFMpegWrapper::liveRecorder(
 
 				string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
 				string manifestFileName = JSONUtils::asString(outputRoot, "manifestFileName", "");
-				int playlistEntriesNumber = JSONUtils::asInt(outputRoot, "playlistEntriesNumber", 5);
-				int localSegmentDurationInSeconds = JSONUtils::asInt(outputRoot, "segmentDurationInSeconds", 10);
+				int playlistEntriesNumber = JSONUtils::asInt32(outputRoot, "playlistEntriesNumber", 5);
+				int localSegmentDurationInSeconds = JSONUtils::asInt32(outputRoot, "segmentDurationInSeconds", 10);
 
 				// filter to be managed with the others
 				string ffmpegVideoResolutionParameter;
@@ -1520,17 +1520,17 @@ void FFMpegWrapper::liveRecorder(
 
 					ffmpegArgumentList.push_back("-filter_complex");
 
-					int amount = JSONUtils::asInt(frameToBeDetectedRoot, "amount", 99);
-					int threshold = JSONUtils::asInt(frameToBeDetectedRoot, "threshold", 32);
+					int amount = JSONUtils::asInt32(frameToBeDetectedRoot, "amount", 99);
+					int threshold = JSONUtils::asInt32(frameToBeDetectedRoot, "threshold", 32);
 
 					string filter;
 
 					if (videoFrameToBeCropped)
 					{
-						int width = JSONUtils::asInt(frameToBeDetectedRoot, "width", -1);
-						int height = JSONUtils::asInt(frameToBeDetectedRoot, "height", -1);
-						int videoCrop_X = JSONUtils::asInt(frameToBeDetectedRoot, "videoCrop_X", -1);
-						int videoCrop_Y = JSONUtils::asInt(frameToBeDetectedRoot, "videoCrop_Y", -1);
+						int width = JSONUtils::asInt32(frameToBeDetectedRoot, "width", -1);
+						int height = JSONUtils::asInt32(frameToBeDetectedRoot, "height", -1);
+						int videoCrop_X = JSONUtils::asInt32(frameToBeDetectedRoot, "videoCrop_X", -1);
+						int videoCrop_Y = JSONUtils::asInt32(frameToBeDetectedRoot, "videoCrop_Y", -1);
 
 						filter = "[0:v]crop=w=" + to_string(width) + ":h=" + to_string(height) + ":x=" + to_string(videoCrop_X) +
 								 ":y=" + to_string(videoCrop_Y) + "[CROPPED];" + "[CROPPED][" + to_string(pictureIndex + 1) + ":v]" +
@@ -2485,17 +2485,17 @@ void FFMpegWrapper::liveRecorder2(
 
 					ffmpegArgumentList.emplace_back("-filter_complex");
 
-					int amount = JSONUtils::asInt(frameToBeDetectedRoot, "amount", 99);
-					int threshold = JSONUtils::asInt(frameToBeDetectedRoot, "threshold", 32);
+					int amount = JSONUtils::asInt32(frameToBeDetectedRoot, "amount", 99);
+					int threshold = JSONUtils::asInt32(frameToBeDetectedRoot, "threshold", 32);
 
 					string filter;
 
 					if (videoFrameToBeCropped)
 					{
-						int width = JSONUtils::asInt(frameToBeDetectedRoot, "width", -1);
-						int height = JSONUtils::asInt(frameToBeDetectedRoot, "height", -1);
-						int videoCrop_X = JSONUtils::asInt(frameToBeDetectedRoot, "videoCrop_X", -1);
-						int videoCrop_Y = JSONUtils::asInt(frameToBeDetectedRoot, "videoCrop_Y", -1);
+						int width = JSONUtils::asInt32(frameToBeDetectedRoot, "width", -1);
+						int height = JSONUtils::asInt32(frameToBeDetectedRoot, "height", -1);
+						int videoCrop_X = JSONUtils::asInt32(frameToBeDetectedRoot, "videoCrop_X", -1);
+						int videoCrop_Y = JSONUtils::asInt32(frameToBeDetectedRoot, "videoCrop_Y", -1);
 
 						filter = "[0:v]crop=w=" + to_string(width) + ":h=" + to_string(height) + ":x=" + to_string(videoCrop_X) +
 								 ":y=" + to_string(videoCrop_Y) + "[CROPPED];" + "[CROPPED][" + to_string(pictureIndex + 1) + ":v]" +
@@ -3412,17 +3412,17 @@ void FFMpegWrapper::liveRecorder(
 
 					// ffmpegArgumentList.emplace_back("-filter_complex");
 
-					int amount = JSONUtils::asInt(frameToBeDetectedRoot, "amount", 99);
-					int threshold = JSONUtils::asInt(frameToBeDetectedRoot, "threshold", 32);
+					int amount = JSONUtils::asInt32(frameToBeDetectedRoot, "amount", 99);
+					int threshold = JSONUtils::asInt32(frameToBeDetectedRoot, "threshold", 32);
 
 					string filter;
 
 					if (videoFrameToBeCropped)
 					{
-						int width = JSONUtils::asInt(frameToBeDetectedRoot, "width", -1);
-						int height = JSONUtils::asInt(frameToBeDetectedRoot, "height", -1);
-						int videoCrop_X = JSONUtils::asInt(frameToBeDetectedRoot, "videoCrop_X", -1);
-						int videoCrop_Y = JSONUtils::asInt(frameToBeDetectedRoot, "videoCrop_Y", -1);
+						int width = JSONUtils::asInt32(frameToBeDetectedRoot, "width", -1);
+						int height = JSONUtils::asInt32(frameToBeDetectedRoot, "height", -1);
+						int videoCrop_X = JSONUtils::asInt32(frameToBeDetectedRoot, "videoCrop_X", -1);
+						int videoCrop_Y = JSONUtils::asInt32(frameToBeDetectedRoot, "videoCrop_Y", -1);
 
 						ffMpegEngine.addFilterComplex(std::format(
 							"[0:v]crop=w={}:h={}:x={}:y={}[CROPPED]",

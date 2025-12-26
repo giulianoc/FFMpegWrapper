@@ -41,9 +41,9 @@ FFMpegWrapper::FFMpegWrapper(json configuration) : _currentApiName()
 		_pythonPathName
 	);
 
-	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::asInt(configuration["storage"], "waitingNFSSync_maxMillisecondsToWait", 150000);
+	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::asInt32(configuration["storage"], "waitingNFSSync_maxMillisecondsToWait", 150000);
 	_waitingNFSSync_milliSecondsWaitingBetweenChecks =
-		JSONUtils::asInt(configuration["storage"], "waitingNFSSync_milliSecondsWaitingBetweenChecks", 100);
+		JSONUtils::asInt32(configuration["storage"], "waitingNFSSync_milliSecondsWaitingBetweenChecks", 100);
 	/*
 	info(__FILEREF__ + "Configuration item"
 		+ ", storage->waitingNFSSync_sleepTimeInSeconds: "
@@ -51,7 +51,7 @@ FFMpegWrapper::FFMpegWrapper(json configuration) : _currentApiName()
 	);
 	*/
 
-	// _startCheckingFrameInfoInMinutes = JSONUtils::asInt(configuration["ffmpeg"], "startCheckingFrameInfoInMinutes", 5);
+	// _startCheckingFrameInfoInMinutes = JSONUtils::asInt32(configuration["ffmpeg"], "startCheckingFrameInfoInMinutes", 5);
 
 	_charsToBeReadFromFfmpegErrorOutput = 1024 * 3;
 
