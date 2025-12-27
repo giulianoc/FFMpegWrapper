@@ -87,6 +87,47 @@ struct EncodingIsAlreadyRunning final : public exception
 class FFMpegWrapper
 {
   public:
+	enum class KillType
+	{
+		None,
+		Kill,
+		RestartWithinEncoder,
+		KillToRestartByEngine
+	};
+	static constexpr string_view toString(const KillType &killType)
+	{
+		switch (killType)
+		{
+		case KillType::None:
+			return "None";
+		case KillType::Kill:
+			return "Kill";
+		case KillType::RestartWithinEncoder:
+			return "RestartWithinEncoder";
+		case KillType::KillToRestartByEngine:
+			return "KillToRestartByEngine";
+		default:
+			const string errorMessage = std::format("toString with a wrong KillType: {}", static_cast<int>(killType));
+			SPDLOG_ERROR(errorMessage);
+			throw runtime_error(errorMessage);
+		}
+	}
+	static KillType toKillType(string_view killType)
+	{
+		if (killType == "None")
+			return KillType::None;
+		if (killType == "Kill")
+			return KillType::Kill;
+		if (killType == "RestartWithinEncoder")
+			return KillType::RestartWithinEncoder;
+		if (killType == "KillToRestartByEngine")
+			return KillType::KillToRestartByEngine;
+
+		const string errorMessage = std::format("toKillType with a wrong KillType: {}", killType);
+		SPDLOG_ERROR(errorMessage);
+		throw runtime_error(errorMessage);
+	}
+
 	string _ffmpegTempDir;
 
 	explicit FFMpegWrapper(json configuration);
@@ -293,17 +334,10 @@ class FFMpegWrapper
 
 	void liveProxy(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
-		json *inputsRoot, const json &outputsRoot, ProcessUtility::ProcessId &processId, optional<chrono::system_clock::time_point>& proxyStart,
-		shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData, long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
+		json *inputsRoot, const json &outputsRoot, optional<chrono::system_clock::time_point> &proxyStart,
+		const shared_ptr<FFMpegEngine::CallbackData> &ffmpegCallbackData, long& numberOfRestartBecauseOfFailure,
+		const KillType& killTypeReceived, ProcessUtility::ProcessId &processId, bool keepOutputLog = true
 	);
-
-	/*
-	void liveProxy2(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
-		json *inputsRoot, json outputsRoot, ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pProxyStart,
-		long *numberOfRestartBecauseOfFailure, bool keepOutputLog = true
-	);
-	*/
 
 	void liveGrid(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string userAgent, json inputChannelsRoot,
@@ -523,31 +557,14 @@ class FFMpegWrapper
 		string stagingEncodedAssetPathName = ""
 	);
 
-	/*
-	tuple<string, string, string> addFilters(
-		json filtersRoot,
-		string ffmpegVideoResolutionParameter,
-		string ffmpegDrawTextFilter,
-		int64_t streamingDurationInSeconds);
-
-	string getFilter(
-		json filtersRoot,
-		int64_t streamingDurationInSeconds);
-	*/
-
 	static int getNextLiveProxyInput(
 		int64_t ingestionJobKey, int64_t encodingJobKey, json *inputsRoot, mutex *inputsRootMutex, int currentInputIndex, bool timedInput,
 		json *newInputRoot
 	);
 
-	tuple<long, string, string, int, int64_t, json> liveProxyInput(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
-		vector<string> &ffmpegInputArgumentList
-	);
-
 	tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> liveProxyInput(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
-		FFMpegEngine &ffMpegEngine
+		FFMpegEngine &ffMpegEngine, const KillType& killTypeReceived
 	);
 
 	void outputsRootToFfmpeg(

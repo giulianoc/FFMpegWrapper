@@ -852,10 +852,19 @@ void FFMpegWrapper::liveProxy2(
 
 void FFMpegWrapper::liveProxy(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
-	json *inputsRoot, const json& outputsRoot, ProcessUtility::ProcessId &processId, optional<chrono::system_clock::time_point>& proxyStart,
-	shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
-	long *numberOfRestartBecauseOfFailure, bool keepOutputLog
-)
+	json *inputsRoot, const json& outputsRoot, optional<chrono::system_clock::time_point>& proxyStart,
+	const shared_ptr<FFMpegEngine::CallbackData>& ffmpegCallbackData,
+	long& numberOfRestartBecauseOfFailure, // IN/OUT
+	// killTypeReceived è stato aggiunto per gestire il seguente scenario:
+	//	1. il liveProxy sta scaricando tutti i VOD input che servono
+	//	2. arriva una richiesta di kill del liveProxy, il kill non viene fatto perchè il processId non è inizializzato,
+	//		questo metodo continua a scaricare i VOD input ed il kill non viene eseguito
+	//	3. in questo caso il liveProxy deve terminare immediatamente senza scaricare
+	//  Nello scenario sopra, se il comando ffmpeg andasse in errore per un qualsiasi motivo (è capitato un parametro di encoding errato),
+	//  questo metodo rimarrebbe in loop finchè non arriva la scadenza del LiveProxy (che spesso è fra 10 anni!!!)
+	const KillType& killTypeReceived, // IN (cambia se aggiornato dalla API di kill)
+	ProcessUtility::ProcessId &processId, // IN/OUT
+	bool keepOutputLog)
 {
 	_currentApiName = APIName::LiveProxy;
 
@@ -1067,7 +1076,7 @@ void FFMpegWrapper::liveProxy(
 		else
 		{
 			if (previousInputIndex == currentInputIndex)
-				(*numberOfRestartBecauseOfFailure)++;
+				numberOfRestartBecauseOfFailure++;
 			else
 				previousInputIndex = currentInputIndex;
 		}
@@ -1086,7 +1095,7 @@ void FFMpegWrapper::liveProxy(
 
 			tie(endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart, inputFiltersRoot, inputSelectedVideoMap,
 				inputSelectedAudioMap, inputDurationInSeconds) = liveProxyInput(ingestionJobKey, encodingJobKey, externalEncoder,
-				currentInputRoot, maxStreamingDurationInMinutes, ffMpegEngine);
+				currentInputRoot, maxStreamingDurationInMinutes, ffMpegEngine, killTypeReceived);
 
 			{
 				/*
@@ -1123,7 +1132,6 @@ void FFMpegWrapper::liveProxy(
 			throw runtime_error(errorMessage);
 		}
 
-		// vector<string> ffmpegOutputArgumentList;
 		try
 		{
 			SPDLOG_INFO(
@@ -1229,16 +1237,19 @@ void FFMpegWrapper::liveProxy(
 			// In questo modo l'ultima chiamata (ffmpeg) conserverà ffmpegCallbackData.
 			// forkAndExecByCallback puo essere rieseguito a seguito di un restart o per un nuovo input
 			ffmpegCallbackData->reset();
-			ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
-				std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
-				ffmpegCallbackData, _outputFfmpegPathFileName);
-			/*
-			vector<string> ffmpegArgs = ffMpegEngine.buildArgs(false);
-			ProcessUtility::forkAndExec(
-				_ffmpegPath + "/ffmpeg", ffmpegArgs, _outputFfmpegPathFileName,
-				redirectionStdOutput, redirectionStdError, processId, iReturnedStatus
-			);
-			 */
+			if (killTypeReceived == KillType::Kill || killTypeReceived == KillType::KillToRestartByEngine)
+			{
+				SPDLOG_ERROR(
+					"liveProxy executing ffmpeg not done because killTypeReceived is Kill or KillToRestartByEngine"
+					", ingestionJobKey: {}",
+					ingestionJobKey
+				);
+				iReturnedStatus = 9; // simulo SIGKILL
+			}
+			else
+				ffMpegEngine.run(_ffmpegPath, processId, iReturnedStatus,
+					std::format(", ingestionJobKey: {}, encodingJobKey: {}", ingestionJobKey, encodingJobKey),
+					ffmpegCallbackData, _outputFfmpegPathFileName);
 			processId.reset();
 
 			endFfmpegCommand = chrono::system_clock::now();
@@ -1734,13 +1745,24 @@ int FFMpegWrapper::getNextLiveProxyInput(
 
 struct FFMpegProgressData
 {
-	int64_t _ingestionJobKey;
+	int64_t _ingestionJobKey{};
 	chrono::system_clock::time_point _lastTimeProgressUpdate;
-	double _lastPercentageUpdated;
+	double _lastPercentageUpdated{};
+	const FFMpegWrapper::KillType *_killType{};
 };
 static int progressDownloadCallback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
-	FFMpegProgressData *progressData = (FFMpegProgressData *)clientp;
+	auto *progressData = static_cast<FFMpegProgressData *>(clientp);
+
+	if (*(progressData->_killType) == FFMpegWrapper::KillType::Kill || *(progressData->_killType) == FFMpegWrapper::KillType::KillToRestartByEngine)
+	{
+		SPDLOG_ERROR(
+			"progressDownloadCallback interrupted because killTypeReceived is Kill or KillToRestartByEngine"
+			", ingestionJobKey: {}",
+			progressData->_ingestionJobKey
+		);
+		return 1;   // stop downloading
+	}
 
 	int progressUpdatePeriodInSeconds = 15;
 
@@ -1781,14 +1803,12 @@ static int progressDownloadCallback(void *clientp, curl_off_t dltotal, curl_off_
 
 			progressData->_lastPercentageUpdated = downloadingPercentage;
 		}
-
-		// if (downloadingStoppedByUser)
-		//     return 1;   // stop downloading
 	}
 
 	return 0;
 }
 
+/*
 tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
 	vector<string> &ffmpegInputArgumentList
@@ -1911,30 +1931,6 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 			", streamSourceType: {}",
 			ingestionJobKey, encodingJobKey, timePeriod, utcProxyPeriodStart, utcProxyPeriodEnd, streamSourceType
 		);
-
-		/* 2023-03-26: vedi commento sopra in questo metodo
-		if (streamSourceType == "IP_PULL"
-			|| streamSourceType == "IP_PUSH"
-			|| streamSourceType == "TV")
-		{
-			try
-			{
-				int timeoutInSeconds = 20;
-				getMediaInfo(ingestionJobKey, false, timeoutInSeconds, url, videoTracks, audioTracks);
-			}
-			catch(runtime_error& e)
-			{
-				string errorMessage = __FILEREF__ + "ffmpeg: getMediaInfo failed"
-					+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-					+ ", encodingJobKey: " + to_string(encodingJobKey)
-					+ ", e.what(): " + e.what()
-				;
-				SPDLOG_ERROR(errorMessage);
-
-				// throw e;
-			}
-		}
-		*/
 
 		if (streamSourceType == "IP_PULL" && maxWidth != -1)
 		{
@@ -2407,27 +2403,6 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 			", url: {}", ingestionJobKey, encodingJobKey, timePeriod, utcProxyPeriodStart, utcProxyPeriodEnd, inputFormat, url
 		);
 
-		/* 2023-03-26: vedi commento sopra in questo metodo
-		{
-			try
-			{
-				int timeoutInSeconds = 20;
-				getMediaInfo(ingestionJobKey, false, timeoutInSeconds, url, videoTracks, audioTracks);
-			}
-			catch(runtime_error& e)
-			{
-				string errorMessage = __FILEREF__ + "ffmpeg: getMediaInfo failed"
-					+ ", ingestionJobKey: " + to_string(ingestionJobKey)
-					+ ", encodingJobKey: " + to_string(encodingJobKey)
-					+ ", e.what(): " + e.what()
-				;
-				SPDLOG_ERROR(errorMessage);
-
-				// throw e;
-			}
-		}
-		*/
-
 		time_t utcNow;
 		{
 			chrono::system_clock::time_point now = chrono::system_clock::now();
@@ -2672,12 +2647,6 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 			}
 			else
 			{
-				/*
-					2022-10-27: -stream_loop works only in case of ONE input.
-						In case of multiple VODs we will use the '-f concat' option implementing
-						an endless recursive playlist
-						see https://video.stackexchange.com/questions/18982/is-it-possible-to-create-an-endless-loop-using-concat
-				*/
 				if (sources.size() == 1)
 				{
 					ffmpegInputArgumentList.push_back("-stream_loop");
@@ -2809,7 +2778,7 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 
 								CurlWrapper::downloadFile(
 									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
-									std::format(", ingestionJobKey: {}", ingestionJobKey), 960, 1 /* maxRetryNumber */
+									std::format(", ingestionJobKey: {}", ingestionJobKey), 960, 1
 								);
 							}
 							catch (exception &e)
@@ -3165,10 +3134,11 @@ tuple<long, string, string, int, int64_t, json> FFMpegWrapper::liveProxyInput(
 		inputFiltersRoot
 	); // , videoTracks, audioTracks);
 }
+*/
 
 tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<int32_t>> FFMpegWrapper::liveProxyInput(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, json inputRoot, long maxStreamingDurationInMinutes,
-	FFMpegEngine &ffMpegEngine
+	FFMpegEngine &ffMpegEngine, const KillType& killTypeReceived
 )
 {
 	string endlessPlaylistListPathName;
@@ -3475,10 +3445,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			if (streamSourceType == "IP_PULL" && !userAgent.empty())
 			{
 				string httpPrefix = "http"; // it includes also https
-				if (url.size() >= httpPrefix.size() && url.compare(0, httpPrefix.size(), httpPrefix) == 0)
-				{
+				if (url.starts_with(httpPrefix))
 					userAgentToBeUsed = true;
-				}
 				else
 				{
 					SPDLOG_WARN(
@@ -4192,7 +4160,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 						string destBinaryPathName;
 						string destBinaryFileName;
 						{
-							size_t fileNameIndex = sourcePhysicalReference.find_last_of("/");
+							size_t fileNameIndex = sourcePhysicalReference.find_last_of('/');
 							if (fileNameIndex == string::npos)
 							{
 								SPDLOG_ERROR(
@@ -4244,6 +4212,18 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								progressData._ingestionJobKey = ingestionJobKey;
 								progressData._lastTimeProgressUpdate = chrono::system_clock::now();
 								progressData._lastPercentageUpdated = -1.0;
+								progressData._killType = &killTypeReceived;
+
+								if (killTypeReceived == KillType::Kill || killTypeReceived == KillType::KillToRestartByEngine)
+								{
+									SPDLOG_ERROR(
+										"CurlWrapper::downloadFile not executed because killTypeReceived is Kill or KillToRestartByEngine"
+										", ingestionJobKey: {}",
+										ingestionJobKey
+									);
+
+									break;
+								}
 
 								CurlWrapper::downloadFile(
 									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
