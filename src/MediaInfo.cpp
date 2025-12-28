@@ -337,7 +337,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		json detailsRoot = JSONUtils::toJson(mediaDetails);
 
 		string field = "streams";
-		if (!JSONUtils::isMetadataPresent(detailsRoot, field))
+		if (!JSONUtils::isPresent(detailsRoot, field))
 		{
 			string errorMessage = std::format(
 				"ffmpeg: Field is not present or it is null"
@@ -360,7 +360,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 			json streamRoot = streamsRoot[streamIndex];
 
 			field = "codec_type";
-			if (!JSONUtils::isMetadataPresent(streamRoot, field))
+			if (!JSONUtils::isPresent(streamRoot, field))
 			{
 				string errorMessage = std::format(
 					"ffmpeg: Field is not present or it is null"
@@ -389,7 +389,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				long videoBitRate = -1;
 
 				field = "index";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					string errorMessage = std::format(
 						"ffmpeg: Field is not present or it is null"
@@ -406,10 +406,10 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				trackIndex = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "codec_name";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					field = "codec_tag_string";
-					if (!JSONUtils::isMetadataPresent(streamRoot, field))
+					if (!JSONUtils::isPresent(streamRoot, field))
 					{
 						string errorMessage = std::format(
 							"ffmpeg: Field is not present or it is null"
@@ -430,7 +430,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					firstVideoCodecName = videoCodecName;
 
 				field = "profile";
-				if (JSONUtils::isMetadataPresent(streamRoot, field))
+				if (JSONUtils::isPresent(streamRoot, field))
 					videoProfile = JSONUtils::asString(streamRoot, field, "");
 				else
 				{
@@ -448,7 +448,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				}
 
 				field = "width";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					string errorMessage = std::format(
 						"ffmpeg: Field is not present or it is null"
@@ -465,7 +465,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				videoWidth = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "height";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					string errorMessage = std::format(
 						"ffmpeg: Field is not present or it is null"
@@ -481,7 +481,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				videoHeight = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "avg_frame_rate";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					string errorMessage = std::format(
 						"ffmpeg: Field is not present or it is null"
@@ -497,7 +497,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				videoAvgFrameRate = JSONUtils::asString(streamRoot, field, "");
 
 				field = "bit_rate";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					if (videoCodecName != "mjpeg")
 					{
@@ -518,7 +518,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					videoBitRate = stol(JSONUtils::asString(streamRoot, field, ""));
 
 				field = "duration";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					// I didn't find it in a .avi file generated using OpenCV::VideoWriter
 					// let's log it as a warning
@@ -562,7 +562,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				long audioBitRate = -1;
 
 				field = "index";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					string errorMessage = std::format(
 						"ffmpeg: Field is not present or it is null"
@@ -578,7 +578,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				trackIndex = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "codec_name";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					string errorMessage = std::format(
 						"ffmpeg: Field is not present or it is null"
@@ -594,7 +594,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				audioCodecName = JSONUtils::asString(streamRoot, field, "");
 
 				field = "sample_rate";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					string errorMessage = std::format(
 						"ffmpeg: Field is not present or it is null"
@@ -610,7 +610,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				audioSampleRate = stol(JSONUtils::asString(streamRoot, field, ""));
 
 				field = "channels";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					string errorMessage = std::format(
 						"ffmpeg: Field is not present or it is null"
@@ -626,7 +626,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				audioChannels = JSONUtils::asInt32(streamRoot, field, 0);
 
 				field = "bit_rate";
-				if (!JSONUtils::isMetadataPresent(streamRoot, field))
+				if (!JSONUtils::isPresent(streamRoot, field))
 				{
 					// I didn't find bit_rate in a webm file, let's set it as a warning
 
@@ -645,7 +645,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					audioBitRate = stol(JSONUtils::asString(streamRoot, field, ""));
 
 				field = "duration";
-				if (JSONUtils::isMetadataPresent(streamRoot, field))
+				if (JSONUtils::isPresent(streamRoot, field))
 				{
 					string duration = JSONUtils::asString(streamRoot, field, "0");
 
@@ -658,10 +658,10 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 				string language;
 				string tagsField = "tags";
-				if (JSONUtils::isMetadataPresent(streamRoot, tagsField))
+				if (JSONUtils::isPresent(streamRoot, tagsField))
 				{
 					field = "language";
-					if (JSONUtils::isMetadataPresent(streamRoot[tagsField], field))
+					if (JSONUtils::isPresent(streamRoot[tagsField], field))
 					{
 						language = JSONUtils::asString(streamRoot[tagsField], field, "");
 					}
@@ -674,7 +674,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		}
 
 		field = "format";
-		if (!JSONUtils::isMetadataPresent(detailsRoot, field))
+		if (!JSONUtils::isPresent(detailsRoot, field))
 		{
 			string errorMessage = std::format(
 				"ffmpeg: Field is not present or it is null"
@@ -690,7 +690,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		json formatRoot = detailsRoot[field];
 
 		field = "duration";
-		if (!JSONUtils::isMetadataPresent(formatRoot, field))
+		if (!JSONUtils::isPresent(formatRoot, field))
 		{
 			// I didn't find it in a .avi file generated using OpenCV::VideoWriter
 			// let's log it as a warning
@@ -719,7 +719,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 			durationInMilliSeconds = dDurationInMilliSeconds * 1000;
 		}
 
-		if (!JSONUtils::isMetadataPresent(formatRoot, "bit_rate"))
+		if (!JSONUtils::isPresent(formatRoot, "bit_rate"))
 		{
 			if (firstVideoCodecName != "" && firstVideoCodecName != "mjpeg")
 			{
@@ -752,7 +752,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		//	- da (10:41:00:00 - 09:59:00:00) a (10:53:10:06 - 09:59:00:00)
 		//	e poi bisogna concatenare i tre tagli ottenuti
 		field = "tags";
-		if (JSONUtils::isMetadataPresent(formatRoot, field))
+		if (JSONUtils::isPresent(formatRoot, field))
 			metadataRoot = formatRoot[field];
 
 		SPDLOG_INFO(
@@ -1091,7 +1091,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 		json detailsRoot = JSONUtils::toJson(mediaDetails);
 
 		string field = "packets";
-		if (!JSONUtils::isMetadataPresent(detailsRoot, field))
+		if (!JSONUtils::isPresent(detailsRoot, field))
 		{
 			string errorMessage = std::format(
 				"ffmpeg: Field is not present or it is null"
@@ -1111,7 +1111,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 			json packetRoot = packetsRoot[packetIndex];
 
 			field = "pts_time";
-			if (!JSONUtils::isMetadataPresent(packetRoot, field))
+			if (!JSONUtils::isPresent(packetRoot, field))
 			{
 				string errorMessage = std::format(
 					"ffmpeg: Field is not present or it is null"
@@ -1127,7 +1127,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 			string pts_time = JSONUtils::asString(packetRoot, field, "");
 
 			field = "flags";
-			if (!JSONUtils::isMetadataPresent(packetRoot, field))
+			if (!JSONUtils::isPresent(packetRoot, field))
 			{
 				string errorMessage = std::format(
 					"ffmpeg: Field is not present or it is null"

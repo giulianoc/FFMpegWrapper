@@ -406,7 +406,7 @@ void FFMpegWrapper::liveRecorder(
 			{
 				json frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
 
-				if (JSONUtils::isMetadataPresent(frameToBeDetectedRoot, "picturePathName"))
+				if (JSONUtils::isPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
 					string picturePathName = JSONUtils::asString(frameToBeDetectedRoot, "picturePathName", "");
 
@@ -507,7 +507,7 @@ void FFMpegWrapper::liveRecorder(
 			string outputType = JSONUtils::asString(outputRoot, "outputType", "");
 
 			json filtersRoot = nullptr;
-			if (JSONUtils::isMetadataPresent(outputRoot, "filters"))
+			if (JSONUtils::isPresent(outputRoot, "filters"))
 				filtersRoot = outputRoot["filters"];
 
 			json encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
@@ -1514,7 +1514,7 @@ void FFMpegWrapper::liveRecorder(
 			{
 				json frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
 
-				if (JSONUtils::isMetadataPresent(frameToBeDetectedRoot, "picturePathName"))
+				if (JSONUtils::isPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
 					bool videoFrameToBeCropped = JSONUtils::asBool(frameToBeDetectedRoot, "videoFrameToBeCropped", false);
 
@@ -2334,7 +2334,7 @@ void FFMpegWrapper::liveRecorder2(
 			{
 				const json& frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
 
-				if (JSONUtils::isMetadataPresent(frameToBeDetectedRoot, "picturePathName"))
+				if (JSONUtils::isPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
 					string picturePathName = JSONUtils::asString(frameToBeDetectedRoot, "picturePathName", "");
 
@@ -2479,7 +2479,7 @@ void FFMpegWrapper::liveRecorder2(
 			{
 				const json& frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
 
-				if (JSONUtils::isMetadataPresent(frameToBeDetectedRoot, "picturePathName"))
+				if (JSONUtils::isPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
 					bool videoFrameToBeCropped = JSONUtils::asBool(frameToBeDetectedRoot, "videoFrameToBeCropped", false);
 
@@ -3205,7 +3205,7 @@ void FFMpegWrapper::liveRecorder(
 		{
 			for (const auto & frameToBeDetectedRoot : framesToBeDetectedRoot)
 			{
-				if (JSONUtils::isMetadataPresent(frameToBeDetectedRoot, "picturePathName"))
+				if (JSONUtils::isPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
 					string picturePathName = JSONUtils::asString(frameToBeDetectedRoot, "picturePathName", "");
 
@@ -3406,7 +3406,7 @@ void FFMpegWrapper::liveRecorder(
 			{
 				const json& frameToBeDetectedRoot = framesToBeDetectedRoot[pictureIndex];
 
-				if (JSONUtils::isMetadataPresent(frameToBeDetectedRoot, "picturePathName"))
+				if (JSONUtils::isPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
 					bool videoFrameToBeCropped = JSONUtils::asBool(frameToBeDetectedRoot, "videoFrameToBeCropped", false);
 

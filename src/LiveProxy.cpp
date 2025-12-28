@@ -995,13 +995,13 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 	//"Italia-nazionali-Diretta canale satellitare della Camera dei deputati", "streamSourceType": "IP_PULL", "pushListenTimeout": -1,
 	//"tvAudioItalianPid": -1, "tvFrequency": -1, "tvModulation": "", "tvServiceId": -1, "tvSymbolRate": -1, "tvVideoPid": -1, "url":
 	//"https://www.youtube.com/watch?v=Cnjs83yowUM", "maxWidth": -1, "userAgent": "", "otherInputOptions": "" },
-	if (JSONUtils::isMetadataPresent(inputRoot, "streamInput"))
+	if (JSONUtils::isPresent(inputRoot, "streamInput"))
 	{
 		field = "streamInput";
 		json streamInputRoot = inputRoot[field];
 
 		field = "streamSourceType";
-		if (!JSONUtils::isMetadataPresent(streamInputRoot, field))
+		if (!JSONUtils::isPresent(streamInputRoot, field))
 		{
 			string errorMessage = std::format(
 				"Field is not present or it is null"
@@ -1530,22 +1530,22 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
 			{
-				if (JSONUtils::isMetadataPresent(streamInputRoot, "filters"))
+				if (JSONUtils::isPresent(streamInputRoot, "filters"))
 				{
 					json filtersRoot = streamInputRoot["filters"];
 
 					// se viene usato il filtro imageoverlay, è necessario recuperare sourcePhysicalPathName e sourcePhysicalDeliveryURL
-					if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+					if (JSONUtils::isPresent(filtersRoot, "complex"))
 					{
 						json complexFiltersRoot = filtersRoot["complex"];
 						for (int complexFilterIndex = 0; complexFilterIndex < complexFiltersRoot.size(); complexFilterIndex++)
 						{
 							json complexFilterRoot = complexFiltersRoot[complexFilterIndex];
-							if (JSONUtils::isMetadataPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
+							if (JSONUtils::isPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
 							{
 								if (externalEncoder)
 								{
-									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
+									if (!JSONUtils::isPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
 									{
 										string errorMessage = std::format(
 											"imageoverlay filter without imagePhysicalDeliveryURL"
@@ -1564,7 +1564,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								}
 								else
 								{
-									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalPathName"))
+									if (!JSONUtils::isPresent(complexFilterRoot, "imagePhysicalPathName"))
 									{
 										string errorMessage = std::format(
 											"imageoverlay filter without imagePhysicalDeliveryURL"
@@ -1594,11 +1594,11 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			// }
 		}
 
-		if (JSONUtils::isMetadataPresent(streamInputRoot, "filters"))
+		if (JSONUtils::isPresent(streamInputRoot, "filters"))
 			inputFiltersRoot = streamInputRoot["filters"];
 	}
 	//	"directURLInput": { "url": "" },
-	else if (JSONUtils::isMetadataPresent(inputRoot, "directURLInput"))
+	else if (JSONUtils::isPresent(inputRoot, "directURLInput"))
 	{
 		field = "directURLInput";
 		json directURLInputRoot = inputRoot[field];
@@ -1704,21 +1704,21 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
 			{
-				if (JSONUtils::isMetadataPresent(directURLInputRoot, "filters"))
+				if (JSONUtils::isPresent(directURLInputRoot, "filters"))
 				{
 					json filtersRoot = directURLInputRoot["filters"];
 
 					// se viene usato il filtro imageoverlay, è necessario recuperare sourcePhysicalPathName e sourcePhysicalDeliveryURL
-					if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+					if (JSONUtils::isPresent(filtersRoot, "complex"))
 					{
 						json complexFiltersRoot = filtersRoot["complex"];
 						for (const auto& complexFilterRoot : complexFiltersRoot)
 						{
-							if (JSONUtils::isMetadataPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
+							if (JSONUtils::isPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
 							{
 								if (externalEncoder)
 								{
-									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
+									if (!JSONUtils::isPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
 									{
 										string errorMessage = std::format(
 											"imageoverlay filter without imagePhysicalDeliveryURL"
@@ -1737,7 +1737,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								}
 								else
 								{
-									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalPathName"))
+									if (!JSONUtils::isPresent(complexFilterRoot, "imagePhysicalPathName"))
 									{
 										string errorMessage = std::format(
 											"imageoverlay filter without imagePhysicalDeliveryURL"
@@ -1767,17 +1767,17 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			// }
 		}
 
-		if (JSONUtils::isMetadataPresent(directURLInputRoot, "filters"))
+		if (JSONUtils::isPresent(directURLInputRoot, "filters"))
 			inputFiltersRoot = directURLInputRoot["filters"];
 	}
 	//	"vodInput": { "vodContentType": "", "sources": [{"sourcePhysicalPathName": "..."}],
 	//		"otherInputOptions": "" },
-	else if (JSONUtils::isMetadataPresent(inputRoot, "vodInput"))
+	else if (JSONUtils::isPresent(inputRoot, "vodInput"))
 	{
 		json vodInputRoot = inputRoot["vodInput"];
 
 		string field = "vodContentType";
-		if (!JSONUtils::isMetadataPresent(vodInputRoot, field))
+		if (!JSONUtils::isPresent(vodInputRoot, field))
 		{
 			string errorMessage = std::format(
 				"Field is not present or it is null"
@@ -1796,7 +1796,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		// int64_t durationOfInputsInMilliSeconds = 0;
 		{
 			field = "sources";
-			if (!JSONUtils::isMetadataPresent(vodInputRoot, field))
+			if (!JSONUtils::isPresent(vodInputRoot, field))
 			{
 				string errorMessage = std::format(
 					"Field is not present or it is null"
@@ -1817,7 +1817,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					field = "sourcePhysicalDeliveryURL";
 				else
 					field = "sourcePhysicalPathName";
-				if (!JSONUtils::isMetadataPresent(sourceRoot, field))
+				if (!JSONUtils::isPresent(sourceRoot, field))
 				{
 					string errorMessage = std::format(
 						"Field is not present or it is null"
@@ -1836,7 +1836,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				sources.push_back(sourcePhysicalReference);
 
 				// field = "durationInMilliSeconds";
-				// if (JSONUtils::isMetadataPresent(sourceRoot, field))
+				// if (JSONUtils::isPresent(sourceRoot, field))
 				// 	durationOfInputsInMilliSeconds += JSONUtils::asInt64(sourceRoot, field, 0);
 			}
 		}
@@ -2130,21 +2130,21 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
 			{
-				if (JSONUtils::isMetadataPresent(vodInputRoot, "filters"))
+				if (JSONUtils::isPresent(vodInputRoot, "filters"))
 				{
 					json filtersRoot = vodInputRoot["filters"];
 
 					// se viene usato il filtro imageoverlay, è necessario recuperare sourcePhysicalPathName e sourcePhysicalDeliveryURL
-					if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+					if (JSONUtils::isPresent(filtersRoot, "complex"))
 					{
 						json complexFiltersRoot = filtersRoot["complex"];
 						for (const auto& complexFilterRoot : complexFiltersRoot)
 						{
-							if (JSONUtils::isMetadataPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
+							if (JSONUtils::isPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
 							{
 								if (externalEncoder)
 								{
-									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
+									if (!JSONUtils::isPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
 									{
 										string errorMessage = std::format(
 											"imageoverlay filter without imagePhysicalDeliveryURL"
@@ -2163,7 +2163,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								}
 								else
 								{
-									if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalPathName"))
+									if (!JSONUtils::isPresent(complexFilterRoot, "imagePhysicalPathName"))
 									{
 										string errorMessage = std::format(
 											"imageoverlay filter without imagePhysicalDeliveryURL"
@@ -2193,13 +2193,13 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			// }
 		}
 
-		if (JSONUtils::isMetadataPresent(vodInputRoot, "filters"))
+		if (JSONUtils::isPresent(vodInputRoot, "filters"))
 			inputFiltersRoot = vodInputRoot["filters"];
 	}
 	//	"countdownInput": { "mmsSourceVideoAssetPathName": "", "videoDurationInMilliSeconds": 123, "text": "", "textPosition_X_InPixel": "",
 	//"textPosition_Y_InPixel": "", "fontType": "", "fontSize": 22, "fontColor": "", "textPercentageOpacity": -1, "boxEnable": false, "boxColor":
 	//"", "boxPercentageOpacity": 20 },
-	else if (JSONUtils::isMetadataPresent(inputRoot, "countdownInput"))
+	else if (JSONUtils::isPresent(inputRoot, "countdownInput"))
 	{
 		string field = "countdownInput";
 		json countdownInputRoot = inputRoot[field];
@@ -2208,7 +2208,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			field = "mmsSourceVideoAssetDeliveryURL";
 		else
 			field = "mmsSourceVideoAssetPathName";
-		if (!JSONUtils::isMetadataPresent(countdownInputRoot, field))
+		if (!JSONUtils::isPresent(countdownInputRoot, field))
 		{
 			string errorMessage = std::format(
 				"Field is not present or it is null"
@@ -2224,7 +2224,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		string mmsSourceVideoAssetPathName = JSONUtils::asString(countdownInputRoot, field, "");
 
 		field = "videoDurationInMilliSeconds";
-		if (!JSONUtils::isMetadataPresent(countdownInputRoot, field))
+		if (!JSONUtils::isPresent(countdownInputRoot, field))
 		{
 			string errorMessage = std::format(
 				"Field is not present or it is null"
@@ -2318,22 +2318,22 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 		// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
 		{
-			if (JSONUtils::isMetadataPresent(countdownInputRoot, "filters"))
+			if (JSONUtils::isPresent(countdownInputRoot, "filters"))
 			{
 				json filtersRoot = countdownInputRoot["filters"];
 
 				// se viene usato il filtro imageoverlay, è necessario recuperare sourcePhysicalPathName e sourcePhysicalDeliveryURL
-				if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+				if (JSONUtils::isPresent(filtersRoot, "complex"))
 				{
 					json complexFiltersRoot = filtersRoot["complex"];
 					for (int complexFilterIndex = 0; complexFilterIndex < complexFiltersRoot.size(); complexFilterIndex++)
 					{
 						json complexFilterRoot = complexFiltersRoot[complexFilterIndex];
-						if (JSONUtils::isMetadataPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
+						if (JSONUtils::isPresent(complexFilterRoot, "type") && complexFilterRoot["type"] == "imageoverlay")
 						{
 							if (externalEncoder)
 							{
-								if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
+								if (!JSONUtils::isPresent(complexFilterRoot, "imagePhysicalDeliveryURL"))
 								{
 									string errorMessage = std::format(
 										"imageoverlay filter without imagePhysicalDeliveryURL"
@@ -2352,7 +2352,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 							}
 							else
 							{
-								if (!JSONUtils::isMetadataPresent(complexFilterRoot, "imagePhysicalPathName"))
+								if (!JSONUtils::isPresent(complexFilterRoot, "imagePhysicalPathName"))
 								{
 									string errorMessage = std::format(
 										"imageoverlay filter without imagePhysicalDeliveryURL"
@@ -2382,16 +2382,16 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 		// inizializza filtersRoot e verifica se drawtext is present
 		bool isDrawTextFilterPresent = false;
-		if (JSONUtils::isMetadataPresent(countdownInputRoot, "filters"))
+		if (JSONUtils::isPresent(countdownInputRoot, "filters"))
 		{
 			inputFiltersRoot = countdownInputRoot["filters"];
-			if (JSONUtils::isMetadataPresent(inputFiltersRoot, "video"))
+			if (JSONUtils::isPresent(inputFiltersRoot, "video"))
 			{
 				json videoFiltersRoot = inputFiltersRoot["video"];
 				for (int videoFilterIndex = 0; videoFilterIndex < videoFiltersRoot.size(); videoFilterIndex++)
 				{
 					json videoFilterRoot = videoFiltersRoot[videoFilterIndex];
-					if (JSONUtils::isMetadataPresent(videoFilterRoot, "type") && videoFilterRoot["type"] == "drawtext")
+					if (JSONUtils::isPresent(videoFilterRoot, "type") && videoFilterRoot["type"] == "drawtext")
 						isDrawTextFilterPresent = true;
 				}
 			}
@@ -2535,7 +2535,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", json(nullptr));
 		/*
 		json encodingProfileDetailsRoot = nullptr;
-		if (JSONUtils::isMetadataPresent(outputRoot, "encodingProfileDetails"))
+		if (JSONUtils::isPresent(outputRoot, "encodingProfileDetails"))
 			encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
 		*/
 
@@ -3224,7 +3224,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", json(nullptr));
 		/*
 		json encodingProfileDetailsRoot = nullptr;
-		if (JSONUtils::isMetadataPresent(outputRoot, "encodingProfileDetails"))
+		if (JSONUtils::isPresent(outputRoot, "encodingProfileDetails"))
 			encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
 		*/
 
@@ -3401,7 +3401,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				output.addVideoFilter(ffmpegVideoResolutionParameter);
 			if (filtersRoot != nullptr)
 			{
-				if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
+				if (JSONUtils::isPresent(filtersRoot, "video"))
 				{
 					for (const auto& filterRoot : filtersRoot["video"])
 						output.addVideoFilter(ffmpegFilters.getFilter(filterRoot, inputDurationInSeconds));
@@ -3491,7 +3491,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		{
 			if (filtersRoot != nullptr)
 			{
-				if (JSONUtils::isMetadataPresent(filtersRoot, "audio"))
+				if (JSONUtils::isPresent(filtersRoot, "audio"))
 				{
 					for (const auto& filterRoot : filtersRoot["audio"])
 						output.addAudioFilter(ffmpegFilters.getFilter(filterRoot, inputDurationInSeconds));
@@ -3895,7 +3895,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			{
 				if (filtersRoot != nullptr)
 				{
-					if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
+					if (JSONUtils::isPresent(filtersRoot, "video"))
 					{
 						for (const auto& filterRoot : filtersRoot["video"])
 							output.addVideoFilter(ffmpegFilters.getFilter(filterRoot, inputDurationInSeconds));
@@ -3911,7 +3911,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			{
 				if (filtersRoot != nullptr)
 				{
-					if (JSONUtils::isMetadataPresent(filtersRoot, "audio"))
+					if (JSONUtils::isPresent(filtersRoot, "audio"))
 					{
 						for (const auto& filterRoot : filtersRoot["audio"])
 							output.addAudioFilter(ffmpegFilters.getFilter(filterRoot, inputDurationInSeconds));
@@ -4012,7 +4012,7 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 			}
 		}
 
-		if (JSONUtils::isMetadataPresent(outputRoot, "drawTextDetails"))
+		if (JSONUtils::isPresent(outputRoot, "drawTextDetails"))
 		{
 			string textTemporaryFileName;
 			{
@@ -4031,17 +4031,17 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 			}
 		}
 
-		if (JSONUtils::isMetadataPresent(outputRoot, "filters"))
+		if (JSONUtils::isPresent(outputRoot, "filters"))
 		{
 			json filtersRoot = outputRoot["filters"];
 
-			if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
+			if (JSONUtils::isPresent(filtersRoot, "video"))
 			{
 				json videoFiltersRoot = filtersRoot["video"];
 				for (int filterIndex = 0; filterIndex < videoFiltersRoot.size(); filterIndex++)
 				{
 					json videoFilterRoot = videoFiltersRoot[filterIndex];
-					if (JSONUtils::isMetadataPresent(videoFilterRoot, "type") && videoFilterRoot["type"] == "drawtext")
+					if (JSONUtils::isPresent(videoFilterRoot, "type") && videoFilterRoot["type"] == "drawtext")
 					{
 						string textTemporaryFileName =
 							std::format("{}/{}_{}_{}.overlayText", _ffmpegTempDir, ingestionJobKey, encodingJobKey, outputIndex);

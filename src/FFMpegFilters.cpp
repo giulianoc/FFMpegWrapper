@@ -24,7 +24,7 @@ FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionP
 
 	if (filtersRoot != nullptr)
 	{
-		if (JSONUtils::isMetadataPresent(filtersRoot, "complex"))
+		if (JSONUtils::isPresent(filtersRoot, "complex"))
 		{
 			for (int filterIndex = 0; filterIndex < filtersRoot["complex"].size(); filterIndex++)
 			{
@@ -74,7 +74,7 @@ string FFMpegFilters::addVideoFilters(
 
 	if (filtersRoot != nullptr)
 	{
-		if (JSONUtils::isMetadataPresent(filtersRoot, "video"))
+		if (JSONUtils::isPresent(filtersRoot, "video"))
 		{
 			for (const auto& filterRoot : filtersRoot["video"])
 			{
@@ -95,7 +95,7 @@ string FFMpegFilters::addAudioFilters(const json& filtersRoot, optional<int32_t>
 
 	if (filtersRoot != nullptr)
 	{
-		if (JSONUtils::isMetadataPresent(filtersRoot, "audio"))
+		if (JSONUtils::isPresent(filtersRoot, "audio"))
 		{
 			for (const auto& filterRoot : filtersRoot["audio"])
 			{
@@ -114,7 +114,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 {
 	string filter;
 
-	if (!JSONUtils::isMetadataPresent(filterRoot, "type"))
+	if (!JSONUtils::isPresent(filterRoot, "type"))
 	{
 		string errorMessage = "filterRoot->type field does not exist";
 		SPDLOG_ERROR(errorMessage);
@@ -722,10 +722,10 @@ json FFMpegFilters::mergeFilters(const json& filters_1Root, const json& filters_
 	{
 		string field = "video";
 		{
-			if (JSONUtils::isMetadataPresent(filters_1Root, field))
+			if (JSONUtils::isPresent(filters_1Root, field))
 				mergedFiltersRoot[field] = filters_1Root[field];
 
-			if (JSONUtils::isMetadataPresent(filters_2Root, field))
+			if (JSONUtils::isPresent(filters_2Root, field))
 			{
 				for (int filterIndex = 0; filterIndex < filters_2Root[field].size(); filterIndex++)
 					mergedFiltersRoot[field].push_back(filters_2Root[field][filterIndex]);
@@ -734,10 +734,10 @@ json FFMpegFilters::mergeFilters(const json& filters_1Root, const json& filters_
 
 		field = "audio";
 		{
-			if (JSONUtils::isMetadataPresent(filters_1Root, field))
+			if (JSONUtils::isPresent(filters_1Root, field))
 				mergedFiltersRoot[field] = filters_1Root[field];
 
-			if (JSONUtils::isMetadataPresent(filters_2Root, field))
+			if (JSONUtils::isPresent(filters_2Root, field))
 			{
 				for (int filterIndex = 0; filterIndex < filters_2Root[field].size(); filterIndex++)
 					mergedFiltersRoot[field].push_back(filters_2Root[field][filterIndex]);
@@ -746,10 +746,10 @@ json FFMpegFilters::mergeFilters(const json& filters_1Root, const json& filters_
 
 		field = "complex";
 		{
-			if (JSONUtils::isMetadataPresent(filters_1Root, field))
+			if (JSONUtils::isPresent(filters_1Root, field))
 				mergedFiltersRoot[field] = filters_1Root[field];
 
-			if (JSONUtils::isMetadataPresent(filters_2Root, field))
+			if (JSONUtils::isPresent(filters_2Root, field))
 			{
 				for (int filterIndex = 0; filterIndex < filters_2Root[field].size(); filterIndex++)
 					mergedFiltersRoot[field].push_back(filters_2Root[field][filterIndex]);

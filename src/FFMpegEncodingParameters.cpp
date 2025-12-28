@@ -2953,7 +2953,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 	string fileFormatLowerCase;
 	{
 		field = "fileFormat";
-		if (!JSONUtils::isMetadataPresent(encodingProfileDetailsRoot, field))
+		if (!JSONUtils::isPresent(encodingProfileDetailsRoot, field))
 		{
 			string errorMessage = std::format(
 				"FFMpeg: Field is not present or it is null"
@@ -2980,7 +2980,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			long segmentDurationInSeconds = 10;
 
 			field = "HLS";
-			if (JSONUtils::isMetadataPresent(encodingProfileDetailsRoot, field))
+			if (JSONUtils::isPresent(encodingProfileDetailsRoot, field))
 			{
 				json hlsRoot = encodingProfileDetailsRoot[field];
 
@@ -3003,7 +3003,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			long segmentDurationInSeconds = 10;
 
 			field = "DASH";
-			if (JSONUtils::isMetadataPresent(encodingProfileDetailsRoot, field))
+			if (JSONUtils::isPresent(encodingProfileDetailsRoot, field))
 			{
 				json dashRoot = encodingProfileDetailsRoot[field];
 
@@ -3049,14 +3049,14 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 	if (isVideo)
 	{
 		field = "video";
-		if (JSONUtils::isMetadataPresent(encodingProfileDetailsRoot, field))
+		if (JSONUtils::isPresent(encodingProfileDetailsRoot, field))
 		{
 			json videoRoot = encodingProfileDetailsRoot[field];
 
 			// codec
 			{
 				field = "codec";
-				if (!JSONUtils::isMetadataPresent(videoRoot, field))
+				if (!JSONUtils::isPresent(videoRoot, field))
 				{
 					string errorMessage = std::format(
 						"FFMpeg: Field is not present or it is null"
@@ -3080,7 +3080,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			// profile
 			{
 				field = "profile";
-				if (JSONUtils::isMetadataPresent(videoRoot, field))
+				if (JSONUtils::isPresent(videoRoot, field))
 				{
 					string profile = JSONUtils::asString(videoRoot, field, "");
 
@@ -3117,7 +3117,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			// OtherOutputParameters
 			{
 				field = "otherOutputParameters";
-				if (JSONUtils::isMetadataPresent(videoRoot, field))
+				if (JSONUtils::isPresent(videoRoot, field))
 				{
 					string otherOutputParameters = JSONUtils::asString(videoRoot, field, "");
 
@@ -3128,7 +3128,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			// twoPasses
 			{
 				field = "twoPasses";
-				if (!JSONUtils::isMetadataPresent(videoRoot, field))
+				if (!JSONUtils::isPresent(videoRoot, field))
 				{
 					string errorMessage = std::format(
 						"FFMpeg: Field is not present or it is null"
@@ -3145,7 +3145,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			// frameRate
 			{
 				field = "frameRate";
-				if (JSONUtils::isMetadataPresent(videoRoot, field))
+				if (JSONUtils::isPresent(videoRoot, field))
 				{
 					int frameRate = JSONUtils::asInt32(videoRoot, field, 0);
 
@@ -3177,7 +3177,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							*/
 
 							field = "keyFrameIntervalInSeconds";
-							if (JSONUtils::isMetadataPresent(videoRoot, field))
+							if (JSONUtils::isPresent(videoRoot, field))
 							{
 								int keyFrameIntervalInSeconds = JSONUtils::asInt32(videoRoot, field, 5);
 
@@ -3197,7 +3197,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			}
 
 			field = "bitRates";
-			if (!JSONUtils::isMetadataPresent(videoRoot, field))
+			if (!JSONUtils::isPresent(videoRoot, field))
 			{
 				string errorMessage = std::format(
 					"FFMpeg: Field is not present or it is null"
@@ -3222,7 +3222,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					int videoHeight;
 					{
 						field = "width";
-						if (!JSONUtils::isMetadataPresent(bitRateInfo, field))
+						if (!JSONUtils::isPresent(bitRateInfo, field))
 						{
 							string errorMessage = std::format(
 								"FFMpeg: Field is not present or it is null"
@@ -3238,7 +3238,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							videoWidth = -2; // h264 requires always a even width/height
 
 						field = "height";
-						if (!JSONUtils::isMetadataPresent(bitRateInfo, field))
+						if (!JSONUtils::isPresent(bitRateInfo, field))
 						{
 							string errorMessage = std::format(
 								"FFMpeg: Field is not present or it is null"
@@ -3283,7 +3283,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					int kBitRate;
 					{
 						field = "kBitRate";
-						if (!JSONUtils::isMetadataPresent(bitRateInfo, field))
+						if (!JSONUtils::isPresent(bitRateInfo, field))
 						{
 							string errorMessage = std::format(
 								"FFMpeg: Field is not present or it is null"
@@ -3304,7 +3304,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					string ffmpegVideoMaxRate;
 					{
 						field = "kMaxRate";
-						if (JSONUtils::isMetadataPresent(bitRateInfo, field))
+						if (JSONUtils::isPresent(bitRateInfo, field))
 						{
 							int maxRate = JSONUtils::asInt32(bitRateInfo, field, 0);
 
@@ -3316,7 +3316,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					string ffmpegVideoBufSize;
 					{
 						field = "kBufferSize";
-						if (JSONUtils::isMetadataPresent(bitRateInfo, field))
+						if (JSONUtils::isPresent(bitRateInfo, field))
 						{
 							int bufferSize = JSONUtils::asInt32(bitRateInfo, field, 0);
 
@@ -3343,7 +3343,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 	// if (contentType == "video" || contentType == "audio")
 	{
 		field = "audio";
-		if (!JSONUtils::isMetadataPresent(encodingProfileDetailsRoot, field))
+		if (!JSONUtils::isPresent(encodingProfileDetailsRoot, field))
 		{
 			string errorMessage = std::format(
 				"FFMpeg: Field is not present or it is null"
@@ -3360,7 +3360,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		// codec
 		{
 			field = "codec";
-			if (!JSONUtils::isMetadataPresent(audioRoot, field))
+			if (!JSONUtils::isPresent(audioRoot, field))
 			{
 				string errorMessage = std::format(
 					"FFMpeg: Field is not present or it is null"
@@ -3382,7 +3382,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		/*
 		{
 			field = "kBitRate";
-			if (JSONUtils::isMetadataPresent(audioRoot, field))
+			if (JSONUtils::isPresent(audioRoot, field))
 			{
 				int bitRate = JSONUtils::asInt32(audioRoot, field, 0);
 
@@ -3396,7 +3396,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		// OtherOutputParameters
 		{
 			field = "otherOutputParameters";
-			if (JSONUtils::isMetadataPresent(audioRoot, field))
+			if (JSONUtils::isPresent(audioRoot, field))
 			{
 				string otherOutputParameters = JSONUtils::asString(audioRoot, field, "");
 
@@ -3407,7 +3407,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		// channelsNumber
 		{
 			field = "channelsNumber";
-			if (JSONUtils::isMetadataPresent(audioRoot, field))
+			if (JSONUtils::isPresent(audioRoot, field))
 			{
 				int channelsNumber = JSONUtils::asInt32(audioRoot, field, 0);
 
@@ -3418,7 +3418,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		// sample rate
 		{
 			field = "sampleRate";
-			if (JSONUtils::isMetadataPresent(audioRoot, field))
+			if (JSONUtils::isPresent(audioRoot, field))
 			{
 				int sampleRate = JSONUtils::asInt32(audioRoot, field, 0);
 
@@ -3427,7 +3427,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		}
 
 		field = "bitRates";
-		if (!JSONUtils::isMetadataPresent(audioRoot, field))
+		if (!JSONUtils::isPresent(audioRoot, field))
 		{
 			string errorMessage = std::format(
 				"FFMpeg: Field is not present or it is null"
@@ -3449,7 +3449,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				string ffmpegAudioBitRate;
 				{
 					field = "kBitRate";
-					if (!JSONUtils::isMetadataPresent(bitRateInfo, field))
+					if (!JSONUtils::isPresent(bitRateInfo, field))
 					{
 						string errorMessage = std::format(
 							"FFMpeg: Field is not present or it is null"
