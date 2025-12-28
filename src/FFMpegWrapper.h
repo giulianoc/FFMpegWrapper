@@ -309,29 +309,6 @@ class FFMpegWrapper
 		long *numberOfRestartBecauseOfFailure
 	);
 
-	void liveRecorder2(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string &segmentListPathName,
-		const string &recordedFileNamePrefix,
-
-		const string &otherInputOptions,
-
-		const string &streamSourceType, string liveURL, int pushListenTimeout, int captureLive_videoDeviceNumber,
-		const string &captureLive_videoInputFormat, int captureLive_frameRate, int captureLive_width, int captureLive_height,
-		int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
-
-		bool utcTimeOverlay,
-
-		const string &userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
-
-		int segmentDurationInSeconds, const string &outputFileFormat, const string &segmenterType,
-
-		const json &outputsRoot,
-
-		json framesToBeDetectedRoot,
-
-		ProcessUtility::ProcessId &processId, chrono::system_clock::time_point *pRecordingStart, long *numberOfRestartBecauseOfFailure
-	);
-
 	void liveProxy(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 		json *inputsRoot, const json &outputsRoot, optional<chrono::system_clock::time_point> &proxyStart,
