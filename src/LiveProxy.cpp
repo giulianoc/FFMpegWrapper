@@ -238,7 +238,7 @@ void FFMpegWrapper::liveProxy(
 		optional<int32_t> inputDurationInSeconds;
 		// vector<string> ffmpegInputArgumentList;
 		string otherOutputOptionsBecauseOfMaxWidth;
-		string endlessPlaylistListPathName;
+		string endlessPlaylistPathName;
 		int pushListenTimeout;
 		int64_t utcProxyPeriodStart;
 		json inputFiltersRoot;
@@ -265,7 +265,7 @@ void FFMpegWrapper::liveProxy(
 				ingestionJobKey, encodingJobKey, inputsRoot->size(), timedInput, currentInputIndex
 			);
 
-			tie(endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart, inputFiltersRoot, inputSelectedVideoMap,
+			tie(endlessPlaylistPathName, pushListenTimeout, utcProxyPeriodStart, inputFiltersRoot, inputSelectedVideoMap,
 				inputSelectedAudioMap, inputDurationInSeconds) = liveProxyInput(ingestionJobKey, encodingJobKey, externalEncoder,
 				currentInputRoot, maxStreamingDurationInMinutes, ffMpegEngine, killTypeReceived);
 
@@ -466,45 +466,36 @@ void FFMpegWrapper::liveProxy(
 				chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 			);
 
-			if (!endlessPlaylistListPathName.empty() && fs::exists(endlessPlaylistListPathName))
+			if (!endlessPlaylistPathName.empty() && fs::exists(endlessPlaylistPathName))
 			{
 				if (externalEncoder)
 				{
-					ifstream ifConfigurationFile(endlessPlaylistListPathName);
-					if (ifConfigurationFile)
-					{
-						string configuration;
-						string prefixFile = "file '";
-						while (getline(ifConfigurationFile, configuration))
-						{
-							if (configuration.starts_with(prefixFile))
-							{
-								string mediaFileName = configuration.substr(prefixFile.size(), configuration.size() - prefixFile.size() - 1);
+					// in questo caso dobbiamo rimuovere la directory che contiene sia la playlist che i media scaricati
 
-								SPDLOG_INFO(
-									"Remove"
-									", ingestionJobKey: {}"
-									", encodingJobKey: {}"
-									", _ffmpegEndlessRecursivePlaylist: {}",
-									ingestionJobKey, encodingJobKey, _ffmpegEndlessRecursivePlaylistDir + "/" + mediaFileName
-								);
-								fs::remove_all(_ffmpegEndlessRecursivePlaylistDir + "/" + mediaFileName);
-							}
-						}
-
-						ifConfigurationFile.close();
-					}
+					string endlessPlaylistDirectory = StringUtils::uriPathPrefix(endlessPlaylistPathName);
+					SPDLOG_INFO(
+						"Remove"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", endlessPlaylistDirectory: {}",
+						ingestionJobKey, encodingJobKey, endlessPlaylistDirectory
+					);
+					fs::remove_all(endlessPlaylistDirectory);
+					endlessPlaylistPathName = "";
 				}
-
-				SPDLOG_INFO(
-					"Remove"
-					", ingestionJobKey: {}"
-					", encodingJobKey: {}"
-					", endlessPlaylistListPathName: {}",
-					ingestionJobKey, encodingJobKey, endlessPlaylistListPathName
-				);
-				fs::remove_all(endlessPlaylistListPathName);
-				endlessPlaylistListPathName = "";
+				else
+				{
+					// in questo caso dobbiamo rimuovere solo la playlist perchè i file fanno riferimento allo storage locale
+					SPDLOG_INFO(
+						"Remove"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", endlessPlaylistPathName: {}",
+						ingestionJobKey, encodingJobKey, endlessPlaylistPathName
+					);
+					fs::remove_all(endlessPlaylistPathName);
+					endlessPlaylistPathName = "";
+				}
 			}
 
 			try
@@ -616,45 +607,36 @@ void FFMpegWrapper::liveProxy(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			if (!endlessPlaylistListPathName.empty() && fs::exists(endlessPlaylistListPathName))
+			if (!endlessPlaylistPathName.empty() && fs::exists(endlessPlaylistPathName))
 			{
 				if (externalEncoder)
 				{
-					ifstream ifConfigurationFile(endlessPlaylistListPathName);
-					if (ifConfigurationFile)
-					{
-						string configuration;
-						string prefixFile = "file '";
-						while (getline(ifConfigurationFile, configuration))
-						{
-							if (configuration.size() >= prefixFile.size() && 0 == configuration.compare(0, prefixFile.size(), prefixFile))
-							{
-								string mediaFileName = configuration.substr(prefixFile.size(), configuration.size() - prefixFile.size() - 1);
+					// in questo caso dobbiamo rimuovere la directory che contiene sia la playlist che i media scaricati
 
-								SPDLOG_INFO(
-									"Remove"
-									", ingestionJobKey: {}"
-									", encodingJobKey: {}"
-									", _ffmpegEndlessRecursivePlaylist: {}",
-									ingestionJobKey, encodingJobKey, _ffmpegEndlessRecursivePlaylistDir + "/" + mediaFileName
-								);
-								fs::remove_all(_ffmpegEndlessRecursivePlaylistDir + "/" + mediaFileName);
-							}
-						}
-
-						ifConfigurationFile.close();
-					}
+					string endlessPlaylistDirectory = StringUtils::uriPathPrefix(endlessPlaylistPathName);
+					SPDLOG_INFO(
+						"Remove"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", endlessPlaylistDirectory: {}",
+						ingestionJobKey, encodingJobKey, endlessPlaylistDirectory
+					);
+					fs::remove_all(endlessPlaylistDirectory);
+					endlessPlaylistPathName = "";
 				}
-
-				SPDLOG_INFO(
-					"Remove"
-					", ingestionJobKey: {}"
-					", encodingJobKey: {}"
-					", endlessPlaylistListPathName: {}",
-					ingestionJobKey, encodingJobKey, endlessPlaylistListPathName
-				);
-				fs::remove_all(endlessPlaylistListPathName);
-				endlessPlaylistListPathName = "";
+				else
+				{
+					// in questo caso dobbiamo rimuovere solo la playlist perchè i file fanno riferimento allo storage locale
+					SPDLOG_INFO(
+						"Remove"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", endlessPlaylistPathName: {}",
+						ingestionJobKey, encodingJobKey, endlessPlaylistPathName
+					);
+					fs::remove_all(endlessPlaylistPathName);
+					endlessPlaylistPathName = "";
+				}
 			}
 
 			try
@@ -985,7 +967,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 	FFMpegEngine &ffMpegEngine, const KillType& killTypeReceived
 )
 {
-	string endlessPlaylistListPathName;
+	string endlessPlaylistPathName;
 	int pushListenTimeout = -1;
 	int64_t utcProxyPeriodStart = -1;
 	json inputFiltersRoot = nullptr;
@@ -1952,17 +1934,44 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				//	...
 				//	file 'XXX_YYY_endlessPlaylist.txt'
 
-				string endlessPlaylistListFileName = std::format("{}_{}_endlessPlaylist.txt", ingestionJobKey, encodingJobKey);
-				endlessPlaylistListPathName = std::format("{}/{}", _ffmpegEndlessRecursivePlaylistDir, endlessPlaylistListFileName);
+				string endlessPlaylistFileName;
+				string endlessPlaylistDirectory;
+				if (externalEncoder)
+				{
+					// creiamo una directory dove mettiamo sia la playlist che i file scaricati
+					endlessPlaylistFileName = "endlessPlaylist.txt";
+					endlessPlaylistDirectory = std::format("{}/{}_{}", _ffmpegEndlessRecursivePlaylistDir, ingestionJobKey, encodingJobKey);
+					endlessPlaylistPathName = std::format("{}/{}", endlessPlaylistDirectory, endlessPlaylistFileName);
+
+					SPDLOG_INFO(
+						"Create directory"
+						", endlessPlaylistDirectory: {}",
+						endlessPlaylistDirectory
+					);
+					fs::create_directories(endlessPlaylistDirectory);
+					fs::permissions(
+						endlessPlaylistDirectory,
+						fs::perms::owner_read | fs::perms::owner_write | fs::perms::owner_exec | fs::perms::group_read | fs::perms::group_exec |
+							fs::perms::others_read | fs::perms::others_exec,
+						fs::perm_options::replace
+					);
+				}
+				else
+				{
+					// in questo caso (no externalEncoder), creiamo solo la playlist che fa riferimento allo storage locale
+					endlessPlaylistFileName = std::format("{}_{}_endlessPlaylist.txt", ingestionJobKey, encodingJobKey);
+					endlessPlaylistDirectory = _ffmpegEndlessRecursivePlaylistDir;
+					endlessPlaylistPathName = std::format("{}/{}", _ffmpegEndlessRecursivePlaylistDir, endlessPlaylistFileName);
+				}
 
 				SPDLOG_INFO(
 					"Creating ffmpegEndlessRecursivePlaylist file"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
-					", endlessPlaylistListPathName: {}",
-					ingestionJobKey, encodingJobKey, endlessPlaylistListPathName
+					", endlessPlaylistPathName: {}",
+					ingestionJobKey, encodingJobKey, endlessPlaylistPathName
 				);
-				ofstream playlistListFile(endlessPlaylistListPathName.c_str(), ofstream::trunc);
+				ofstream playlistListFile(endlessPlaylistPathName.c_str(), ofstream::trunc);
 				if (!playlistListFile)
 				{
 #ifdef _WIN32
@@ -1971,18 +1980,18 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 						"Error creating ffmpegEndlessRecursivePlaylist file"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
-						", _ffmpegEndlessRecursivePlaylist: {}"
+						", endlessPlaylistPathName: {}"
 						", errno: {} ({})",
-						ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, errno, strerror_s(buffer, sizeof(buffer), errno)
+						ingestionJobKey, encodingJobKey, endlessPlaylistPathName, errno, strerror_s(buffer, sizeof(buffer), errno)
 					);
 #else
 					string errorMessage = std::format(
 						"Error creating ffmpegEndlessRecursivePlaylist file"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
-						", _ffmpegEndlessRecursivePlaylist: {}"
+						", endlessPlaylistPathName: {}"
 						", errno: {} ({})",
-						ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, errno, strerror(errno)
+						ingestionJobKey, encodingJobKey, endlessPlaylistPathName, errno, strerror(errno)
 					);
 #endif
 					SPDLOG_ERROR(errorMessage);
@@ -2022,8 +2031,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 							//	con lo stesso nome, nella stessa directory (_ffmpegEndlessRecursivePlaylistDir).
 							//	Per questo motivo aggiungiamo, come prefisso al source file name,
 							//	ingestionJobKey and encodingJobKey
-							destBinaryFileName =
-								std::format("{}_{}_{}", ingestionJobKey, encodingJobKey, sourcePhysicalReference.substr(fileNameIndex + 1));
+							destBinaryFileName = sourcePhysicalReference.substr(fileNameIndex + 1);
 
 							size_t extensionIndex = destBinaryFileName.find_last_of('.');
 							if (extensionIndex != string::npos)
@@ -2035,7 +2043,18 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								}
 							}
 
-							destBinaryPathName = _ffmpegEndlessRecursivePlaylistDir + "/" + destBinaryFileName;
+							destBinaryPathName = std::format("{}/{}", endlessPlaylistPathName, destBinaryFileName);
+						}
+
+						if (killTypeReceived == KillType::Kill || killTypeReceived == KillType::KillToRestartByEngine)
+						{
+							SPDLOG_ERROR(
+								"streamingToFile/CurlWrapper::downloadFile not executed because killTypeReceived is Kill or KillToRestartByEngine"
+								", ingestionJobKey: {}",
+								ingestionJobKey
+							);
+
+							break;
 						}
 
 						// sourcePhysicalReference is like
@@ -2056,17 +2075,6 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								progressData._lastTimeProgressUpdate = chrono::system_clock::now();
 								progressData._lastPercentageUpdated = -1.0;
 								progressData._killType = &killTypeReceived;
-
-								if (killTypeReceived == KillType::Kill || killTypeReceived == KillType::KillToRestartByEngine)
-								{
-									SPDLOG_ERROR(
-										"CurlWrapper::downloadFile not executed because killTypeReceived is Kill or KillToRestartByEngine"
-										", ingestionJobKey: {}",
-										ingestionJobKey
-									);
-
-									break;
-								}
 
 								CurlWrapper::downloadFile(
 									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
@@ -2093,10 +2101,10 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 							"ffmpeg: adding physical path"
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
-							", _ffmpegEndlessRecursivePlaylist: {}"
+							", endlessPlaylistPathName: {}"
 							", sourcePhysicalReference: {}"
 							", content: file '{}'",
-							ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, sourcePhysicalReference, destBinaryFileName
+							ingestionJobKey, encodingJobKey, endlessPlaylistPathName, sourcePhysicalReference, destBinaryFileName
 						);
 					}
 					else
@@ -2120,15 +2128,15 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 							"ffmpeg: adding physical path"
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
-							", endlessPlaylistListPathName: {}"
+							", endlessPlaylistPathName: {}"
 							", sourcePhysicalReference: {}"
 							", content: file '{}'",
-							ingestionJobKey, encodingJobKey, endlessPlaylistListPathName, sourcePhysicalReference,
+							ingestionJobKey, encodingJobKey, endlessPlaylistPathName, sourcePhysicalReference,
 							sourcePhysicalReference.substr(storageIndex + 1)
 						);
 					}
 				}
-				playlistListFile << "file '" << endlessPlaylistListFileName << "'" << endl;
+				playlistListFile << "file '" << endlessPlaylistFileName << "'" << endl;
 				playlistListFile.close();
 
 				// ffmpegInputArgumentList.push_back("-f");
@@ -2136,7 +2144,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				// ffmpegInputArgumentList.push_back("-i");
 				// ffmpegInputArgumentList.push_back(endlessPlaylistListPathName);
 				mainInput.addArgs("-f concat");
-				mainInput.setSource(endlessPlaylistListPathName);
+				mainInput.setSource(endlessPlaylistPathName);
 			}
 
 			// se viene usato l'imageoverlay filter, bisogna aggiungere il riferimento alla image
@@ -2435,7 +2443,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 	}
 
 	return make_tuple(
-		endlessPlaylistListPathName, pushListenTimeout, utcProxyPeriodStart,
+		endlessPlaylistPathName, pushListenTimeout, utcProxyPeriodStart,
 		inputFiltersRoot, inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds
 	);
 }
