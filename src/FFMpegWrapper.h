@@ -99,31 +99,31 @@ class FFMpegWrapper
 		switch (killType)
 		{
 		case KillType::None:
-			return "None";
+			return "none";
 		case KillType::Kill:
-			return "Kill";
+			return "kill";
 		case KillType::RestartWithinEncoder:
-			return "RestartWithinEncoder";
+			return "restartWithinEncoder";
 		case KillType::KillToRestartByEngine:
-			return "KillToRestartByEngine";
+			return "killToRestartByEngine";
 		default:
-			const string errorMessage = std::format("toString with a wrong KillType: {}", static_cast<int>(killType));
+			const string errorMessage = std::format("toString, wrong KillType: {}", static_cast<int>(killType));
 			SPDLOG_ERROR(errorMessage);
 			throw runtime_error(errorMessage);
 		}
 	}
 	static KillType toKillType(string_view killType)
 	{
-		if (killType == "None")
+		if (killType == "none")
 			return KillType::None;
-		if (killType == "Kill")
+		if (killType == "kill")
 			return KillType::Kill;
-		if (killType == "RestartWithinEncoder")
+		if (killType == "restartWithinEncoder")
 			return KillType::RestartWithinEncoder;
-		if (killType == "KillToRestartByEngine")
+		if (killType == "killToRestartByEngine")
 			return KillType::KillToRestartByEngine;
 
-		const string errorMessage = std::format("toKillType with a wrong KillType: {}", killType);
+		const string errorMessage = std::format("toKillType, wrong KillType: {}", killType);
 		SPDLOG_ERROR(errorMessage);
 		throw runtime_error(errorMessage);
 	}
