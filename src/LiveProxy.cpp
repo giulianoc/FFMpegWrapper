@@ -2012,26 +2012,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 						string destBinaryPathName;
 						string destBinaryFileName;
 						{
-							size_t fileNameIndex = sourcePhysicalReference.find_last_of('/');
-							if (fileNameIndex == string::npos)
-							{
-								SPDLOG_ERROR(
-									"physical path has a wrong path"
-									", ingestionJobKey: {}"
-									", sourcePhysicalReference: {}",
-									ingestionJobKey, sourcePhysicalReference
-								);
-
-								continue;
-							}
-							// 2023-06-10: nel destBinaryFileName è necessario aggiungere
-							//	ingestionJobKey and encodingJobKey come per il nome della playlist.
-							//	Infatti, nel caso in cui avessimo due IngestionJob (due VOD Proxy)
-							//	che usano lo stesso source file, entrambi farebbero il download dello stesso file,
-							//	con lo stesso nome, nella stessa directory (_ffmpegEndlessRecursivePlaylistDir).
-							//	Per questo motivo aggiungiamo, come prefisso al source file name,
-							//	ingestionJobKey and encodingJobKey
-							destBinaryFileName = sourcePhysicalReference.substr(fileNameIndex + 1);
+							destBinaryFileName = StringUtils::lastURIPath(sourcePhysicalReference);
 
 							size_t extensionIndex = destBinaryFileName.find_last_of('.');
 							if (extensionIndex != string::npos)
@@ -2043,7 +2024,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								}
 							}
 
-							destBinaryPathName = std::format("{}/{}", endlessPlaylistPathName, destBinaryFileName);
+							destBinaryPathName = std::format("{}/{}", endlessPlaylistDirectory, destBinaryFileName);
 						}
 
 						if (killTypeReceived == KillType::Kill || killTypeReceived == KillType::KillToRestartByEngine)
