@@ -334,7 +334,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		while (mediaDetails.size() > 0 && (mediaDetails.back() == 10 || mediaDetails.back() == 13))
 			mediaDetails.pop_back();
 
-		json detailsRoot = JSONUtils::toJson(mediaDetails);
+		json detailsRoot = JSONUtils::toJson<json>(mediaDetails);
 
 		string field = "streams";
 		if (!JSONUtils::isPresent(detailsRoot, field))
@@ -1088,7 +1088,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 		while (mediaDetails.size() > 0 && (mediaDetails.back() == 10 || mediaDetails.back() == 13))
 			mediaDetails.pop_back();
 
-		json detailsRoot = JSONUtils::toJson(mediaDetails);
+		json detailsRoot = JSONUtils::toJson<json>(mediaDetails);
 
 		string field = "packets";
 		if (!JSONUtils::isPresent(detailsRoot, field))
