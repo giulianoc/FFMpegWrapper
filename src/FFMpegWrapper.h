@@ -34,12 +34,6 @@
 
 namespace fs = std::filesystem;
 
-/*
-using json = nlohmann::json;
-using orderd_json = nlohmann::ordered_json;
-using namespace nlohmann::literals;
-*/
-
 struct FFMpegEncodingStatusNotAvailable final : public std::exception
 {
 	[[nodiscard]] char const *what() const noexcept override { return "Encoding status not available"; };
