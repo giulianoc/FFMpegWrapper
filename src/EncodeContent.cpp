@@ -17,6 +17,10 @@
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::encodeContent(
 	string mmsSourceAssetPathName, int64_t durationInMilliSeconds, string encodedStagingAssetPathName, json encodingProfileDetailsRoot,
 	bool isVideo, // if false it means is audio

@@ -16,6 +16,10 @@
 #include "FFMpegWrapper.h"
 #include "ProcessUtility.h"
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::generateFrameToIngest(
 	int64_t ingestionJobKey, string mmsAssetPathName, int64_t videoDurationInMilliSeconds, double startTimeInSeconds, string frameAssetPathName,
 	int imageWidth, int imageHeight, ProcessUtility::ProcessId &processId, shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData

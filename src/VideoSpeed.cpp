@@ -16,6 +16,10 @@
 #include "ProcessUtility.h"
 #include "spdlog/spdlog.h"
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::videoSpeed(
 	string mmsSourceVideoAssetPathName, int64_t videoDurationInMilliSeconds,
 

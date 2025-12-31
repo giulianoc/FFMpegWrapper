@@ -15,6 +15,10 @@
 #include "ProcessUtility.h"
 #include <fstream>
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 	int64_t ingestionJobKey,
 	bool isMMSAssetPathName, // false means it is a URL

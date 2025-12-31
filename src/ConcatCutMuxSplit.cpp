@@ -17,6 +17,10 @@
 #include "spdlog/spdlog.h"
 #include <fstream>
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::muxAllFiles(int64_t ingestionJobKey, vector<string> sourcesPathName, string destinationPathName)
 {
 	_currentApiName = APIName::MuxAllFiles;

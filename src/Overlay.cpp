@@ -20,6 +20,10 @@
 #include <fstream>
 #include <regex>
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::overlayImageOnVideo(
 	bool externalEncoder, string mmsSourceVideoAssetPathName, int64_t videoDurationInMilliSeconds, string mmsSourceImageAssetPathName,
 	string imagePosition_X_InPixel, string imagePosition_Y_InPixel, string stagingEncodedAssetPathName, json encodingProfileDetailsRoot,

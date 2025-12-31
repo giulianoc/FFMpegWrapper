@@ -16,6 +16,8 @@
 #include <fstream>
 #include <regex>
 
+using namespace std;
+
 void FFMpegWrapper::retrieveLocalInputDevices(
 	vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices
 )

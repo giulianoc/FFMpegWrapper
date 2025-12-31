@@ -16,6 +16,10 @@
 #include "spdlog/spdlog.h"
 #include <fstream>
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestionJobKey, string youTubeURL)
 {
 	SPDLOG_INFO(

@@ -1,12 +1,12 @@
 
 #include "FFMpegFilters.h"
-#include "JSONUtils.h"
+#include "JsonPath.h"
+#include "nlohmann/json.hpp"
 #include "StringUtils.h"
-
 #include <fstream>
 #include <utility>
 
-FFMpegFilters::FFMpegFilters(string  ffmpegTempDir, string  ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
+FFMpegFilters::FFMpegFilters(std::string  ffmpegTempDir, std::string  ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
 	: _ffmpegTempDir(std::move(ffmpegTempDir)), _ffmpegTtfFontDir(std::move(ffmpegTtfFontDir)), _ingestionJobKey(ingestionJobKey), _encodingJobKey(encodingJobKey),
 	  _outputIndex(outputIndex)
 {
@@ -14,13 +14,14 @@ FFMpegFilters::FFMpegFilters(string  ffmpegTempDir, string  ffmpegTtfFontDir, in
 
 FFMpegFilters::~FFMpegFilters() = default;
 
-tuple<string, string, string>
-FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter,
-	optional<int32_t> inputDurationInSeconds) const
+std::tuple<std::string, std::string, std::string>
+FFMpegFilters::addFilters(
+	nlohmann::json filtersRoot, const std::string& ffmpegVideoResolutionParameter, const std::string& ffmpegDrawTextFilter,
+	std::optional<int32_t> inputDurationInSeconds) const
 {
-	string videoFilters = addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, ffmpegDrawTextFilter, inputDurationInSeconds);
-	string audioFilters = addAudioFilters(filtersRoot, inputDurationInSeconds);
-	string complexFilters;
+	std::string videoFilters = addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter, ffmpegDrawTextFilter, inputDurationInSeconds);
+	std::string audioFilters = addAudioFilters(filtersRoot, inputDurationInSeconds);
+	std::string complexFilters;
 
 	if (filtersRoot != nullptr)
 	{
@@ -28,9 +29,9 @@ FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionP
 		{
 			for (int filterIndex = 0; filterIndex < filtersRoot["complex"].size(); filterIndex++)
 			{
-				json filterRoot = filtersRoot["complex"][filterIndex];
+				nlohmann::json filterRoot = filtersRoot["complex"][filterIndex];
 
-				string filter = getFilter(filterRoot, inputDurationInSeconds);
+				std::string filter = getFilter(filterRoot, inputDurationInSeconds);
 				if (!complexFilters.empty())
 					complexFilters += ",";
 				complexFilters += filter;
@@ -52,12 +53,12 @@ FFMpegFilters::addFilters(json filtersRoot, const string& ffmpegVideoResolutionP
 	return make_tuple(videoFilters, audioFilters, complexFilters);
 }
 
-string FFMpegFilters::addVideoFilters(
-	json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter,
-	optional<int32_t> inputDurationInSeconds
+std::string FFMpegFilters::addVideoFilters(
+	nlohmann::json filtersRoot, const std::string& ffmpegVideoResolutionParameter, const std::string& ffmpegDrawTextFilter,
+	std::optional<int32_t> inputDurationInSeconds
 ) const
 {
-	string videoFilters;
+	std::string videoFilters;
 
 	if (!ffmpegVideoResolutionParameter.empty())
 	{
@@ -78,7 +79,7 @@ string FFMpegFilters::addVideoFilters(
 		{
 			for (const auto& filterRoot : filtersRoot["video"])
 			{
-				string filter = getFilter(filterRoot, inputDurationInSeconds);
+				std::string filter = getFilter(filterRoot, inputDurationInSeconds);
 				if (!videoFilters.empty())
 					videoFilters += ",";
 				videoFilters += filter;
@@ -89,9 +90,9 @@ string FFMpegFilters::addVideoFilters(
 	return videoFilters;
 }
 
-string FFMpegFilters::addAudioFilters(const json& filtersRoot, optional<int32_t> inputDurationInSeconds) const
+std::string FFMpegFilters::addAudioFilters(const nlohmann::json& filtersRoot, std::optional<int32_t> inputDurationInSeconds) const
 {
-	string audioFilters;
+	std::string audioFilters;
 
 	if (filtersRoot != nullptr)
 	{
@@ -99,7 +100,7 @@ string FFMpegFilters::addAudioFilters(const json& filtersRoot, optional<int32_t>
 		{
 			for (const auto& filterRoot : filtersRoot["audio"])
 			{
-				const string filter = getFilter(filterRoot, inputDurationInSeconds);
+				const std::string filter = getFilter(filterRoot, inputDurationInSeconds);
 				if (!audioFilters.empty())
 					audioFilters += ",";
 				audioFilters += filter;
@@ -110,18 +111,19 @@ string FFMpegFilters::addAudioFilters(const json& filtersRoot, optional<int32_t>
 	return audioFilters;
 }
 
-string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputDurationInSeconds) const
+std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::optional<int32_t> inputDurationInSeconds) const
 {
-	string filter;
+	std::string filter;
 
 	if (!JSONUtils::isPresent(filterRoot, "type"))
 	{
-		string errorMessage = "filterRoot->type field does not exist";
+		std::string errorMessage = "filterRoot->type field does not exist";
 		SPDLOG_ERROR(errorMessage);
 
-		throw runtime_error(errorMessage);
+		throw std::runtime_error(errorMessage);
 	}
-	string type = JSONUtils::asString(filterRoot, "type", "");
+	// std::string type = JSONUtils::asString(filterRoot, "type");
+	auto type = JsonPath(&filterRoot)["type"].as<std::string>("");
 
 	switch (hash_case(type))
 	{
@@ -152,7 +154,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 			double black_min_duration = JSONUtils::asDouble(filterRoot, "black_min_duration", 2);
 			double pixel_black_th = JSONUtils::asDouble(filterRoot, "pixel_black_th", 0.0);
 
-			filter = ("blackdetect=d=" + to_string(black_min_duration) + ":pix_th=" + to_string(pixel_black_th));
+			filter = std::format("blackdetect=d={}:pix_th={}", black_min_duration, pixel_black_th);
 
 			break;
 		}
@@ -161,7 +163,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 			int amount = JSONUtils::asInt32(filterRoot, "amount", 98);
 			int threshold = JSONUtils::asInt32(filterRoot, "threshold", 32);
 
-			filter = ("blackframe=amount=" + to_string(amount) + ":threshold=" + to_string(threshold));
+			filter = std::format("blackframe=amount={}:threshold={}", amount, threshold);
 
 			break;
 		}
@@ -169,12 +171,12 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 		{
 			// x,y 0,0 indica il punto in basso a sinistra del video
 			// in_h e in_w indicano input width and height
-			string out_w = JSONUtils::asString(filterRoot, "out_w", "in_w");
-			string out_h = JSONUtils::asString(filterRoot, "out_h", "in_h");
+			std::string out_w = JSONUtils::asString(filterRoot, "out_w", "in_w");
+			std::string out_h = JSONUtils::asString(filterRoot, "out_h", "in_h");
 			// La posizione orizzontale, nel video di input, del bordo sinistro del video di output
-			string x = JSONUtils::asString(filterRoot, "x", "(in_w-out_w)/2");
+			std::string x = JSONUtils::asString(filterRoot, "x", "(in_w-out_w)/2");
 			// La posizione verticale, nel video in input, del bordo superiore del video in output
-			string y = JSONUtils::asString(filterRoot, "y", "(in_h-out_h)/2");
+			std::string y = JSONUtils::asString(filterRoot, "y", "(in_h-out_h)/2");
 			bool keep_aspect = JSONUtils::asBool(filterRoot, "keep_aspect", false);
 			// Enable exact cropping. If enabled, subsampled videos will be cropped at exact width/height/x/y
 			// as specified and will not be rounded to nearest smaller value
@@ -190,16 +192,16 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 		{
 			// x,y 0,0 indica il punto in basso a sinistra del video
 			// in_h e in_w indicano input width and height
-			string x = JSONUtils::asString(filterRoot, "x", "0");
-			string y = JSONUtils::asString(filterRoot, "y", "0");
-			string width = JSONUtils::asString(filterRoot, "width", "300");
-			string height = JSONUtils::asString(filterRoot, "height", "300");
-			string fontColor = JSONUtils::asString(filterRoot, "fontColor", "red");
+			std::string x = JSONUtils::asString(filterRoot, "x", "0");
+			std::string y = JSONUtils::asString(filterRoot, "y", "0");
+			std::string width = JSONUtils::asString(filterRoot, "width", "300");
+			std::string height = JSONUtils::asString(filterRoot, "height", "300");
+			std::string fontColor = JSONUtils::asString(filterRoot, "fontColor", "red");
 			int percentageOpacity = JSONUtils::asInt32(filterRoot, "percentageOpacity", -1);
 			// thickness: il valore speciale di "fill" riempie il box
-			string thickness = JSONUtils::asString(filterRoot, "thickness", "3");
+			std::string thickness = JSONUtils::asString(filterRoot, "thickness", "3");
 
-			string opacity;
+			std::string opacity;
 			if (percentageOpacity != -1)
 			{
 				// char cOpacity[64];
@@ -217,20 +219,20 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 		}
 		case "drawtext"_case:
 		{
-			string text = JSONUtils::asString(filterRoot, "text", "");
+			std::string text = JSONUtils::asString(filterRoot, "text", "");
 			// timecode: none, editorial, pts
-			string timecode = JSONUtils::asString(filterRoot, "timecode", "none");
+			std::string timecode = JSONUtils::asString(filterRoot, "timecode", "none");
 			int reloadAtFrameInterval = JSONUtils::asInt32(filterRoot, "reloadAtFrameInterval", -1);
-			string textPosition_X_InPixel = JSONUtils::asString(filterRoot, "textPosition_X_InPixel", "");
-			string textPosition_Y_InPixel = JSONUtils::asString(filterRoot, "textPosition_Y_InPixel", "");
-			string fontType = JSONUtils::asString(filterRoot, "fontType", "");
+			std::string textPosition_X_InPixel = JSONUtils::asString(filterRoot, "textPosition_X_InPixel", "");
+			std::string textPosition_Y_InPixel = JSONUtils::asString(filterRoot, "textPosition_Y_InPixel", "");
+			std::string fontType = JSONUtils::asString(filterRoot, "fontType", "");
 			int fontSize = JSONUtils::asInt32(filterRoot, "fontSize", -1);
-			string fontColor = JSONUtils::asString(filterRoot, "fontColor", "");
+			std::string fontColor = JSONUtils::asString(filterRoot, "fontColor", "");
 			int textPercentageOpacity = JSONUtils::asInt32(filterRoot, "textPercentageOpacity", -1);
 			int shadowX = JSONUtils::asInt32(filterRoot, "shadowX", 0);
 			int shadowY = JSONUtils::asInt32(filterRoot, "shadowY", 0);
 			bool boxEnable = JSONUtils::asBool(filterRoot, "boxEnable", false);
-			string boxColor = JSONUtils::asString(filterRoot, "boxColor", "");
+			std::string boxColor = JSONUtils::asString(filterRoot, "boxColor", "");
 			int boxPercentageOpacity = JSONUtils::asInt32(filterRoot, "boxPercentageOpacity", -1);
 			int boxBorderW = JSONUtils::asInt32(filterRoot, "boxBorderW", 0);
 
@@ -268,17 +270,17 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 			*/
 
 			{
-				string textFilePathName;
+				std::string textFilePathName;
 				// serve un file se
 				// - è presente reloadAtFrameInterval
 				// - sono presenti caratteri speciali come '
 				if (reloadAtFrameInterval > 0 ||
 					// caratteri dove non si puo usare escape
-					text.find('\'') != string::npos)
+					text.find('\'') != std::string::npos)
 					textFilePathName = getDrawTextTemporaryPathName(_ffmpegTempDir, _ingestionJobKey, _encodingJobKey, _outputIndex);
 
 				// in case of file, there is no need of escape
-				string escape = textFilePathName.empty() ? "\\" : "";
+				std::string escape = textFilePathName.empty() ? "\\" : "";
 
 				// text = regex_replace(text, regex(":"), escape + ":");
 				text = StringUtils::replaceAll(text, ":", std::format("{}:", escape));
@@ -345,13 +347,13 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 					}
 				}
 
-				if (timecode == "editorialTimecode" && text.find(std::format("%{{metadata{}:timecode}}", escape)) == string::npos)
+				if (timecode == "editorialTimecode" && text.find(std::format("%{{metadata{}:timecode}}", escape)) == std::string::npos)
 				{
 					if (!text.empty())
 						text += " ";
 					text += std::format("%{{metadata{}:timecode}}", escape);
 				}
-				else if (timecode == "ptsTimecode" && text.find(std::format("%{{pts{}:", escape)) == string::npos)
+				else if (timecode == "ptsTimecode" && text.find(std::format("%{{pts{}:", escape)) == std::string::npos)
 				{
 					if (!text.empty())
 						text += " ";
@@ -359,7 +361,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 					// text += "time: %{pts:localtime}";
 
 					// genera la date/time utc con formato 2025-11-15 14:30:00
-					time_t utcTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
+					time_t utcTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 					text += std::format("%{{pts{}:gmtime{}:{}}}", escape, escape, utcTime);
 
 					// parte da 00:00:00.000
@@ -369,7 +371,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 				if (!textFilePathName.empty())
 				{
 					// questo file dovrà essere rimosso dallo script di retention
-					ofstream of(textFilePathName, ofstream::trunc);
+					std::ofstream of(textFilePathName, std::ofstream::trunc);
 					of << text;
 					of.flush();
 				}
@@ -384,7 +386,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 
 				* 5447324 is the countdown duration expressed in seconds
 				*/
-				string ffmpegTextPosition_X_InPixel;
+				std::string ffmpegTextPosition_X_InPixel;
 				if (textPosition_X_InPixel == "left")
 					ffmpegTextPosition_X_InPixel = "20";
 				else if (textPosition_X_InPixel == "center")
@@ -436,7 +438,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 					ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "timestampInSeconds", "t");
 				}
 
-				string ffmpegTextPosition_Y_InPixel;
+				std::string ffmpegTextPosition_Y_InPixel;
 				if (textPosition_Y_InPixel == "below")
 					ffmpegTextPosition_Y_InPixel = "h - (text_h + 20)";
 				else if (textPosition_Y_InPixel == "center")
@@ -491,7 +493,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 				if (!fontType.empty())
 					filter += std::format(":fontfile='{}/{}'", _ffmpegTtfFontDir, fontType);
 				if (fontSize != -1)
-					filter += (":fontsize=" + to_string(fontSize));
+					filter += std::format(":fontsize={}", fontSize);
 				if (!fontColor.empty())
 				{
 					filter += (":fontcolor=" + fontColor);
@@ -507,8 +509,8 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 						filter += std::format("@{:.1}", ((float)textPercentageOpacity) / 100.0);
 					}
 				}
-				filter += (":shadowx=" + to_string(shadowX));
-				filter += (":shadowy=" + to_string(shadowY));
+				filter += std::format(":shadowx={}", shadowX);
+				filter += std::format(":shadowy={}", shadowY);
 				if (boxEnable)
 				{
 					filter += (":box=1");
@@ -529,7 +531,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 						}
 					}
 					if (boxBorderW != -1)
-						filter += (":boxborderw=" + to_string(boxBorderW));
+						filter += std::format(":boxborderw={}", boxBorderW);
 				}
 			}
 
@@ -597,10 +599,10 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 		}
 		case "imageoverlay"_case:
 		{
-			string imagePosition_X_InPixel = JSONUtils::asString(filterRoot, "imagePosition_X_InPixel", "0");
-			string imagePosition_Y_InPixel = JSONUtils::asString(filterRoot, "imagePosition_Y_InPixel", "0");
+			std::string imagePosition_X_InPixel = JSONUtils::asString(filterRoot, "imagePosition_X_InPixel", "0");
+			std::string imagePosition_Y_InPixel = JSONUtils::asString(filterRoot, "imagePosition_Y_InPixel", "0");
 
-			string ffmpegImagePosition_X_InPixel;
+			std::string ffmpegImagePosition_X_InPixel;
 			if (imagePosition_X_InPixel == "left")
 				ffmpegImagePosition_X_InPixel = "20";
 			else if (imagePosition_X_InPixel == "center")
@@ -615,7 +617,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 				ffmpegImagePosition_X_InPixel = StringUtils::replaceAll(ffmpegImagePosition_X_InPixel, "image_width", "overlay_w");
 			}
 
-			string ffmpegImagePosition_Y_InPixel;
+			std::string ffmpegImagePosition_Y_InPixel;
 			if (imagePosition_Y_InPixel == "below")
 				ffmpegImagePosition_Y_InPixel = "main_h - (overlay_h + 20)";
 			else if (imagePosition_Y_InPixel == "center")
@@ -644,10 +646,10 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 		case "select"_case:
 		{
 			// select frames to pass in output
-			string frameType = JSONUtils::asString(filterRoot, "frameType", "i-frame");
+			std::string frameType = JSONUtils::asString(filterRoot, "frameType", "i-frame");
 
 			// es: vfr
-			string fpsMode = JSONUtils::asString(filterRoot, "fpsMode", "");
+			std::string fpsMode = JSONUtils::asString(filterRoot, "fpsMode", "");
 
 			if (frameType == "i-frame")
 				filter = "select='eq(pict_type,PICT_TYPE_I)'";
@@ -660,10 +662,10 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 			}
 			else
 			{
-				string errorMessage = "filterRoot->frameType is unknown";
+				std::string errorMessage = "filterRoot->frameType is unknown";
 				SPDLOG_ERROR(errorMessage);
 
-				throw runtime_error(errorMessage);
+				throw std::runtime_error(errorMessage);
 			}
 
 			if (!fpsMode.empty())
@@ -681,7 +683,7 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 		{
 			double noise = JSONUtils::asDouble(filterRoot, "noise", 0.0001);
 
-			filter = ("silencedetect=noise=" + to_string(noise));
+			filter = std::format("silencedetect=noise={}", noise);
 
 			break;
 		}
@@ -695,24 +697,24 @@ string FFMpegFilters::getFilter(const json& filterRoot, optional<int32_t> inputD
 		}
 		default:
 		{
-			string errorMessage = std::format(
+			std::string errorMessage = std::format(
 				"filterRoot->type is unknown"
 				", type: {}",
 				type
 			);
 			SPDLOG_ERROR(errorMessage);
 
-			throw runtime_error(errorMessage);
+			throw std::runtime_error(errorMessage);
 		}
 	}
 
 	return filter;
 }
 
-json FFMpegFilters::mergeFilters(const json& filters_1Root, const json& filters_2Root)
+nlohmann::json FFMpegFilters::mergeFilters(const nlohmann::json& filters_1Root, const nlohmann::json& filters_2Root)
 {
 
-	json mergedFiltersRoot = nullptr;
+	nlohmann::json mergedFiltersRoot = nullptr;
 
 	if (filters_1Root == nullptr)
 		mergedFiltersRoot = filters_2Root;
@@ -720,7 +722,7 @@ json FFMpegFilters::mergeFilters(const json& filters_1Root, const json& filters_
 		mergedFiltersRoot = filters_1Root;
 	else
 	{
-		string field = "video";
+		std::string field = "video";
 		{
 			if (JSONUtils::isPresent(filters_1Root, field))
 				mergedFiltersRoot[field] = filters_1Root[field];
@@ -760,7 +762,7 @@ json FFMpegFilters::mergeFilters(const json& filters_1Root, const json& filters_
 	return mergedFiltersRoot;
 }
 
-string FFMpegFilters::getDrawTextTemporaryPathName(const string& ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
+std::string FFMpegFilters::getDrawTextTemporaryPathName(const std::string& ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
 {
 	if (outputIndex != -1)
 		return std::format("{}/{}_{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey, outputIndex);
@@ -768,9 +770,9 @@ string FFMpegFilters::getDrawTextTemporaryPathName(const string& ffmpegTempDir, 
 		return std::format("{}/{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey);
 }
 
-json FFMpegFilters::createTimecodeDrawTextFilter()
+nlohmann::json FFMpegFilters::createTimecodeDrawTextFilter()
 {
-	json drawTextFilterRoot;
+	nlohmann::json drawTextFilterRoot;
 	drawTextFilterRoot["type"] = "drawtext";
 	{
 		drawTextFilterRoot["timecode"] = "ptsTimecode";

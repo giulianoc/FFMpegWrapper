@@ -19,6 +19,10 @@
 #include <fstream>
 #include <regex>
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 string FFMpegWrapper::getOutputFfmpegPathFileName() const
 {
 	return _outputFfmpegPathFileName;

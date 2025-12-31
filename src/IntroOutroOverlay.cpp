@@ -17,6 +17,10 @@
 #include "spdlog/spdlog.h"
 #include <cmath>
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::introOutroOverlay(
 	string introVideoAssetPathName, int64_t introVideoDurationInMilliSeconds, string mainVideoAssetPathName, int64_t mainVideoDurationInMilliSeconds,
 	string outroVideoAssetPathName, int64_t outroVideoDurationInMilliSeconds,

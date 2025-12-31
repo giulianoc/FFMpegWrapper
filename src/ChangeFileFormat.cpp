@@ -15,6 +15,10 @@
 #include "ProcessUtility.h"
 #include "spdlog/spdlog.h"
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 // destinationPathName will end with the new file format
 void FFMpegWrapper::changeFileFormat(
 	int64_t ingestionJobKey, int64_t physicalPathKey, string sourcePhysicalPath,

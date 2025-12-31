@@ -14,6 +14,10 @@
 #include "FFMpegWrapper.h"
 #include "ProcessUtility.h"
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::streamingToFile(int64_t ingestionJobKey, bool regenerateTimestamps, string sourceReferenceURL, string destinationPathName)
 {
 	string ffmpegExecuteCommand;

@@ -16,7 +16,7 @@
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
 
-FFMpegWrapper::FFMpegWrapper(json configuration) : _currentApiName()
+FFMpegWrapper::FFMpegWrapper(nlohmann::json configuration) : _currentApiName()
 {
 	_ffmpegPath = JSONUtils::asString(configuration["ffmpeg"], "path", ".");
 	SPDLOG_DEBUG(
@@ -64,7 +64,7 @@ FFMpegWrapper::FFMpegWrapper(json configuration) : _currentApiName()
 	_currentMMSSourceAssetPathName = "";	  // just for log
 	_currentStagingEncodedAssetPathName = ""; // just for log
 
-	_startFFMpegMethod = chrono::system_clock::now();
+	_startFFMpegMethod = std::chrono::system_clock::now();
 
 	_incrontabConfigurationDirectory = "/home/mms/mms/conf";
 	_incrontabConfigurationFileName = "incrontab.txt";
@@ -82,23 +82,23 @@ bool FFMpegWrapper::ffmpegExecutableExist()
 #endif
 }
 
-void FFMpegWrapper::encodingVideoCodecValidation(string codec)
+void FFMpegWrapper::encodingVideoCodecValidation(std::string codec)
 {
 	if (codec != "libx264" && codec != "libvpx" && codec != "rawvideo" && codec != "mpeg4" && codec != "xvid")
 	{
-		string errorMessage = std::format(
+		std::string errorMessage = std::format(
 			"ffmpeg: Video codec is wrong"
 			", codec: {}",
 			codec
 		);
 		SPDLOG_ERROR(errorMessage);
 
-		throw runtime_error(errorMessage);
+		throw std::runtime_error(errorMessage);
 	}
 }
 
 void FFMpegWrapper::setStatus(
-	int64_t ingestionJobKey, int64_t encodingJobKey, int64_t durationInMilliSeconds, string mmsSourceAssetPathName, string stagingEncodedAssetPathName
+	int64_t ingestionJobKey, int64_t encodingJobKey, int64_t durationInMilliSeconds, std::string mmsSourceAssetPathName, std::string stagingEncodedAssetPathName
 )
 {
 
@@ -108,21 +108,21 @@ void FFMpegWrapper::setStatus(
 	_currentMMSSourceAssetPathName = mmsSourceAssetPathName;		   // just for log
 	_currentStagingEncodedAssetPathName = stagingEncodedAssetPathName; // just for log
 
-	_startFFMpegMethod = chrono::system_clock::now();
+	_startFFMpegMethod = std::chrono::system_clock::now();
 }
 
 /*
 int FFMpeg::progressDownloadCallback(
-	int64_t ingestionJobKey, chrono::system_clock::time_point &lastTimeProgressUpdate, double &lastPercentageUpdated, double dltotal, double dlnow,
+	int64_t ingestionJobKey, std::chrono::system_clock::time_point &lastTimeProgressUpdate, double &lastPercentageUpdated, double dltotal, double dlnow,
 	double ultotal, double ulnow
 )
 {
 
 	int progressUpdatePeriodInSeconds = 15;
 
-	chrono::system_clock::time_point now = chrono::system_clock::now();
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 
-	if (dltotal != 0 && (dltotal == dlnow || now - lastTimeProgressUpdate >= chrono::seconds(progressUpdatePeriodInSeconds)))
+	if (dltotal != 0 && (dltotal == dlnow || now - lastTimeProgressUpdate >= std::chrono::seconds(progressUpdatePeriodInSeconds)))
 	{
 		double progress = (dlnow / dltotal) * 100;
 		// int downloadingPercentage = floorf(progress * 100) / 100;
@@ -163,9 +163,9 @@ int FFMpeg::progressDownloadCallback(double dltotal, double dlnow, double ultota
 
 	int progressUpdatePeriodInSeconds = 15;
 
-	chrono::system_clock::time_point now = chrono::system_clock::now();
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 
-	if (dltotal != 0 && (dltotal == dlnow || now - _lastTimeProgressUpdate >= chrono::seconds(progressUpdatePeriodInSeconds)))
+	if (dltotal != 0 && (dltotal == dlnow || now - _lastTimeProgressUpdate >= std::chrono::seconds(progressUpdatePeriodInSeconds)))
 	{
 		double progress = (dlnow / dltotal) * 100;
 		// int downloadingPercentage = floorf(progress * 100) / 100;
@@ -207,12 +207,12 @@ int FFMpeg::progressDownloadCallback(double dltotal, double dlnow, double ultota
 }
 */
 
-void FFMpegWrapper::renameOutputFfmpegPathFileName(int64_t ingestionJobKey, int64_t encodingJobKey, string outputFfmpegPathFileName)
+void FFMpegWrapper::renameOutputFfmpegPathFileName(int64_t ingestionJobKey, int64_t encodingJobKey, std::string outputFfmpegPathFileName)
 {
-	string debugOutputFfmpegPathFileName;
+	std::string debugOutputFfmpegPathFileName;
 	try
 	{
-		tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(chrono::system_clock::to_time_t(chrono::system_clock::now()));
+		tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
 
 		debugOutputFfmpegPathFileName = std::format(
 			"{}.{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}", outputFfmpegPathFileName, tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1,
@@ -231,7 +231,7 @@ void FFMpegWrapper::renameOutputFfmpegPathFileName(int64_t ingestionJobKey, int6
 		if (fs::exists(outputFfmpegPathFileName))
 			fs::rename(outputFfmpegPathFileName, debugOutputFfmpegPathFileName);
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
 		SPDLOG_ERROR(
 			"move failed"
@@ -244,7 +244,7 @@ void FFMpegWrapper::renameOutputFfmpegPathFileName(int64_t ingestionJobKey, int6
 	}
 }
 
-bool FFMpegWrapper::isNumber(int64_t ingestionJobKey, string number)
+bool FFMpegWrapper::isNumber(int64_t ingestionJobKey, std::string number)
 {
 	try
 	{
@@ -256,9 +256,9 @@ bool FFMpegWrapper::isNumber(int64_t ingestionJobKey, string number)
 
 		return true;
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
-		string errorMessage = std::format(
+		std::string errorMessage = std::format(
 			"isNumber failed"
 			", ingestionJobKey: {}"
 			", number: {}"
@@ -267,22 +267,22 @@ bool FFMpegWrapper::isNumber(int64_t ingestionJobKey, string number)
 		);
 		SPDLOG_ERROR(errorMessage);
 
-		throw runtime_error(errorMessage);
+		throw std::runtime_error(errorMessage);
 	}
 }
 
 // ritorna: secondi (double), centesimi (long). Es: 5.27 e 527. I centesimi sono piu precisi perchè evitano
 //	i troncamenti di un double
-pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, string time)
+std::pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, std::string time)
 {
 	try
 	{
-		string localTime = StringUtils::trimTabToo(time);
+		std::string localTime = StringUtils::trimTabToo(time);
 		if (localTime == "")
-			return make_pair(0.0, 0);
+			return std::make_pair(0.0, 0);
 
 		if (isNumber(ingestionJobKey, localTime))
-			return make_pair(stod(localTime), stod(localTime) * 100);
+			return std::make_pair(stod(localTime), stod(localTime) * 100);
 
 		// format: [-][HH:]MM:SS[.m...]
 
@@ -298,31 +298,31 @@ pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, string 
 		int decimals = 0; // centesimi di secondo
 
 		bool hoursPresent = std::count_if(localTime.begin(), localTime.end(), [](char c) { return c == ':'; }) == 2;
-		bool decimalPresent = localTime.find(".") != string::npos;
+		bool decimalPresent = localTime.find(".") != std::string::npos;
 
-		stringstream ss(isNegative ? localTime.substr(1) : localTime);
+		std::stringstream ss(isNegative ? localTime.substr(1) : localTime);
 
 		char delim = ':';
 
 		if (hoursPresent)
 		{
-			string sHours;
+			std::string sHours;
 			getline(ss, sHours, delim);
 			hours = stoi(sHours);
 		}
 
-		string sMinutes;
+		std::string sMinutes;
 		getline(ss, sMinutes, delim);
 		minutes = stoi(sMinutes);
 
 		delim = '.';
-		string sSeconds;
+		std::string sSeconds;
 		getline(ss, sSeconds, delim);
 		seconds = stoi(sSeconds);
 
 		if (decimalPresent)
 		{
-			string sDecimals;
+			std::string sDecimals;
 			getline(ss, sDecimals, delim);
 			decimals = stoi(sDecimals);
 		}
@@ -348,11 +348,11 @@ pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, string 
 			centsOfSeconds *= -1;
 		}
 
-		return make_pair(dSeconds, centsOfSeconds);
+		return std::make_pair(dSeconds, centsOfSeconds);
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
-		string errorMessage = std::format(
+		std::string errorMessage = std::format(
 			"timeToSeconds failed"
 			", ingestionJobKey: {}"
 			", time: {}"
@@ -361,11 +361,11 @@ pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, string 
 		);
 		SPDLOG_ERROR(errorMessage);
 
-		throw runtime_error(errorMessage);
+		throw std::runtime_error(errorMessage);
 	}
 }
 
-string FFMpegWrapper::secondsToTime(int64_t ingestionJobKey, double dSeconds)
+std::string FFMpegWrapper::secondsToTime(int64_t ingestionJobKey, double dSeconds)
 {
 	try
 	{
@@ -380,14 +380,14 @@ string FFMpegWrapper::secondsToTime(int64_t ingestionJobKey, double dSeconds)
 		int seconds = dLocalSeconds;
 		dLocalSeconds -= seconds;
 
-		string time;
+		std::string time;
 		{
 			/*
 			char buffer[64];
 			sprintf(buffer, "%02d:%02d:%02d", hours, minutes, seconds);
 			time = buffer;
 			*/
-			time = format("{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds);
+			time = std::format("{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds);
 			// dLocalSeconds dovrebbe essere 0.12345
 			if (dLocalSeconds > 0.0)
 			{
@@ -405,9 +405,9 @@ string FFMpegWrapper::secondsToTime(int64_t ingestionJobKey, double dSeconds)
 
 		return time;
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
-		string errorMessage = std::format(
+		std::string errorMessage = std::format(
 			"secondsToTime failed"
 			", ingestionJobKey: {}"
 			", dSeconds: {}"
@@ -416,11 +416,11 @@ string FFMpegWrapper::secondsToTime(int64_t ingestionJobKey, double dSeconds)
 		);
 		SPDLOG_ERROR(errorMessage);
 
-		throw runtime_error(errorMessage);
+		throw std::runtime_error(errorMessage);
 	}
 }
 
-string FFMpegWrapper::centsOfSecondsToTime(int64_t ingestionJobKey, long centsOfSeconds)
+std::string FFMpegWrapper::centsOfSecondsToTime(int64_t ingestionJobKey, long centsOfSeconds)
 {
 	try
 	{
@@ -435,7 +435,7 @@ string FFMpegWrapper::centsOfSecondsToTime(int64_t ingestionJobKey, long centsOf
 		int seconds = localCentsOfSeconds / 100;
 		localCentsOfSeconds -= (seconds * 100);
 
-		string time = format("{:0>2}:{:0>2}:{:0>2}.{:0>2}", hours, minutes, seconds, localCentsOfSeconds);
+		std::string time = std::format("{:0>2}:{:0>2}:{:0>2}.{:0>2}", hours, minutes, seconds, localCentsOfSeconds);
 		{
 			/*
 			char buffer[64];
@@ -446,9 +446,9 @@ string FFMpegWrapper::centsOfSecondsToTime(int64_t ingestionJobKey, long centsOf
 
 		return time;
 	}
-	catch (exception &e)
+	catch (std::exception &e)
 	{
-		string errorMessage = std::format(
+		std::string errorMessage = std::format(
 			"centsOfSecondsToTime failed"
 			", ingestionJobKey: {}"
 			", centsOfSeconds: {}"
@@ -457,6 +457,6 @@ string FFMpegWrapper::centsOfSecondsToTime(int64_t ingestionJobKey, long centsOf
 		);
 		SPDLOG_ERROR(errorMessage);
 
-		throw runtime_error(errorMessage);
+		throw std::runtime_error(errorMessage);
 	}
 }

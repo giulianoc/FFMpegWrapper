@@ -13,43 +13,43 @@
 
 #pragma once
 
-#include <chrono>
-#include "JSONUtils.h"
-#include <string>
+#include "nlohmann/json.hpp"
 #ifndef SPDLOG_ACTIVE_LEVEL
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
 #include "spdlog/spdlog.h"
-
-using namespace std;
+// #include <chrono>
+#include <string>
 
 class FFMpegFilters
 {
   public:
-	FFMpegFilters(string ffmpegTempDir, string ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex = -1);
+	FFMpegFilters(std::string ffmpegTempDir, std::string ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex = -1);
 
 	~FFMpegFilters();
 
-	tuple<string, string, string>
-	addFilters(json filtersRoot, const string& ffmpegVideoResolutionParameter, const string& ffmpegDrawTextFilter,
-		optional<int32_t> inputDurationInSeconds) const;
+	std::tuple<std::string, std::string, std::string>
+	addFilters(
+		nlohmann::json filtersRoot, const std::string& ffmpegVideoResolutionParameter, const std::string& ffmpegDrawTextFilter,
+		std::optional<int32_t> inputDurationInSeconds) const;
 
-	[[nodiscard]] string addVideoFilters(
-		json filtersRoot, const string &ffmpegVideoResolutionParameter, const string &ffmpegDrawTextFilter, optional<int32_t> inputDurationInSeconds
+	[[nodiscard]] std::string addVideoFilters(
+		nlohmann::json filtersRoot, const std::string &ffmpegVideoResolutionParameter, const std::string &ffmpegDrawTextFilter,
+		std::optional<int32_t> inputDurationInSeconds
 	) const;
 
-	[[nodiscard]] string addAudioFilters(const json &filtersRoot, optional<int32_t> inputDurationInSeconds) const;
+	[[nodiscard]] std::string addAudioFilters(const nlohmann::json &filtersRoot, std::optional<int32_t> inputDurationInSeconds) const;
 
-	[[nodiscard]] string getFilter(const json &filterRoot, optional<int32_t> inputDurationInSeconds) const;
+	[[nodiscard]] std::string getFilter(const nlohmann::json& filterRoot, std::optional<int32_t> inputDurationInSeconds) const;
 
-	static json mergeFilters(const json &filters_1Root, const json &filters_2Root);
+	static nlohmann::json mergeFilters(const nlohmann::json &filters_1Root, const nlohmann::json &filters_2Root);
 
-	static string getDrawTextTemporaryPathName(const string &ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex);
-	static json createTimecodeDrawTextFilter();
+	static std::string getDrawTextTemporaryPathName(const std::string &ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex);
+	static nlohmann::json createTimecodeDrawTextFilter();
 
   private:
-	string _ffmpegTempDir;
-	string _ffmpegTtfFontDir;
+	std::string _ffmpegTempDir;
+	std::string _ffmpegTtfFontDir;
 
 	int64_t _ingestionJobKey;
 	int64_t _encodingJobKey;

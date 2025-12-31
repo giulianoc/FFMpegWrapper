@@ -16,6 +16,10 @@
 #include "spdlog/spdlog.h"
 #include <fstream>
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, string directoryToBeMonitored)
 {
 	try

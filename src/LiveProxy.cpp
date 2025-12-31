@@ -22,6 +22,10 @@
 #include <fstream>
 #include <regex>
 
+using namespace std;
+using json = nlohmann::json;
+using ordered_json = nlohmann::ordered_json;
+
 void FFMpegWrapper::liveProxy(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
 	json *inputsRoot, const json& outputsRoot, optional<chrono::system_clock::time_point>& proxyStart,

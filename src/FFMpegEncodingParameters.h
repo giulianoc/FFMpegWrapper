@@ -31,61 +31,59 @@
 #endif
 #endif
 
-using namespace std;
-
 class FFMpegEncodingParameters
 {
   private:
-	string _ffmpegTempDir;
-	string _ffmpegTtfFontDir;
-	string _multiTrackTemplateVariable;
-	string _multiTrackTemplatePart;
+	std::string _ffmpegTempDir;
+	std::string _ffmpegTtfFontDir;
+	std::string _multiTrackTemplateVariable;
+	std::string _multiTrackTemplatePart;
 
 	int64_t _ingestionJobKey;
 	int64_t _encodingJobKey;
-	string _encodedStagingAssetPathName;
+	std::string _encodedStagingAssetPathName;
 	bool _isVideo;
-	json _videoTracksRoot;
-	json _audioTracksRoot;
+	nlohmann::json _videoTracksRoot;
+	nlohmann::json _audioTracksRoot;
 	int _videoTrackIndexToBeUsed;
 	int _audioTrackIndexToBeUsed;
 
 	bool _initialized;
 
-	string _ffmpegHttpStreamingParameter;
+	std::string _ffmpegHttpStreamingParameter;
 
-	string _ffmpegFileFormatParameter;
+	std::string _ffmpegFileFormatParameter;
 
-	string _ffmpegVideoCodecParameter;
-	string _ffmpegVideoCodec;
-	string _ffmpegVideoProfileParameter;
-	string _ffmpegVideoOtherParameters;
-	string _ffmpegVideoFrameRateParameter;
-	string _ffmpegVideoKeyFramesRateParameter;
-	vector<tuple<string, int, int, int, string, string, string>> _videoBitRatesInfo;
+	std::string _ffmpegVideoCodecParameter;
+	std::string _ffmpegVideoCodec;
+	std::string _ffmpegVideoProfileParameter;
+	std::string _ffmpegVideoOtherParameters;
+	std::string _ffmpegVideoFrameRateParameter;
+	std::string _ffmpegVideoKeyFramesRateParameter;
+	std::vector<std::tuple<std::string, int, int, int, std::string, std::string, std::string>> _videoBitRatesInfo;
 
-	string _ffmpegAudioCodecParameter;
-	string _ffmpegAudioCodec;
-	string _ffmpegAudioOtherParameters;
-	string _ffmpegAudioChannelsParameter;
-	string _ffmpegAudioSampleRateParameter;
-	vector<string> _audioBitRatesInfo;
+	std::string _ffmpegAudioCodecParameter;
+	std::string _ffmpegAudioCodec;
+	std::string _ffmpegAudioOtherParameters;
+	std::string _ffmpegAudioChannelsParameter;
+	std::string _ffmpegAudioSampleRateParameter;
+	std::vector<std::string> _audioBitRatesInfo;
 
-	string getManifestFileName();
-	string getMultiTrackTemplatePart();
-	string getMultiTrackEncodedStagingTemplateAssetPathName();
+	std::string getManifestFileName();
+	std::string getMultiTrackTemplatePart();
+	std::string getMultiTrackEncodedStagingTemplateAssetPathName();
 
   public:
-	string _httpStreamingFileFormat;
+	std::string _httpStreamingFileFormat;
 
 	FFMpegEncodingParameters(
-		int64_t ingestionJobKey, int64_t encodingJobKey, json encodingProfileDetailsRoot,
+		int64_t ingestionJobKey, int64_t encodingJobKey, nlohmann::json encodingProfileDetailsRoot,
 		bool isVideo, // if false it means is audio
-		int videoTrackIndexToBeUsed, int audioTrackIndexToBeUsed, string encodedStagingAssetPathName, json videoTracksRoot, json audioTracksRoot,
+		int videoTrackIndexToBeUsed, int audioTrackIndexToBeUsed, std::string encodedStagingAssetPathName, nlohmann::json videoTracksRoot, nlohmann::json audioTracksRoot,
 
 		bool &twoPasses, // out
 
-		string ffmpegTempDir, string ffmpegTtfFontDir
+		std::string ffmpegTempDir, std::string ffmpegTtfFontDir
 	);
 
 	~FFMpegEncodingParameters();
@@ -103,18 +101,18 @@ class FFMpegEncodingParameters
 
 		bool videoResolutionToBeAdded,
 
-		json filtersRoot,
+		nlohmann::json filtersRoot,
 
 		// out (in append)
-		vector<string> &ffmpegArgumentList
+		std::vector<std::string> &ffmpegArgumentList
 	);
-	void applyEncoding(int stepNumber, bool outputFileToBeAdded, bool videoResolutionToBeAdded, const json &filtersRoot, FFMpegEngine &ffMpegEngine);
+	void applyEncoding(int stepNumber, bool outputFileToBeAdded, bool videoResolutionToBeAdded, const nlohmann::json &filtersRoot, FFMpegEngine &ffMpegEngine);
 
 	void createManifestFile();
 
 	void removeTwoPassesTemporaryFiles();
 
-	bool getMultiTrackPathNames(vector<string> &sourcesPathName);
+	bool getMultiTrackPathNames(std::vector<std::string> &sourcesPathName);
 	void removeMultiTrackPathNames();
 
 	void applyEncoding_audioGroup(
@@ -124,33 +122,33 @@ class FFMpegEncodingParameters
 		int stepNumber,
 
 		// out (in append)
-		vector<string> &ffmpegArgumentList
+		std::vector<std::string> &ffmpegArgumentList
 	);
 	void applyEncoding_audioGroup(int stepNumber, FFMpegEngine &ffMpegEngine);
 
 	void createManifestFile_audioGroup();
 
 	static void settingFfmpegParameters(
-		json encodingProfileDetailsRoot, bool isVideo,
+		nlohmann::json encodingProfileDetailsRoot, bool isVideo,
 		// if false it means is audio
 
-		string &httpStreamingFileFormat, string &ffmpegHttpStreamingParameter,
+		std::string &httpStreamingFileFormat, std::string &ffmpegHttpStreamingParameter,
 
-		string &ffmpegFileFormatParameter,
+		std::string &ffmpegFileFormatParameter,
 
-		string &ffmpegVideoCodecParameter, string &ffmpegVideoCodec, string &ffmpegVideoProfileParameter, string &ffmpegVideoOtherParameters,
-		bool &twoPasses, string &ffmpegVideoFrameRateParameter, string &ffmpegVideoKeyFramesRateParameter,
+		std::string &ffmpegVideoCodecParameter, std::string &ffmpegVideoCodec, std::string &ffmpegVideoProfileParameter, std::string &ffmpegVideoOtherParameters,
+		bool &twoPasses, std::string &ffmpegVideoFrameRateParameter, std::string &ffmpegVideoKeyFramesRateParameter,
 
-		vector<tuple<string, int, int, int, string, string, string>> &videoBitRatesInfo, string &ffmpegAudioCodecParameter, string &ffmpegAudioCodec,
-		string &ffmpegAudioOtherParameters, string &ffmpegAudioChannelsParameter, string &ffmpegAudioSampleRateParameter,
-		vector<string> &audioBitRatesInfo
+		std::vector<std::tuple<std::string, int, int, int, std::string, std::string, std::string>> &videoBitRatesInfo, std::string &ffmpegAudioCodecParameter, std::string &ffmpegAudioCodec,
+		std::string &ffmpegAudioOtherParameters, std::string &ffmpegAudioChannelsParameter, std::string &ffmpegAudioSampleRateParameter,
+		std::vector<std::string> &audioBitRatesInfo
 	);
 
-	static void addToArguments(string parameter, vector<string> &argumentList);
+	static void addToArguments(std::string parameter, std::vector<std::string> &argumentList);
 
-	static void encodingFileFormatValidation(string fileFormat);
+	static void encodingFileFormatValidation(std::string fileFormat);
 
-	static void encodingAudioCodecValidation(string codec);
+	static void encodingAudioCodecValidation(std::string codec);
 
-	static void encodingVideoProfileValidation(string codec, string profile);
+	static void encodingVideoProfileValidation(std::string codec, std::string profile);
 };
