@@ -548,7 +548,7 @@ void FFMpegWrapper::liveProxy(
 					ffMpegEngine.toSingleLine(), e.what()
 				);
 				ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
-					Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), errorMessage));
+					Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), "Killed"));
 			}
 			else
 			{
@@ -577,7 +577,7 @@ void FFMpegWrapper::liveProxy(
 						ffMpegEngine.toSingleLine(), *ffmpegCallbackData->getSignal(), e.what()
 					);
 					ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
-						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), errorMessage));
+						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), "Restarted"));
 				}
 				else
 				{
@@ -596,7 +596,8 @@ void FFMpegWrapper::liveProxy(
 						ffMpegEngine.toSingleLine(), e.what()
 					);
 					ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
-						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), errorMessage));
+						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true),
+						std::format("Failed: {}", e.what())));
 				}
 			}
 			SPDLOG_ERROR(errorMessage);

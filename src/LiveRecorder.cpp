@@ -739,7 +739,7 @@ void FFMpegWrapper::liveRecorder(
 					);
 					SPDLOG_ERROR(errorMessage);
 					ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
-						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), errorMessage));
+						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), "Restarted"));
 
 					// in case of IP_PUSH the monitor thread, in case the client does not
 					// reconnect istantaneously, kills the process.
@@ -878,6 +878,7 @@ void FFMpegWrapper::liveRecorder(
 		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		string errorMessage;
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
+		{
 			errorMessage = std::format(
 				"ffmpeg: ffmpeg execution command failed because killed by the user"
 				", ingestionJobKey: {}"
@@ -887,7 +888,11 @@ void FFMpegWrapper::liveRecorder(
 				", e.what(): {}",
 				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), e.what()
 			);
+			ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
+				Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), "Killed"));
+		}
 		else
+		{
 			errorMessage = std::format(
 				"ffmpeg: ffmpeg execution command failed"
 				", ingestionJobKey: {}"
@@ -897,9 +902,11 @@ void FFMpegWrapper::liveRecorder(
 				", e.what(): {}",
 				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), e.what()
 			);
+			ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
+				Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true),
+				std::format("Failed: {}", e.what())));
+		}
 		SPDLOG_ERROR(errorMessage);
-		ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
-			Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), errorMessage));
 
 		renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 
