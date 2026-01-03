@@ -547,6 +547,8 @@ void FFMpegWrapper::liveProxy(
 					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
 					ffMpegEngine.toSingleLine(), e.what()
 				);
+				ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
+					Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), errorMessage));
 			}
 			else
 			{
@@ -574,6 +576,8 @@ void FFMpegWrapper::liveProxy(
 						ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
 						ffMpegEngine.toSingleLine(), *ffmpegCallbackData->getSignal(), e.what()
 					);
+					ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
+						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), errorMessage));
 				}
 				else
 				{
@@ -591,6 +595,8 @@ void FFMpegWrapper::liveProxy(
 						chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - startFfmpegCommand).count(), _outputFfmpegPathFileName,
 						ffMpegEngine.toSingleLine(), e.what()
 					);
+					ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
+						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), errorMessage));
 				}
 			}
 			SPDLOG_ERROR(errorMessage);
