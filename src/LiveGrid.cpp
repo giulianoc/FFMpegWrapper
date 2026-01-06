@@ -19,7 +19,6 @@
 
 using namespace std;
 using json = nlohmann::json;
-using ordered_json = nlohmann::ordered_json;
 
 void FFMpegWrapper::liveGrid(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string userAgent,

@@ -18,7 +18,6 @@
 
 using namespace std;
 using json = nlohmann::json;
-using ordered_json = nlohmann::ordered_json;
 
 pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestionJobKey, string youTubeURL)
 {

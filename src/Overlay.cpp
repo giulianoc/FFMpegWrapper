@@ -22,7 +22,6 @@
 
 using namespace std;
 using json = nlohmann::json;
-using ordered_json = nlohmann::ordered_json;
 
 void FFMpegWrapper::overlayImageOnVideo(
 	bool externalEncoder, string mmsSourceVideoAssetPathName, int64_t videoDurationInMilliSeconds, string mmsSourceImageAssetPathName,

@@ -20,7 +20,6 @@
 
 using namespace std;
 using json = nlohmann::json;
-using ordered_json = nlohmann::ordered_json;
 
 void FFMpegWrapper::pictureInPicture(
 	const string& mmsMainVideoAssetPathName, int64_t mainVideoDurationInMilliSeconds, const string& mmsOverlayVideoAssetPathName,
