@@ -94,7 +94,7 @@ void FFMpegWrapper::generateFrameToIngest(
 	// 	ffmpegArgumentList.push_back("-vframes");
 	// 	ffmpegArgumentList.push_back(to_string(1));
 	// }
-	mainOutput.addArg("-vframes 1");
+	mainOutput.addArgs("-vframes 1");
 	// ffmpegArgumentList.push_back("-an");
 	// ffmpegArgumentList.push_back("-s");
 	// ffmpegArgumentList.push_back(to_string(imageWidth) + "x" + to_string(imageHeight));
