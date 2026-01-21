@@ -409,31 +409,24 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 					ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 15) * t)";
 				else if (textPosition_X_InPixel == "rightToLeft_30")
 					ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 30) * t)";
+
+				// 2026-01-21: rivisti i calcoli per loopRightToLeft
 				else if (textPosition_X_InPixel == "loopRightToLeft_15")
 					ffmpegTextPosition_X_InPixel = "w-mod(t*15\\,w+text_w)";
-					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 15) * mod(t\\, 15))";
-				// loopRightToLeft_slow deve essere rimosso
 				else if (textPosition_X_InPixel == "loopRightToLeft_slow" || textPosition_X_InPixel == "loopRightToLeft_30")
 					ffmpegTextPosition_X_InPixel = "w-mod(t*30\\,w+text_w)";
-					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 30) * mod(t\\, 30))";
 				else if (textPosition_X_InPixel == "loopRightToLeft_60")
 					ffmpegTextPosition_X_InPixel = "w-mod(t*60\\,w+text_w)";
-					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 60) * mod(t\\, 60))";
 				else if (textPosition_X_InPixel == "loopRightToLeft_90")
 					ffmpegTextPosition_X_InPixel = "w-mod(t*90\\,w+text_w)";
-					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 90) * mod(t\\, 90))";
 				else if (textPosition_X_InPixel == "loopRightToLeft_120")
 					ffmpegTextPosition_X_InPixel = "w-mod(t*120\\,w+text_w)";
-					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 120) * mod(t\\, 120))";
 				else if (textPosition_X_InPixel == "loopRightToLeft_150")
 					ffmpegTextPosition_X_InPixel = "w-mod(t*150\\,w+text_w)";
-					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 150) * mod(t\\, 150))";
 				else if (textPosition_X_InPixel == "loopRightToLeft_180")
 					ffmpegTextPosition_X_InPixel = "w-mod(t*180\\,w+text_w)";
-					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 180) * mod(t\\, 180))";
 				else if (textPosition_X_InPixel == "loopRightToLeft_210")
 					ffmpegTextPosition_X_InPixel = "w-mod(t*210\\,w+text_w)";
-					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 210) * mod(t\\, 210))";
 				else
 				{
 					// ffmpegTextPosition_X_InPixel = regex_replace(textPosition_X_InPixel, regex("video_width"), "w");
