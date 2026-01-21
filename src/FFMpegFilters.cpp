@@ -410,7 +410,8 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 				else if (textPosition_X_InPixel == "rightToLeft_30")
 					ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 30) * t)";
 				else if (textPosition_X_InPixel == "loopRightToLeft_15")
-					ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 15) * mod(t\\, 15))";
+					ffmpegTextPosition_X_InPixel = "w-mod(t*15\\,w+text_w)";
+					// ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 15) * mod(t\\, 15))";
 				// loopRightToLeft_slow deve essere rimosso
 				else if (textPosition_X_InPixel == "loopRightToLeft_slow" || textPosition_X_InPixel == "loopRightToLeft_30")
 					ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 30) * mod(t\\, 30))";
@@ -762,12 +763,12 @@ nlohmann::json FFMpegFilters::mergeFilters(const nlohmann::json& filters_1Root, 
 	return mergedFiltersRoot;
 }
 
-std::string FFMpegFilters::getDrawTextTemporaryPathName(const std::string& ffmpegTempDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
+std::string FFMpegFilters::getDrawTextTemporaryPathName(const std::string& ffmpegTempDir, int64_t ingestionJobKey,
+	int64_t encodingJobKey, int outputIndex)
 {
 	if (outputIndex != -1)
 		return std::format("{}/{}_{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey, outputIndex);
-	else
-		return std::format("{}/{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey);
+	return std::format("{}/{}_{}.overlayText", ffmpegTempDir, ingestionJobKey, encodingJobKey);
 }
 
 nlohmann::json FFMpegFilters::createTimecodeDrawTextFilter()
