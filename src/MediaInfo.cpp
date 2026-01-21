@@ -28,7 +28,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 {
 	_currentApiName = APIName::GetMediaInfo;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"getMediaInfo"
 		", ingestionJobKey: {}"
 		", isMMSAssetPathName: {}"
@@ -44,7 +44,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 			", mediaSource: {}",
 			ingestionJobKey, mediaSource
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
@@ -70,7 +70,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		{
 			string errorMessage =
 				string("Source asset path name not existing") + ", ingestionJobKey: " + to_string(ingestionJobKey) + ", mediaSource: " + mediaSource;
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -82,7 +82,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 			string errorMessage = __FILEREF__ + "ffmpeg: No fileName find in the asset path name"
 				+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 				+ ", mediaSource: " + mediaSource;
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -147,7 +147,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 	chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 	try
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"getMediaInfo: Executing ffprobe command"
 			", ingestionJobKey: {}"
 			", ffprobeExecuteCommand: {}",
@@ -167,7 +167,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				string errorMessage = string("getMediaInfo: ffmpeg: ffprobe command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
 									  ", executeCommandStatus: " + to_string(executeCommandStatus) +
 									  ", ffprobeExecuteCommand: " + ffprobeExecuteCommand;
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = string("getMediaInfo command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey);
@@ -178,7 +178,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"getMediaInfo: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffprobeExecuteCommand: @{}@"
@@ -195,9 +195,9 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 							  ", ffprobeExecuteCommand: " + ffprobeExecuteCommand + ", @FFMPEG statistics@ - duration (secs): @" +
 							  to_string(chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()) + "@" +
 							  ", e.what(): " + e.what();
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", detailsPathFileName: {}",
@@ -324,7 +324,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		stringstream buffer;
 		buffer << detailsFile.rdbuf();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Details found"
 			", ingestionJobKey: {}"
 			", mediaSource: {}"
@@ -350,7 +350,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				", mediaInfo: {}",
 				ingestionJobKey, mediaSource, field, JSONUtils::toString(detailsRoot)
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -372,7 +372,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					", Field: {}",
 					ingestionJobKey, mediaSource, field
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -402,7 +402,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", mediaInfo: {}",
 						ingestionJobKey, mediaSource, field, JSONUtils::toString(detailsRoot)
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -422,7 +422,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 							", mediaInfo: {}",
 							ingestionJobKey, mediaSource, field, JSONUtils::toString(detailsRoot)
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						throw runtime_error(errorMessage);
 					}
@@ -443,7 +443,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						string errorMessage = __FILEREF__ + "ffmpeg: Field is not present or it is null"
 								+ ", mediaSource: " + mediaSource
 								+ ", Field: " + field;
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						throw runtime_error(errorMessage);
 					}
@@ -461,7 +461,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", mediaInfo: {}",
 						ingestionJobKey, mediaSource, field, JSONUtils::toString(detailsRoot)
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -477,7 +477,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", Field: {}",
 						ingestionJobKey, mediaSource, field
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -493,7 +493,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", Field: {}",
 						ingestionJobKey, mediaSource, field
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -506,7 +506,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					{
 						// I didn't find bit_rate also in a ts file, let's set it as a warning
 
-						SPDLOG_WARN(
+						LOG_WARN(
 							"ffmpeg: Field is not present or it is null"
 							", ingestionJobKey: {}"
 							", mediaSource: {}"
@@ -527,7 +527,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					// let's log it as a warning
 					if (videoCodecName != "" && videoCodecName != "mjpeg")
 					{
-						SPDLOG_WARN(
+						LOG_WARN(
 							"ffmpeg: Field is not present or it is null"
 							", ingestionJobKey: {}"
 							", mediaSource: {}"
@@ -574,7 +574,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", Field: {}",
 						ingestionJobKey, mediaSource, field
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -590,7 +590,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", Field: {}",
 						ingestionJobKey, mediaSource, field
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -606,7 +606,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", Field: {}",
 						ingestionJobKey, mediaSource, field
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -622,7 +622,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", Field: {}",
 						ingestionJobKey, mediaSource, field
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -640,7 +640,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						", Field: {}",
 						ingestionJobKey, mediaSource, field
 					);
-					SPDLOG_WARN(errorMessage);
+					LOG_WARN(errorMessage);
 
 					// throw runtime_error(errorMessage);
 				}
@@ -686,7 +686,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				", Field: {}",
 				ingestionJobKey, mediaSource, field
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -706,7 +706,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					", Field: {}",
 					ingestionJobKey, mediaSource, field
 				);
-				SPDLOG_WARN(errorMessage);
+				LOG_WARN(errorMessage);
 
 				// throw runtime_error(errorMessage);
 			}
@@ -726,7 +726,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		{
 			if (firstVideoCodecName != "" && firstVideoCodecName != "mjpeg")
 			{
-				SPDLOG_WARN(
+				LOG_WARN(
 					"ffmpeg: Field is not present or it is null"
 					", ingestionJobKey: {}"
 					", mediaSource: {}"
@@ -758,7 +758,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		if (JSONUtils::isPresent(formatRoot, field))
 			metadataRoot = formatRoot[field];
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", detailsPathFileName: {}",
@@ -774,9 +774,9 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 			", e.what(): {}",
 			ingestionJobKey, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", detailsPathFileName: {}",
@@ -794,9 +794,9 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 			", e.what(): {}",
 			ingestionJobKey, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", detailsPathFileName: {}",
@@ -814,7 +814,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		string errorMessage = __FILEREF__ + "ffmpeg: durationInMilliSeconds was not able to be retrieved from media"
 				+ ", mediaSource: " + mediaSource
 				+ ", durationInMilliSeconds: " + to_string(durationInMilliSeconds);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
@@ -825,7 +825,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				+ ", width: " + to_string(width)
 				+ ", height: " + to_string(height)
 				;
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
@@ -870,7 +870,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 {
 	_currentApiName = APIName::NearestKeyFrameTime;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"getNearestKeyFrameTime"
 		", ingestionJobKey: {}"
 		", mediaSource: {}"
@@ -887,7 +887,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 			", mediaSource: {}",
 			ingestionJobKey, mediaSource
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
@@ -916,7 +916,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 				", mediaSource: {}",
 				ingestionJobKey, mediaSource
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -946,7 +946,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 	chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 	try
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"getNearestKeyFrameTime: Executing ffprobe command"
 			", ingestionJobKey: {}"
 			", ffprobeExecuteCommand: {}",
@@ -970,7 +970,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 					", ffprobeExecuteCommand: {}",
 					ingestionJobKey, executeCommandStatus, ffprobeExecuteCommand
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = std::format(
@@ -988,7 +988,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"getNearestKeyFrameTime: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffprobeExecuteCommand: @{}@"
@@ -1010,9 +1010,9 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 			ingestionJobKey, ffprobeExecuteCommand, chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count(),
 			e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", detailsPathFileName: {}",
@@ -1078,7 +1078,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 		stringstream buffer;
 		buffer << detailsFile.rdbuf();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Details found"
 			", ingestionJobKey: {}"
 			", mediaSource: {}"
@@ -1104,7 +1104,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 				", mediaInfo: {}",
 				ingestionJobKey, mediaSource, field, JSONUtils::toString(detailsRoot)
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -1123,7 +1123,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 					", Field: {}",
 					ingestionJobKey, mediaSource, field
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -1139,7 +1139,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 					", Field: {}",
 					ingestionJobKey, mediaSource, field
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -1170,7 +1170,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 
 		if (nearestDistance == -1.0)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"getNearestKeyFrameTime failed to look for a key frame"
 				", ingestionJobKey: {}"
 				", mediaSource: {}"
@@ -1180,7 +1180,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 			);
 		}
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", detailsPathFileName: {}",
@@ -1196,9 +1196,9 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 			", e.what(): {}",
 			ingestionJobKey, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", detailsPathFileName: {}",
@@ -1216,9 +1216,9 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 			", e.what(): {}",
 			ingestionJobKey, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", detailsPathFileName: {}",
@@ -1238,7 +1238,7 @@ int FFMpegWrapper::probeChannel(int64_t ingestionJobKey, string url)
 
 	string outputProbePathFileName = std::format("{}/{}.probeChannel.log", _ffmpegTempDir, ingestionJobKey);
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"{}"
 		", ingestionJobKey: {}"
 		", url: {}",
@@ -1255,7 +1255,7 @@ int FFMpegWrapper::probeChannel(int64_t ingestionJobKey, string url)
 	int executeCommandStatus = 0;
 	try
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"{}: Executing ffplay command"
 			", ingestionJobKey: {}"
 			", probeExecuteCommand: {}",
@@ -1274,7 +1274,7 @@ int FFMpegWrapper::probeChannel(int64_t ingestionJobKey, string url)
 				", probeExecuteCommand: {}",
 				toString(_currentApiName), ingestionJobKey, executeCommandStatus, probeExecuteCommand
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
 			errorMessage = string(toString(_currentApiName)) + ": probe command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
@@ -1283,7 +1283,7 @@ int FFMpegWrapper::probeChannel(int64_t ingestionJobKey, string url)
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"{}: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", probeExecuteCommand: {}"
@@ -1302,9 +1302,9 @@ int FFMpegWrapper::probeChannel(int64_t ingestionJobKey, string url)
 			", e.what(): {}",
 			ingestionJobKey, probeExecuteCommand, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", outputProbePathFileName: {}",
@@ -1325,7 +1325,7 @@ void FFMpegWrapper::getLiveStreamingInfo(
 )
 {
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"getLiveStreamingInfo"
 		", liveURL: {}"
 		", userAgent: {}"
@@ -1354,7 +1354,7 @@ void FFMpegWrapper::getLiveStreamingInfo(
 			}
 			else
 			{
-				SPDLOG_WARN(
+				LOG_WARN(
 					"getLiveStreamingInfo: user agent cannot be used if not http"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -1374,7 +1374,7 @@ void FFMpegWrapper::getLiveStreamingInfo(
 
 		chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"getLiveStreamingInfo: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -1392,7 +1392,7 @@ void FFMpegWrapper::getLiveStreamingInfo(
 				", ffmpegExecuteCommand: {}",
 				ingestionJobKey, encodingJobKey, executeCommandStatus, ffmpegExecuteCommand
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
 			errorMessage = string("getLiveStreamingInfo failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
@@ -1402,7 +1402,7 @@ void FFMpegWrapper::getLiveStreamingInfo(
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"getLiveStreamingInfo: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -1423,11 +1423,11 @@ void FFMpegWrapper::getLiveStreamingInfo(
 			", e.what(): {}",
 			ingestionJobKey, encodingJobKey, ffmpegExecuteCommand, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		if (fs::exists(outputFfmpegPathFileName.c_str()))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -1444,7 +1444,7 @@ void FFMpegWrapper::getLiveStreamingInfo(
 	{
 		if (!fs::exists(outputFfmpegPathFileName.c_str()))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"ffmpeg: ffmpeg status not available"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -1683,7 +1683,7 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 										", e.what(): {}",
 										ingestionJobKey, encodingJobKey, line, yuvEndIndex, sWidth, e.what()
 									);
-									SPDLOG_ERROR(errorMessage);
+									LOG_ERROR(errorMessage);
 								}
 							}
 
@@ -1707,7 +1707,7 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 										", e.what(): {}",
 										ingestionJobKey, encodingJobKey, line, sHeight, e.what()
 									);
-									SPDLOG_ERROR(errorMessage);
+									LOG_ERROR(errorMessage);
 								}
 							}
 						}
@@ -1717,7 +1717,7 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 								make_tuple(programId, videoStreamId, videoStreamDescription, videoCodec, videoYUV, videoWidth, videoHeight)
 							);
 
-							SPDLOG_INFO(
+							LOG_INFO(
 								"FFMpeg::getLiveStreamingInfo. Video track"
 								", ingestionJobKey: {}"
 								", encodingJobKey: {}"
@@ -1809,7 +1809,7 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 										", e.what(): {}",
 										ingestionJobKey, encodingJobKey, line, sSamplingRate, e.what()
 									);
-									SPDLOG_ERROR(errorMessage);
+									LOG_ERROR(errorMessage);
 								}
 							}
 						}
@@ -1827,7 +1827,7 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 								make_tuple(programId, audioStreamId, audioStreamDescription, audioCodec, audioSamplingRate, audioStereo)
 							);
 
-							SPDLOG_INFO(
+							LOG_INFO(
 								"FFMpeg::getLiveStreamingInfo. Audio track"
 								", ingestionJobKey: {}"
 								", encodingJobKey: {}"
@@ -1848,7 +1848,7 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 			programId++;
 		}
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -1866,9 +1866,9 @@ Output #0, flv, to 'rtmp://prg-1.s.cdn77.com:1936/static/1620280677?password=DMG
 			", e.what(): {}",
 			ingestionJobKey, encodingJobKey, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"

@@ -18,9 +18,6 @@
 #include <chrono>
 #include <cstdint>
 #include <string>
-#ifndef SPDLOG_ACTIVE_LEVEL
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
-#endif
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
@@ -103,7 +100,7 @@ class FFMpegWrapper
 			return "killToRestartByEngine";
 		default:
 			const std::string errorMessage = std::format("toString, wrong KillType: {}", static_cast<int>(killType));
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 			throw std::runtime_error(errorMessage);
 		}
 	}
@@ -119,7 +116,7 @@ class FFMpegWrapper
 			return KillType::KillToRestartByEngine;
 
 		const std::string errorMessage = std::format("toKillType, wrong KillType: {}", killType);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 		throw std::runtime_error(errorMessage);
 	}
 

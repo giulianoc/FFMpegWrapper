@@ -36,7 +36,7 @@ void FFMpegWrapper::encodeContent(
 
 	try
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Received {}"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -58,7 +58,7 @@ void FFMpegWrapper::encodeContent(
 				", mmsSourceAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mmsSourceAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -74,7 +74,7 @@ void FFMpegWrapper::encodeContent(
 					", encodedStagingAssetPathName: {}",
 					ingestionJobKey, encodedStagingAssetPathName
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -82,7 +82,7 @@ void FFMpegWrapper::encodeContent(
 			string directory = encodedStagingAssetPathName.substr(0, endOfDirectoryIndex);
 			if (!fs::exists(directory))
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Creating directory"
 					", ingestionJobKey: {}"
 					", directory: {}",
@@ -196,7 +196,7 @@ void FFMpegWrapper::encodeContent(
 			{
 				bool noErrorIfExists = true;
 				bool recursive = true;
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Creating directory (if needed)"
 					", ingestionJobKey: {}"
 					", encodedStagingAssetPathName: {}",
@@ -218,7 +218,7 @@ void FFMpegWrapper::encodeContent(
 
 					string audioPathName = std::format("{}/{}", encodedStagingAssetPathName, audioTrackDirectoryName);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Creating directory (if needed)"
 						", ingestionJobKey: {}"
 						", audioPathName: {}",
@@ -243,7 +243,7 @@ void FFMpegWrapper::encodeContent(
 
 					string videoPathName = std::format("{}/{}", encodedStagingAssetPathName, videoTrackDirectoryName);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Creating directory (if needed)"
 						", ingestionJobKey: {}"
 						", videoPathName: {}",
@@ -283,7 +283,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command (first step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -327,7 +327,7 @@ void FFMpegWrapper::encodeContent(
 							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus,
 							ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("encodeContent command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
@@ -337,7 +337,7 @@ void FFMpegWrapper::encodeContent(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command (first step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -376,11 +376,11 @@ void FFMpegWrapper::encodeContent(
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -420,7 +420,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command (second step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -464,7 +464,7 @@ void FFMpegWrapper::encodeContent(
 							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus,
 							ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -474,7 +474,7 @@ void FFMpegWrapper::encodeContent(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command (second step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -513,11 +513,11 @@ void FFMpegWrapper::encodeContent(
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -532,7 +532,7 @@ void FFMpegWrapper::encodeContent(
 
 				ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -563,7 +563,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -606,7 +606,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}",
 							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -616,7 +616,7 @@ void FFMpegWrapper::encodeContent(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -655,9 +655,9 @@ void FFMpegWrapper::encodeContent(
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(),
 							e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -670,7 +670,7 @@ void FFMpegWrapper::encodeContent(
 						throw e;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -689,7 +689,7 @@ void FFMpegWrapper::encodeContent(
 				}
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Encoded file generated"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -708,7 +708,7 @@ void FFMpegWrapper::encodeContent(
 					", ffmpegArgumentList: {}",
 					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = string("command failed, encoded dir size is 0") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -725,7 +725,7 @@ void FFMpegWrapper::encodeContent(
 			// vector<string> ffmpegArgumentList;
 
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Creating directory (if needed)"
 					", ingestionJobKey: {}"
 					", encodedStagingAssetPathName: {}",
@@ -771,7 +771,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStreamFirstStep, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command (first step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -814,7 +814,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}",
 							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -824,7 +824,7 @@ void FFMpegWrapper::encodeContent(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command (first step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -860,11 +860,11 @@ void FFMpegWrapper::encodeContent(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -906,7 +906,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					//	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStreamSecondStep, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command (second step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -949,7 +949,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}",
 							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -959,7 +959,7 @@ void FFMpegWrapper::encodeContent(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command (second step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -996,11 +996,11 @@ void FFMpegWrapper::encodeContent(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -1015,7 +1015,7 @@ void FFMpegWrapper::encodeContent(
 
 				ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -1054,7 +1054,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -1097,7 +1097,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}",
 							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -1107,7 +1107,7 @@ void FFMpegWrapper::encodeContent(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -1144,9 +1144,9 @@ void FFMpegWrapper::encodeContent(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -1159,7 +1159,7 @@ void FFMpegWrapper::encodeContent(
 						throw e;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -1180,7 +1180,7 @@ void FFMpegWrapper::encodeContent(
 				}
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Encoded file generated"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -1198,7 +1198,7 @@ void FFMpegWrapper::encodeContent(
 					", ingestionJobKey: {}",
 					encodingJobKey, ingestionJobKey
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = string("command failed, encoded dir size is 0") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -1249,7 +1249,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -1292,7 +1292,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}",
 							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("encodeContent command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -1302,7 +1302,7 @@ void FFMpegWrapper::encodeContent(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -1339,11 +1339,11 @@ void FFMpegWrapper::encodeContent(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -1385,7 +1385,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command (second step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -1428,7 +1428,7 @@ void FFMpegWrapper::encodeContent(
 							", ffmpegArgumentList: {}",
 							ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("encodeContent command failed (second step)") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -1438,7 +1438,7 @@ void FFMpegWrapper::encodeContent(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command (second step)"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -1475,11 +1475,11 @@ void FFMpegWrapper::encodeContent(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -1494,7 +1494,7 @@ void FFMpegWrapper::encodeContent(
 
 				ffmpegEncodingParameters.removeTwoPassesTemporaryFiles();
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -1524,7 +1524,7 @@ void FFMpegWrapper::encodeContent(
 							", e.what(): {}",
 							ingestionJobKey, encodingJobKey, e.what()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						ffmpegEncodingParameters.removeMultiTrackPathNames();
 
@@ -1561,7 +1561,7 @@ void FFMpegWrapper::encodeContent(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executing ffmpeg command"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -1595,7 +1595,7 @@ void FFMpegWrapper::encodeContent(
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
-						SPDLOG_ERROR(
+						LOG_ERROR(
 							"encodeContent: executed ffmpeg command failed"
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
@@ -1616,7 +1616,7 @@ void FFMpegWrapper::encodeContent(
 					}
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
-					SPDLOG_INFO(
+					LOG_INFO(
 						"encodeContent: Executed ffmpeg command"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -1653,9 +1653,9 @@ void FFMpegWrapper::encodeContent(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -1668,7 +1668,7 @@ void FFMpegWrapper::encodeContent(
 						throw e;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -1699,7 +1699,7 @@ void FFMpegWrapper::encodeContent(
 							", e.what(): {}",
 							ingestionJobKey, encodingJobKey, e.what()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						ffmpegEncodingParameters.removeMultiTrackPathNames();
 
@@ -1713,7 +1713,7 @@ void FFMpegWrapper::encodeContent(
 				llFileSize = fs::file_size(encodedStagingAssetPathName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Encoded file generated"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -1732,7 +1732,7 @@ void FFMpegWrapper::encodeContent(
 					", ffmpegArgumentList: {}",
 					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = string("command failed, encoded file size is 0") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -1743,7 +1743,7 @@ void FFMpegWrapper::encodeContent(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg encode failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -1756,7 +1756,7 @@ void FFMpegWrapper::encodeContent(
 
 		if (fs::exists(encodedStagingAssetPathName))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -1764,7 +1764,7 @@ void FFMpegWrapper::encodeContent(
 				encodingJobKey, ingestionJobKey, encodedStagingAssetPathName
 			);
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", encodedStagingAssetPathName: {}",
 				encodedStagingAssetPathName

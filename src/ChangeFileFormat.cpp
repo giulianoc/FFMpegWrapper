@@ -50,7 +50,7 @@ void FFMpegWrapper::changeFileFormat(
 				", sourcePhysicalPath: {}",
 				ingestionJobKey, sourcePhysicalPath
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -119,7 +119,7 @@ void FFMpegWrapper::changeFileFormat(
 		ffmpegExecuteCommand.insert(0, string("export DYLD_LIBRARY_PATH=") + getenv("DYLD_LIBRARY_PATH") + "; ");
 #endif
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"changeFileFormat: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", physicalPathKey: {}"
@@ -138,7 +138,7 @@ void FFMpegWrapper::changeFileFormat(
 				", ffmpegExecuteCommand: {}",
 				executeCommandStatus, ffmpegExecuteCommand
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
 			errorMessage = "changeFileFormat: command failed";
@@ -147,7 +147,7 @@ void FFMpegWrapper::changeFileFormat(
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"changeContainer: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", physicalPathKey: {}"
@@ -166,16 +166,16 @@ void FFMpegWrapper::changeFileFormat(
 			", e.what(): {}",
 			ffmpegExecuteCommand, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", _outputFfmpegPathFileName: {}",
 			_outputFfmpegPathFileName
 		);
 		fs::remove_all(_outputFfmpegPathFileName);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", destinationPathName: {}",
 			destinationPathName
@@ -185,7 +185,7 @@ void FFMpegWrapper::changeFileFormat(
 		throw e;
 	}
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Remove"
 		", _outputFfmpegPathFileName: {}",
 		_outputFfmpegPathFileName

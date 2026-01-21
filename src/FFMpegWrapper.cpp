@@ -19,7 +19,7 @@
 FFMpegWrapper::FFMpegWrapper(nlohmann::json configuration) : _currentApiName()
 {
 	_ffmpegPath = JSONUtils::asString(configuration["ffmpeg"], "path", ".");
-	SPDLOG_DEBUG(
+	LOG_DEBUG(
 		"Configuration item"
 		", ffmpeg->path: {}",
 		_ffmpegPath
@@ -29,13 +29,13 @@ FFMpegWrapper::FFMpegWrapper(nlohmann::json configuration) : _currentApiName()
 	_ffmpegTtfFontDir = JSONUtils::asString(configuration["ffmpeg"], "ttfFontDir", ".");
 
 	_youTubeDlPath = JSONUtils::asString(configuration["youTubeDl"], "path", ".");
-	SPDLOG_DEBUG(
+	LOG_DEBUG(
 		"Configuration item"
 		", youTubeDl->path: {}",
 		_youTubeDlPath
 	);
 	_pythonPathName = JSONUtils::asString(configuration["youTubeDl"], "pythonPathName", ".");
-	SPDLOG_DEBUG(
+	LOG_DEBUG(
 		"Configuration item"
 		", youTubeDl->pythonPathName: {}",
 		_pythonPathName
@@ -91,7 +91,7 @@ void FFMpegWrapper::encodingVideoCodecValidation(std::string codec)
 			", codec: {}",
 			codec
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -172,7 +172,7 @@ int FFMpeg::progressDownloadCallback(double dltotal, double dlnow, double ultota
 		// this is to have one decimal in the percentage
 		double downloadingPercentage = ((double)((int)(progress * 10))) / 10;
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Download still running"
 			", ingestionJobKey: {}"
 			", downloadingPercentage: {}"
@@ -187,7 +187,7 @@ int FFMpeg::progressDownloadCallback(double dltotal, double dlnow, double ultota
 
 		if (_lastPercentageUpdated != downloadingPercentage)
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Update IngestionJob"
 				", ingestionJobKey: {}"
 				", downloadingPercentage: {}",
@@ -219,7 +219,7 @@ void FFMpegWrapper::renameOutputFfmpegPathFileName(int64_t ingestionJobKey, int6
 			tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min, tmUtcTimestamp.tm_sec
 		);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"move"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -233,7 +233,7 @@ void FFMpegWrapper::renameOutputFfmpegPathFileName(int64_t ingestionJobKey, int6
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"move failed"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -265,7 +265,7 @@ bool FFMpegWrapper::isNumber(int64_t ingestionJobKey, std::string number)
 			", exception: {}",
 			ingestionJobKey, number, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -359,7 +359,7 @@ std::pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, st
 			", exception: {}",
 			ingestionJobKey, time, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -414,7 +414,7 @@ std::string FFMpegWrapper::secondsToTime(int64_t ingestionJobKey, double dSecond
 			", exception: {}",
 			ingestionJobKey, dSeconds, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -455,7 +455,7 @@ std::string FFMpegWrapper::centsOfSecondsToTime(int64_t ingestionJobKey, long ce
 			", exception: {}",
 			ingestionJobKey, centsOfSeconds, e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}

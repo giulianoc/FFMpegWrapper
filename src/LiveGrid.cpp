@@ -55,7 +55,7 @@ void FFMpegWrapper::liveGrid(
 	FFMpegEngine ffMpegEngine;
 	try
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Received {}"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}",
@@ -72,7 +72,7 @@ void FFMpegWrapper::liveGrid(
 				", outputsRoot.size: {}",
 				toString(_currentApiName), ingestionJobKey, encodingJobKey, outputsRoot.size()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -80,7 +80,7 @@ void FFMpegWrapper::liveGrid(
 		// vector<string> ffmpegOutputArgumentList;
 		try
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"{}"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -103,7 +103,7 @@ void FFMpegWrapper::liveGrid(
 				// 		ffmpegOutputArgumentList.begin(), ffmpegOutputArgumentList.end(),
 				// 		ostream_iterator<string>(ffmpegOutputArgumentListStream, " ")
 				// 	);
-				SPDLOG_INFO(
+				LOG_INFO(
 					"{}: ffmpegOutputArgumentList"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -121,7 +121,7 @@ void FFMpegWrapper::liveGrid(
 				", exception: {}",
 				toString(_currentApiName), ingestionJobKey, encodingJobKey, e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -636,7 +636,7 @@ void FFMpegWrapper::liveGrid(
 
 					bool noErrorIfExists = true;
 					bool recursive = true;
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Creating directory (if needed)"
 						", audioPathName: {}",
 						audioPathName
@@ -656,7 +656,7 @@ void FFMpegWrapper::liveGrid(
 
 					bool noErrorIfExists = true;
 					bool recursive = true;
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Creating directory (if needed)"
 						", videoPathName: {}",
 						videoPathName
@@ -713,7 +713,7 @@ void FFMpegWrapper::liveGrid(
 		// if (!ffmpegArgumentList.empty())
 		// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"liveGrid: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -749,7 +749,7 @@ void FFMpegWrapper::liveGrid(
 				", ffmpegArgumentList: {}",
 				ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
 			errorMessage = string("liveGrid: command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
@@ -759,7 +759,7 @@ void FFMpegWrapper::liveGrid(
 
 		endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"liveGrid: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -775,7 +775,7 @@ void FFMpegWrapper::liveGrid(
 		}
 		catch (exception &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"outputsRootToFfmpeg_clean failed"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -844,7 +844,7 @@ void FFMpegWrapper::liveGrid(
 			}
 			*/
 		}
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		/*
 		info(__FILEREF__ + "Remove"
@@ -861,7 +861,7 @@ void FFMpegWrapper::liveGrid(
 		}
 		catch (exception &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"outputsRootToFfmpeg_clean failed"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"

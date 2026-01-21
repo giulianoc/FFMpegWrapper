@@ -118,7 +118,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 	if (!JSONUtils::isPresent(filterRoot, "type"))
 	{
 		std::string errorMessage = "filterRoot->type field does not exist";
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -536,7 +536,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 				}
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"getDrawTextVideoFilterDescription"
 				", text: {}"
 				", textPosition_X_InPixel: {}"
@@ -570,7 +570,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 			}
 			else
 			{
-				SPDLOG_WARN(
+				LOG_WARN(
 					"fade filter, streaming duration to small"
 					", fadeDuration: {}"
 					", streamingDurationInSeconds: {}",
@@ -664,7 +664,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 			else
 			{
 				std::string errorMessage = "filterRoot->frameType is unknown";
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw std::runtime_error(errorMessage);
 			}
@@ -703,7 +703,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 				", type: {}",
 				type
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw std::runtime_error(errorMessage);
 		}

@@ -33,7 +33,7 @@ time_t FFMpegWrapper::getOutputFFMpegFileLastModificationTime()
 	{
 		if (!fs::exists(_outputFfmpegPathFileName.c_str()))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"getOutputFFMpegFileLastModificationTime: Encoding status not available"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -57,7 +57,7 @@ time_t FFMpegWrapper::getOutputFFMpegFileLastModificationTime()
 	}
 	catch (FFMpegEncodingStatusNotAvailable &e)
 	{
-		SPDLOG_WARN(
+		LOG_WARN(
 			"getOutputFFMpegFileLastModificationTime failed"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -73,7 +73,7 @@ time_t FFMpegWrapper::getOutputFFMpegFileLastModificationTime()
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"getOutputFFMpegFileLastModificationTime failed"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -95,7 +95,7 @@ uintmax_t FFMpegWrapper::getOutputFFMpegFileSize()
 	{
 		if (!fs::exists(_outputFfmpegPathFileName.c_str()))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"getOutputFFMpegFileSize: Encoding status not available"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -115,7 +115,7 @@ uintmax_t FFMpegWrapper::getOutputFFMpegFileSize()
 	}
 	catch (FFMpegEncodingStatusNotAvailable &e)
 	{
-		SPDLOG_WARN(
+		LOG_WARN(
 			"getOutputFFMpegFileSize failed"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -131,7 +131,7 @@ uintmax_t FFMpegWrapper::getOutputFFMpegFileSize()
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"getOutputFFMpegFileSize failed"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -196,7 +196,7 @@ string FFMpegWrapper::getLastPartOfFile(string pathFileName, int lastCharsToBeRe
 		if (buffer != nullptr)
 			delete[] buffer;
 
-		SPDLOG_ERROR("getLastPartOfFile failed");
+		LOG_ERROR("getLastPartOfFile failed");
 	}
 
 	return lastPartOfFile;

@@ -47,7 +47,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 				", mmsSourceVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mmsSourceVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -63,7 +63,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 					", mmsSourceImageAssetPathName: {}",
 					ingestionJobKey, encodingJobKey, mmsSourceImageAssetPathName
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -133,7 +133,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -147,13 +147,13 @@ void FFMpegWrapper::overlayImageOnVideo(
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 						+ ", twoPasses: " + to_string(twoPasses)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 					*/
 					twoPasses = false;
 
-					SPDLOG_WARN(
+					LOG_WARN(
 						"in case of overlayImageOnVideo it is not possible to have a two passes encoding. Change it to false"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -199,7 +199,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 			}
 			catch (runtime_error &e)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"ffmpeg: encodingProfileParameter retrieving failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -269,7 +269,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"overlayImageOnVideo: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -302,7 +302,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
-						SPDLOG_ERROR(
+						LOG_ERROR(
 							"overlayImageOnVideo: ffmpeg command failed"
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
@@ -324,7 +324,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"overlayImageOnVideo: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -360,9 +360,9 @@ void FFMpegWrapper::overlayImageOnVideo(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -377,7 +377,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 						throw e;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -387,7 +387,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Overlayed file generated"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -399,7 +399,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 
 			if (ulFileSize == 0)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"ffmpeg: ffmpeg command failed, encoded file size is 0"
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
@@ -420,7 +420,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 	}
 	catch (FFMpegEncodingKilledByUser &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg overlay failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -433,7 +433,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -447,7 +447,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 	}
 	catch (runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg overlay failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -461,7 +461,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
 			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -475,7 +475,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg overlay failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -488,7 +488,7 @@ void FFMpegWrapper::overlayImageOnVideo(
 
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -528,7 +528,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				", mmsSourceVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mmsSourceVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -597,7 +597,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -611,13 +611,13 @@ void FFMpegWrapper::overlayTextOnVideo(
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 						+ ", twoPasses: " + to_string(twoPasses)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 					*/
 					twoPasses = false;
 
-					SPDLOG_WARN(
+					LOG_WARN(
 						"in case of overlayTextOnVideo it is not possible to have a two passes encoding. Change it to false"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -663,7 +663,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 			}
 			catch (runtime_error &e)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"ffmpeg: encodingProfileParameter retrieving failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -696,7 +696,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				of.flush();
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"overlayTextOnVideo: added text into a temporary file"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -755,7 +755,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"overlayTextOnVideo: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -788,7 +788,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
-						SPDLOG_ERROR(
+						LOG_ERROR(
 							"overlayTextOnVideo: ffmpeg command failed"
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
@@ -809,7 +809,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"overlayTextOnVideo: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -845,10 +845,10 @@ void FFMpegWrapper::overlayTextOnVideo(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					/*
-					SPDLOG_INFO(
+					LOG_INFO(
 						"remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -858,7 +858,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 					fs::remove_all(textTemporaryFileName);
 					*/
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -874,7 +874,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				}
 
 				/*
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -884,7 +884,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				fs::remove_all(textTemporaryFileName);
 				*/
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -894,7 +894,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Drawtext file generated"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -906,7 +906,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 
 			if (ulFileSize == 0)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"ffmpeg: ffmpeg command failed, encoded file size is 0"
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
@@ -927,7 +927,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 	}
 	catch (FFMpegEncodingKilledByUser &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg drawtext failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -940,7 +940,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
 			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -954,7 +954,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 	}
 	catch (runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg drawtext failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -967,7 +967,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
 			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -981,7 +981,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg drawtext failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -994,7 +994,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
 			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"

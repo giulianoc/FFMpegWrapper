@@ -63,7 +63,7 @@ void FFMpegWrapper::liveRecorder(
 {
 	_currentApiName = APIName::LiveRecorder;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received {}"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}",
@@ -100,7 +100,7 @@ void FFMpegWrapper::liveRecorder(
 		// So, for this reason, the below check is done
 		if (!fs::exists(segmentListPath))
 		{
-			SPDLOG_WARN(
+			LOG_WARN(
 				"segmentListPath does not exist!!! It will be created"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -108,7 +108,7 @@ void FFMpegWrapper::liveRecorder(
 				ingestionJobKey, encodingJobKey, segmentListPath
 			);
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Create directory"
 				", segmentListPath: {}",
 				segmentListPath
@@ -147,7 +147,7 @@ void FFMpegWrapper::liveRecorder(
 			{
 				time_t sleepTime = utcRecordingPeriodStartFixed - (utcNow + secondsToStartEarly);
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"LiveRecorder timing. Too early to start the LiveRecorder, just sleep {} seconds"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -179,7 +179,7 @@ void FFMpegWrapper::liveRecorder(
 				", tooLateTime: {}",
 				ingestionJobKey, encodingJobKey, utcNow, utcRecordingPeriodStartFixed, utcRecordingPeriodEnd, tooLateTime
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -187,7 +187,7 @@ void FFMpegWrapper::liveRecorder(
 		{
 			time_t delayTime = utcNow - utcRecordingPeriodStartFixed;
 
-			SPDLOG_WARN(
+			LOG_WARN(
 				"LiveRecorder timing. We are a bit late to start the LiveRecorder, let's start it"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -218,7 +218,7 @@ void FFMpegWrapper::liveRecorder(
 
 		time_t streamingDuration = utcRecordingPeriodEnd - utcNow;
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"LiveRecording timing. Streaming duration"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -239,7 +239,7 @@ void FFMpegWrapper::liveRecorder(
 				//	timeout: 3600 seconds
 				//	The result is that the process will finish after 3600 seconds, not after 25 seconds
 				//	To avoid that, in this scenario, we will set the timeout equals to streamingDuration
-				SPDLOG_INFO(
+				LOG_INFO(
 					"LiveRecorder timing. Listen timeout in seconds is reduced because max after 'streamingDuration' the process has to finish"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -266,7 +266,7 @@ void FFMpegWrapper::liveRecorder(
 			}
 			else
 			{
-				SPDLOG_WARN(
+				LOG_WARN(
 					"user agent cannot be used if not http"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -331,7 +331,7 @@ void FFMpegWrapper::liveRecorder(
 			}
 			else
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"listen/timeout not managed yet for the current protocol"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -584,7 +584,7 @@ void FFMpegWrapper::liveRecorder(
 			// ffmpegArgumentList.push_back(segmentListPathName);
 		}
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"outputsRootToFfmpeg..."
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -683,7 +683,7 @@ void FFMpegWrapper::liveRecorder(
 			// if (!ffmpegArgumentList.empty())
 			// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"liveRecorder: Executing ffmpeg command"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -736,7 +736,7 @@ void FFMpegWrapper::liveRecorder(
 						ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 						*ffmpegCallbackData->getSignal(), realDuration - streamingDuration
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 					ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
 						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), "Restarted"));
 
@@ -761,7 +761,7 @@ void FFMpegWrapper::liveRecorder(
 							mainInput.setDurationSeconds(localStreamingDuration);
 							// ffmpegArgumentList[streamingDurationIndex] = to_string(localStreamingDuration);
 
-							SPDLOG_INFO(
+							LOG_INFO(
 								"liveRecorder: ffmpeg execution command failed because received SIGQUIT/SIGTERM, recalculate streaming duration"
 								", ingestionJobKey: {}"
 								", encodingJobKey: {}"
@@ -776,7 +776,7 @@ void FFMpegWrapper::liveRecorder(
 							// exit from loop even if SIGQUIT/SIGTERM because time period expired
 							sigQuitOrTermReceived = false;
 
-							SPDLOG_INFO(
+							LOG_INFO(
 								"liveRecorder: ffmpeg execution command should be called again because received SIGQUIT/SIGTERM but "
 								"utcRecordingPeriod expired"
 								", ingestionJobKey: {}"
@@ -803,7 +803,7 @@ void FFMpegWrapper::liveRecorder(
 					ingestionJobKey, encodingJobKey, iReturnedStatus, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(),
 					realDuration - streamingDuration
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = string("liveRecorder: command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
@@ -812,7 +812,7 @@ void FFMpegWrapper::liveRecorder(
 			}
 		}
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"liveRecorder: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -828,7 +828,7 @@ void FFMpegWrapper::liveRecorder(
 		}
 		catch (exception &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"outputsRootToFfmpeg_clean failed"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -845,7 +845,7 @@ void FFMpegWrapper::liveRecorder(
 			{
 				try
 				{
-					SPDLOG_INFO(
+					LOG_INFO(
 						"removeDirectory"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -856,7 +856,7 @@ void FFMpegWrapper::liveRecorder(
 				}
 				catch (exception &e)
 				{
-					SPDLOG_ERROR(
+					LOG_ERROR(
 						"remove directory failed"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -905,11 +905,11 @@ void FFMpegWrapper::liveRecorder(
 				Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true),
 				std::format("Failed: {}", e.what())));
 		}
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"remove"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -924,7 +924,7 @@ void FFMpegWrapper::liveRecorder(
 		}
 		catch (exception &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"outputsRootToFfmpeg_clean failed"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -939,7 +939,7 @@ void FFMpegWrapper::liveRecorder(
 		{
 			try
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"removeDirectory"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -950,7 +950,7 @@ void FFMpegWrapper::liveRecorder(
 			}
 			catch (exception &ex)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"remove directory failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"

@@ -62,7 +62,7 @@ void FFMpegWrapper::streamingToFile(int64_t ingestionJobKey, bool regenerateTime
 		ffmpegExecuteCommand.insert(0, string("export DYLD_LIBRARY_PATH=") + getenv("DYLD_LIBRARY_PATH") + "; ");
 #endif
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"streamingToFile: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegExecuteCommand: {}",
@@ -74,7 +74,7 @@ void FFMpegWrapper::streamingToFile(int64_t ingestionJobKey, bool regenerateTime
 		int executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
 		if (executeCommandStatus != 0)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"streamingToFile: ffmpeg command failed"
 				", executeCommandStatus: {}"
 				", ffmpegExecuteCommand: {}",
@@ -94,7 +94,7 @@ void FFMpegWrapper::streamingToFile(int64_t ingestionJobKey, bool regenerateTime
 					_outputFfmpegPathFileName
 				);
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"streamingToFile: Executing ffmpeg command"
 					", ingestionJobKey: {}"
 					", ffmpegExecuteCommand: {}",
@@ -106,7 +106,7 @@ void FFMpegWrapper::streamingToFile(int64_t ingestionJobKey, bool regenerateTime
 				executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
 				if (executeCommandStatus != 0)
 				{
-					SPDLOG_ERROR(
+					LOG_ERROR(
 						"streamingToFile: ffmpeg command failed"
 						", executeCommandStatus: {}"
 						", ffmpegExecuteCommand: {}",
@@ -122,7 +122,7 @@ void FFMpegWrapper::streamingToFile(int64_t ingestionJobKey, bool regenerateTime
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"streamingToFile: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegExecuteCommand: {}"
@@ -133,21 +133,21 @@ void FFMpegWrapper::streamingToFile(int64_t ingestionJobKey, bool regenerateTime
 	catch (exception &e)
 	{
 		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg command failed"
 			", ffmpegExecuteCommand: {}"
 			", e.what(): {}",
 			ffmpegExecuteCommand, e.what()
 		);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", _outputFfmpegPathFileName: {}",
 			_outputFfmpegPathFileName
 		);
 		fs::remove_all(_outputFfmpegPathFileName);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", destinationPathName: {}",
 			destinationPathName
@@ -181,7 +181,7 @@ Error opening input files: Server returned 4XX Client Error, but not one of 40{0
 			throw;
 	}
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Remove"
 		", _outputFfmpegPathFileName: {}",
 		_outputFfmpegPathFileName

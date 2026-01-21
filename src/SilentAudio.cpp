@@ -35,7 +35,7 @@ void FFMpegWrapper::silentAudio(
 
 	_currentApiName = APIName::SilentAudio;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received {}"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}",
@@ -55,7 +55,7 @@ void FFMpegWrapper::silentAudio(
 				", videoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, videoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -214,7 +214,7 @@ void FFMpegWrapper::silentAudio(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"{}: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -247,7 +247,7 @@ void FFMpegWrapper::silentAudio(
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
-						SPDLOG_ERROR(
+						LOG_ERROR(
 							"{}: ffmpeg command failed"
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
@@ -268,7 +268,7 @@ void FFMpegWrapper::silentAudio(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"{}: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -304,9 +304,9 @@ void FFMpegWrapper::silentAudio(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -321,7 +321,7 @@ void FFMpegWrapper::silentAudio(
 						throw e;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -331,7 +331,7 @@ void FFMpegWrapper::silentAudio(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"{} file generated"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -343,7 +343,7 @@ void FFMpegWrapper::silentAudio(
 
 			if (ulFileSize == 0)
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"ffmpeg: ffmpeg command failed, encoded file size is 0"
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
@@ -364,7 +364,7 @@ void FFMpegWrapper::silentAudio(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"{} ffmpeg failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -376,7 +376,7 @@ void FFMpegWrapper::silentAudio(
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
 			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"

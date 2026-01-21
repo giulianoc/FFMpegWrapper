@@ -49,7 +49,7 @@ void FFMpegWrapper::pictureInPicture(
 				", mmsMainVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mmsMainVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -63,7 +63,7 @@ void FFMpegWrapper::pictureInPicture(
 				", mmsOverlayVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mmsOverlayVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -80,7 +80,7 @@ void FFMpegWrapper::pictureInPicture(
 				", overlayVideoDurationInMilliSeconds: {}",
 				encodingJobKey, ingestionJobKey, mainVideoDurationInMilliSeconds, overlayVideoDurationInMilliSeconds
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -149,7 +149,7 @@ void FFMpegWrapper::pictureInPicture(
 						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -163,13 +163,13 @@ void FFMpegWrapper::pictureInPicture(
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 						+ ", twoPasses: " + to_string(twoPasses)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 					*/
 					twoPasses = false;
 
-					SPDLOG_WARN(
+					LOG_WARN(
 						"in case of pictureInPicture it is not possible to have a two passes encoding. Change it to false"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -215,7 +215,7 @@ void FFMpegWrapper::pictureInPicture(
 			}
 			catch (runtime_error &e)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"ffmpeg: encodingProfileParameter retrieving failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -313,7 +313,7 @@ void FFMpegWrapper::pictureInPicture(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"pictureInPicture: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -338,7 +338,7 @@ void FFMpegWrapper::pictureInPicture(
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
-						SPDLOG_ERROR(
+						LOG_ERROR(
 							"pictureInPicture: ffmpeg command failed"
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
@@ -359,7 +359,7 @@ void FFMpegWrapper::pictureInPicture(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"pictureInPicture: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -395,9 +395,9 @@ void FFMpegWrapper::pictureInPicture(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -412,7 +412,7 @@ void FFMpegWrapper::pictureInPicture(
 						throw e;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -422,7 +422,7 @@ void FFMpegWrapper::pictureInPicture(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"pictureInPicture file generated"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -434,7 +434,7 @@ void FFMpegWrapper::pictureInPicture(
 
 			if (ulFileSize == 0)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"ffmpeg: ffmpeg command failed, pictureInPicture encoded file size is 0"
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
@@ -455,7 +455,7 @@ void FFMpegWrapper::pictureInPicture(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg pictureInPicture failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -469,7 +469,7 @@ void FFMpegWrapper::pictureInPicture(
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
 			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"

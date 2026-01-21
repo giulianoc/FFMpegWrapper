@@ -43,7 +43,7 @@ void FFMpegWrapper::liveProxy(
 {
 	_currentApiName = APIName::LiveProxy;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received {}"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -70,7 +70,7 @@ void FFMpegWrapper::liveProxy(
 			", inputsRoot: {}",
 			ingestionJobKey, encodingJobKey, JSONUtils::toString(*inputsRoot)
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
@@ -84,7 +84,7 @@ void FFMpegWrapper::liveProxy(
 			", outputsRoot.size: {}",
 			ingestionJobKey, encodingJobKey, outputsRoot.size()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
@@ -117,7 +117,7 @@ void FFMpegWrapper::liveProxy(
 			}
 		}
 	}
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Calculated timedInput"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -157,7 +157,7 @@ void FFMpegWrapper::liveProxy(
 			{
 				time_t sleepTime = utcFirstProxyPeriodStart - utcNow;
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"LiveProxy timing. "
 					"Too early to start the LiveProxy, just sleep {} seconds"
 					", ingestionJobKey: {}"
@@ -188,7 +188,7 @@ void FFMpegWrapper::liveProxy(
 				", tooLateTime: {}",
 				ingestionJobKey, encodingJobKey, utcNow, utcLastProxyPeriodEnd, tooLateTime
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -258,7 +258,7 @@ void FFMpegWrapper::liveProxy(
 
 		try
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"liveProxyInput..."
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -280,7 +280,7 @@ void FFMpegWrapper::liveProxy(
 						ffmpegInputArgumentList.begin(), ffmpegInputArgumentList.end(), ostream_iterator<string>(ffmpegInputArgumentListStream, " ")
 					);
 					*/
-				SPDLOG_INFO(
+				LOG_INFO(
 					"liveProxy: ffmpegInputArgumentList"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -302,14 +302,14 @@ void FFMpegWrapper::liveProxy(
 				", exception: {}",
 				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
 
 		try
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"outputsRootToFfmpeg..."
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -332,7 +332,7 @@ void FFMpegWrapper::liveProxy(
 						ostream_iterator<string>(ffmpegOutputArgumentListStream, " ")
 					);
 				*/
-				SPDLOG_INFO(
+				LOG_INFO(
 					"liveProxy: ffmpegOutputArgumentList"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -352,7 +352,7 @@ void FFMpegWrapper::liveProxy(
 				", exception: {}",
 				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -391,7 +391,7 @@ void FFMpegWrapper::liveProxy(
 			// if (!ffmpegArgumentList.empty())
 			// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"liveProxy: Executing ffmpeg command"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -414,7 +414,7 @@ void FFMpegWrapper::liveProxy(
 			ffmpegCallbackData->reset();
 			if (killTypeReceived == KillType::Kill || killTypeReceived == KillType::KillToRestartByEngine)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"liveProxy executing ffmpeg not done because killTypeReceived is Kill or KillToRestartByEngine"
 					", ingestionJobKey: {}",
 					ingestionJobKey
@@ -443,7 +443,7 @@ void FFMpegWrapper::liveProxy(
 					ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, iReturnedStatus, _outputFfmpegPathFileName,
 					ffMpegEngine.toSingleLine(true)
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = std::format(
@@ -457,7 +457,7 @@ void FFMpegWrapper::liveProxy(
 				throw runtime_error(errorMessage);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"liveProxy: Executed ffmpeg command"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -476,7 +476,7 @@ void FFMpegWrapper::liveProxy(
 					// in questo caso dobbiamo rimuovere la directory che contiene sia la playlist che i media scaricati
 
 					string endlessPlaylistDirectory = StringUtils::uriPathPrefix(endlessPlaylistPathName);
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -489,7 +489,7 @@ void FFMpegWrapper::liveProxy(
 				else
 				{
 					// in questo caso dobbiamo rimuovere solo la playlist perchè i file fanno riferimento allo storage locale
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -507,7 +507,7 @@ void FFMpegWrapper::liveProxy(
 			}
 			catch (exception &e)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"outputsRootToFfmpeg_clean failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -599,13 +599,13 @@ void FFMpegWrapper::liveProxy(
 						std::format("Failed: {}", e.what())));
 				}
 			}
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			if (keepOutputLog)
 				renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 			else
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -624,7 +624,7 @@ void FFMpegWrapper::liveProxy(
 					// in questo caso dobbiamo rimuovere la directory che contiene sia la playlist che i media scaricati
 
 					string endlessPlaylistDirectory = StringUtils::uriPathPrefix(endlessPlaylistPathName);
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -637,7 +637,7 @@ void FFMpegWrapper::liveProxy(
 				else
 				{
 					// in questo caso dobbiamo rimuovere solo la playlist perchè i file fanno riferimento allo storage locale
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -655,7 +655,7 @@ void FFMpegWrapper::liveProxy(
 			}
 			catch (exception &ex)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"outputsRootToFfmpeg_clean failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -682,7 +682,7 @@ void FFMpegWrapper::liveProxy(
 					&& endFfmpegCommand - startFfmpegCommand > chrono::seconds(5 * 60)
 				)
 				{
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Command has to be executed again"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -717,7 +717,7 @@ void FFMpegWrapper::liveProxy(
 					currentNumberOfRepeatingSameInput++;
 					if (currentNumberOfRepeatingSameInput >= maxTimesRepeatingSameInput)
 					{
-						SPDLOG_INFO(
+						LOG_INFO(
 							"Command is NOT executed anymore, reached max number of repeating"
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
@@ -732,7 +732,7 @@ void FFMpegWrapper::liveProxy(
 					}
 					else
 					{
-						SPDLOG_INFO(
+						LOG_INFO(
 							"Command is executed again, sleeping for"
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
@@ -803,7 +803,7 @@ void FFMpegWrapper::liveProxy(
 				//	To avoid this problem, we add here (ffmpeg client) a delay to wait ffmpeg server to starts
 				//	Based on my statistics I think 2 seconds should be enought
 				int sleepInSecondsToBeSureServerIsRunning = 2;
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Command is executed again, sleeping for"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -818,7 +818,7 @@ void FFMpegWrapper::liveProxy(
 			renameOutputFfmpegPathFileName(ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName);
 		else
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -862,7 +862,7 @@ int FFMpegWrapper::getNextLiveProxyInput(
 			field = "utcScheduleEnd";
 			int64_t utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"getNextLiveProxyInput"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -894,7 +894,7 @@ int FFMpegWrapper::getNextLiveProxyInput(
 			newInputIndex = -1;
 	}
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"getNextLiveProxyInput"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -920,7 +920,7 @@ static int progressDownloadCallback(void *clientp, curl_off_t dltotal, curl_off_
 
 	if (*(progressData->_killType) == FFMpegWrapper::KillType::Kill || *(progressData->_killType) == FFMpegWrapper::KillType::KillToRestartByEngine)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"progressDownloadCallback interrupted because killTypeReceived is Kill or KillToRestartByEngine"
 			", ingestionJobKey: {}",
 			progressData->_ingestionJobKey
@@ -939,7 +939,7 @@ static int progressDownloadCallback(void *clientp, curl_off_t dltotal, curl_off_
 		// this is to have one decimal in the percentage
 		double downloadingPercentage = ((double)((int)(progress * 10))) / 10;
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"progressDownloadCallback. Download still running"
 			", ingestionJobKey: {}"
 			", downloadingPercentage: {}"
@@ -955,7 +955,7 @@ static int progressDownloadCallback(void *clientp, curl_off_t dltotal, curl_off_
 		if (progressData->_lastPercentageUpdated != downloadingPercentage)
 		{
 			/*
-			SPDLOG_INFO(
+			LOG_INFO(
 				"progressDownloadCallback. Update IngestionJob"
 				", ingestionJobKey: {}"
 				", downloadingPercentage: {}",
@@ -1020,7 +1020,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				", Field: {}",
 				ingestionJobKey, encodingJobKey, field
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -1079,7 +1079,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		field = "captureAudioDeviceNumber";
 		captureLive_audioDeviceNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"liveProxy: setting dynamic -map option"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -1107,7 +1107,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					+ ", encodingJobKey: " + to_string(encodingJobKey)
 					+ ", e.what(): " + e.what()
 				;
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// throw e;
 			}
@@ -1123,7 +1123,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 				getLiveStreamingInfo(url, userAgent, ingestionJobKey, encodingJobKey, liveVideoTracks, liveAudioTracks);
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"liveProxy: setting dynamic -map option"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -1163,7 +1163,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 							if (audioStreamDescription.find("eng") != string::npos || audioStreamDescription.find("des") != string::npos)
 							{
-								SPDLOG_INFO(
+								LOG_INFO(
 									"liveProxy: audio track discarded"
 									", ingestionJobKey: {}"
 									", encodingJobKey: {}"
@@ -1195,7 +1195,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					inputSelectedAudioMap = selectedAudioStreamId;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"liveProxy: new other output options"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -1213,7 +1213,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					", e.what(): {}",
 					ingestionJobKey, encodingJobKey, e.what()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// throw e;
 			}
@@ -1237,7 +1237,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					inputDurationInSeconds = utcProxyPeriodEnd - utcNow > maxStreamingDurationInMinutes * 60 ? maxStreamingDurationInMinutes * 60
 																												 : utcProxyPeriodEnd - utcNow;
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"LiveProxy timing. Streaming duration"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -1257,7 +1257,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 						//	timeout: 3600 seconds
 						//	The result is that the process will finish after 3600 seconds, not after 25 seconds
 						//	To avoid that, in this scenario, we will set the timeout equals to inputDurationInSeconds
-						SPDLOG_INFO(
+						LOG_INFO(
 							"LiveProxy timing. Listen timeout in seconds is reduced because max after 'inputDurationInSeconds' the process has "
 							"to finish"
 							", ingestionJobKey: {}"
@@ -1285,7 +1285,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					userAgentToBeUsed = true;
 				else
 				{
-					SPDLOG_WARN(
+					LOG_WARN(
 						"user agent cannot be used if not http"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -1390,7 +1390,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				}
 				else
 				{
-					SPDLOG_ERROR(
+					LOG_ERROR(
 						"listen/timeout not managed yet for the current protocol"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -1563,7 +1563,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 											", imageoverlay filter: {}",
 											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
 										);
-										SPDLOG_ERROR(errorMessage);
+										LOG_ERROR(errorMessage);
 
 										throw runtime_error(errorMessage);
 									}
@@ -1582,7 +1582,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 											", imageoverlay filter: {}",
 											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
 										);
-										SPDLOG_ERROR(errorMessage);
+										LOG_ERROR(errorMessage);
 
 										throw runtime_error(errorMessage);
 									}
@@ -1617,7 +1617,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		string inputFormat = JSONUtils::asString(directURLInputRoot, "inputFormat", "");
 		string url = JSONUtils::asString(directURLInputRoot, "url", "");
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"liveProxy, url"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -1642,7 +1642,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					+ ", encodingJobKey: " + to_string(encodingJobKey)
 					+ ", e.what(): " + e.what()
 				;
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// throw e;
 			}
@@ -1660,7 +1660,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			{
 				inputDurationInSeconds = utcProxyPeriodEnd - utcNow;
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"LiveProxy timing. Streaming duration"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -1736,7 +1736,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 											", imageoverlay filter: {}",
 											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
 										);
-										SPDLOG_ERROR(errorMessage);
+										LOG_ERROR(errorMessage);
 
 										throw runtime_error(errorMessage);
 									}
@@ -1755,7 +1755,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 											", imageoverlay filter: {}",
 											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
 										);
-										SPDLOG_ERROR(errorMessage);
+										LOG_ERROR(errorMessage);
 
 										throw runtime_error(errorMessage);
 									}
@@ -1796,7 +1796,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				", Field: {}",
 				ingestionJobKey, encodingJobKey, field
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -1815,7 +1815,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					", Field: {}",
 					ingestionJobKey, encodingJobKey, field
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -1838,7 +1838,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 						", sourceRoot: {}",
 						ingestionJobKey, encodingJobKey, field, externalEncoder, JSONUtils::toString(sourceRoot)
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -1864,7 +1864,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			{
 				inputDurationInSeconds = utcProxyPeriodEnd - utcNow;
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"VODProxy timing. Streaming duration"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -1953,7 +1953,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					endlessPlaylistDirectory = std::format("{}/{}_{}", _ffmpegEndlessRecursivePlaylistDir, ingestionJobKey, encodingJobKey);
 					endlessPlaylistPathName = std::format("{}/{}", endlessPlaylistDirectory, endlessPlaylistFileName);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Create directory"
 						", endlessPlaylistDirectory: {}",
 						endlessPlaylistDirectory
@@ -1974,7 +1974,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					endlessPlaylistPathName = std::format("{}/{}", _ffmpegEndlessRecursivePlaylistDir, endlessPlaylistFileName);
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Creating ffmpegEndlessRecursivePlaylist file"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -2004,7 +2004,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 						ingestionJobKey, encodingJobKey, endlessPlaylistPathName, errno, strerror(errno)
 					);
 #endif
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -2039,7 +2039,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 						if (killTypeReceived == KillType::Kill || killTypeReceived == KillType::KillToRestartByEngine)
 						{
-							SPDLOG_ERROR(
+							LOG_ERROR(
 								"streamingToFile/CurlWrapper::downloadFile not executed because killTypeReceived is Kill or KillToRestartByEngine"
 								", ingestionJobKey: {}",
 								ingestionJobKey
@@ -2074,7 +2074,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 							}
 							catch (exception &e)
 							{
-								SPDLOG_ERROR(
+								LOG_ERROR(
 									"CurlWrapper::downloadFile failed"
 									", ingestionJobKey: {}"
 									", sourcePhysicalReference: {}"
@@ -2088,7 +2088,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 						// playlist and dowloaded files will be removed by the calling FFMpeg::liveProxy2 method
 						playlistListFile << "file '" << destBinaryFileName << "'" << endl;
 
-						SPDLOG_INFO(
+						LOG_INFO(
 							"ffmpeg: adding physical path"
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
@@ -2103,7 +2103,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 						size_t storageIndex = sourcePhysicalReference.find("/storage/");
 						if (storageIndex == string::npos)
 						{
-							SPDLOG_ERROR(
+							LOG_ERROR(
 								"physical path has a wrong path"
 								", ingestionJobKey: {}"
 								", sourcePhysicalReference: {}",
@@ -2115,7 +2115,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 						playlistListFile << "file '" << sourcePhysicalReference.substr(storageIndex + 1) << "'" << endl;
 
-						SPDLOG_INFO(
+						LOG_INFO(
 							"ffmpeg: adding physical path"
 							", ingestionJobKey: {}"
 							", encodingJobKey: {}"
@@ -2162,7 +2162,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 											", imageoverlay filter: {}",
 											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
 										);
-										SPDLOG_ERROR(errorMessage);
+										LOG_ERROR(errorMessage);
 
 										throw runtime_error(errorMessage);
 									}
@@ -2181,7 +2181,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 											", imageoverlay filter: {}",
 											ingestionJobKey, JSONUtils::toString(complexFilterRoot)
 										);
-										SPDLOG_ERROR(errorMessage);
+										LOG_ERROR(errorMessage);
 
 										throw runtime_error(errorMessage);
 									}
@@ -2227,7 +2227,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				", Field: {}",
 				ingestionJobKey, encodingJobKey, field
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -2243,7 +2243,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				", Field: {}",
 				ingestionJobKey, encodingJobKey, field
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -2258,7 +2258,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				", mmsSourceVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mmsSourceVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -2284,7 +2284,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				", tooLateTime: {}",
 				ingestionJobKey, encodingJobKey, utcNow, utcCountDownEnd, tooLateTime
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -2293,7 +2293,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		{
 			inputDurationInSeconds = utcCountDownEnd - utcNow;
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Countdown timing. Streaming duration"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -2351,7 +2351,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 										", imageoverlay filter: {}",
 										ingestionJobKey, JSONUtils::toString(complexFilterRoot)
 									);
-									SPDLOG_ERROR(errorMessage);
+									LOG_ERROR(errorMessage);
 
 									throw runtime_error(errorMessage);
 								}
@@ -2370,7 +2370,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 										", imageoverlay filter: {}",
 										ingestionJobKey, JSONUtils::toString(complexFilterRoot)
 									);
-									SPDLOG_ERROR(errorMessage);
+									LOG_ERROR(errorMessage);
 
 									throw runtime_error(errorMessage);
 								}
@@ -2415,7 +2415,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				", countdownInputRoot: {}",
 				ingestionJobKey, encodingJobKey, JSONUtils::toString(countdownInputRoot)
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -2428,7 +2428,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			", encodingJobKey: {}",
 			ingestionJobKey, encodingJobKey
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
@@ -2461,7 +2461,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 )
 {
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received outputsRootToFfmpeg"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -2531,7 +2531,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		//    siamo nello scenario di un solo inputRoot che richiede il suo drawtext.
 		//    Per questo motivo, il prossimo if, gestisce il caso di drawTextDetails solo per un input root
 		json filtersRoot = ffmpegFilters.mergeFilters(outputRoot["filters"], inputFiltersRoot);
-		SPDLOG_INFO(
+		LOG_INFO(
 			"mergeFilters"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -2612,7 +2612,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -2624,7 +2624,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 					*/
@@ -2637,7 +2637,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 						", twoPasses: {}",
 						ingestionJobKey, encodingJobKey, twoPasses
 					);
-					SPDLOG_WARN(errorMessage);
+					LOG_WARN(errorMessage);
 				}
 			}
 			catch (runtime_error &e)
@@ -2649,7 +2649,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					", e.what(): {}",
 					ingestionJobKey, encodingJobKey, e.what()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw e;
 			}
@@ -2667,7 +2667,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				", outputIndex: {}",
 				ingestionJobKey, encodingJobKey, outputIndex
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -2820,7 +2820,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					", outputRoot: {}",
 					ingestionJobKey, encodingJobKey, JSONUtils::toString(outputRoot)
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -2905,7 +2905,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					", rtmpUrl: {}",
 					ingestionJobKey, encodingJobKey, srtUrl
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -2931,7 +2931,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Checking manifestDirectoryPath directory"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -2947,7 +2947,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			// So, for this reason, the below check is done
 			if (!fs::exists(manifestDirectoryPath))
 			{
-				SPDLOG_WARN(
+				LOG_WARN(
 					"manifestDirectoryPath does not exist!!! It will be created"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -2955,7 +2955,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					ingestionJobKey, encodingJobKey, manifestDirectoryPath
 				);
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Create directory"
 					", manifestDirectoryPath: {}",
 					manifestDirectoryPath
@@ -3056,7 +3056,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					", udpUrl: {}",
 					ingestionJobKey, encodingJobKey, udpUrl
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -3121,7 +3121,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				", outputType: {}",
 				ingestionJobKey, encodingJobKey, outputType
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -3150,7 +3150,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 	optional<string>& inputSelectedAudioMap, optional<int32_t>& inputDurationInSeconds
 )
 {
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received outputsRootToFfmpeg"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -3220,7 +3220,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		//    siamo nello scenario di un solo inputRoot che richiede il suo drawtext.
 		//    Per questo motivo, il prossimo if, gestisce il caso di drawTextDetails solo per un input root
 		json filtersRoot = FFMpegFilters::mergeFilters(outputRoot["filters"], inputFiltersRoot);
-		SPDLOG_INFO(
+		LOG_INFO(
 			"mergeFilters"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -3301,7 +3301,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -3313,7 +3313,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 					*/
@@ -3326,7 +3326,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 						", twoPasses: {}",
 						ingestionJobKey, encodingJobKey, twoPasses
 					);
-					SPDLOG_WARN(errorMessage);
+					LOG_WARN(errorMessage);
 				}
 			}
 			catch (runtime_error &e)
@@ -3338,7 +3338,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					", e.what(): {}",
 					ingestionJobKey, encodingJobKey, e.what()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw e;
 			}
@@ -3356,7 +3356,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				", outputIndex: {}",
 				ingestionJobKey, encodingJobKey, outputIndex
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -3558,7 +3558,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					", outputRoot: {}",
 					ingestionJobKey, encodingJobKey, JSONUtils::toString(outputRoot)
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -3657,7 +3657,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					", rtmpUrl: {}",
 					ingestionJobKey, encodingJobKey, srtUrl
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -3696,7 +3696,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Checking manifestDirectoryPath directory"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -3712,7 +3712,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			// So, for this reason, the below check is done
 			if (!fs::exists(manifestDirectoryPath))
 			{
-				SPDLOG_WARN(
+				LOG_WARN(
 					"manifestDirectoryPath does not exist!!! It will be created"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -3720,7 +3720,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					ingestionJobKey, encodingJobKey, manifestDirectoryPath
 				);
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Create directory"
 					", manifestDirectoryPath: {}",
 					manifestDirectoryPath
@@ -3839,7 +3839,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					", udpUrl: {}",
 					ingestionJobKey, encodingJobKey, udpUrl
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -3951,7 +3951,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				", outputType: {}",
 				ingestionJobKey, encodingJobKey, outputType
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -3981,7 +3981,7 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 				{
 					try
 					{
-						SPDLOG_INFO(
+						LOG_INFO(
 							"removeDirectory"
 							", manifestDirectoryPath: {}",
 							manifestDirectoryPath
@@ -3999,7 +3999,7 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 							", e.what(): {}",
 							ingestionJobKey, encodingJobKey, outputIndex, manifestDirectoryPath, e.what()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						throw e;
 					}
@@ -4014,7 +4014,7 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 							", e.what(): {}",
 							ingestionJobKey, encodingJobKey, outputIndex, manifestDirectoryPath, e.what()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						throw e;
 					}
@@ -4032,7 +4032,7 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 
 			if (fs::exists(textTemporaryFileName))
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", textTemporaryFileName: {}",
 					textTemporaryFileName
@@ -4057,7 +4057,7 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 							std::format("{}/{}_{}_{}.overlayText", _ffmpegTempDir, ingestionJobKey, encodingJobKey, outputIndex);
 						if (fs::exists(textTemporaryFileName))
 						{
-							SPDLOG_INFO(
+							LOG_INFO(
 								"Remove"
 								", textTemporaryFileName: {}",
 								textTemporaryFileName

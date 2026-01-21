@@ -23,7 +23,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 {
 	try
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Received addToIncrontab"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -33,7 +33,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 
 		if (!fs::exists(_incrontabConfigurationDirectory))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"addToIncrontab: create directory"
 				", _ingestionJobKey: {}"
 				", _encodingJobKey: {}"
@@ -84,7 +84,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 				", incrontabConfigurationPathName: {}",
 				ingestionJobKey, encodingJobKey, incrontabConfigurationPathName
 			);
-			SPDLOG_WARN(errorMessage);
+			LOG_WARN(errorMessage);
 
 			// throw runtime_error(errorMessage);
 		}
@@ -100,7 +100,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 					", incrontabConfigurationPathName: {}",
 					ingestionJobKey, encodingJobKey, incrontabConfigurationPathName
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -111,7 +111,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 				directoryToBeMonitored
 			);
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"addToIncrontab: adding incontab configuration"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -126,7 +126,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 		{
 			string incrontabExecuteCommand = std::format("{} {}", _incrontabBinary, incrontabConfigurationPathName);
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"addToIncrontab: Executing incontab command"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -145,7 +145,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 					", incrontabExecuteCommand: {}",
 					ingestionJobKey, encodingJobKey, executeCommandStatus, incrontabExecuteCommand
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -159,7 +159,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 			", encodingJobKey: {}",
 			ingestionJobKey, encodingJobKey
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 	}
 }
 
@@ -167,7 +167,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 {
 	try
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Received removeFromIncrontab"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -190,7 +190,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 					", incrontabConfigurationPathName: {}",
 					ingestionJobKey, encodingJobKey, incrontabConfigurationPathName
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -203,7 +203,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 				if (configuration.size() >= directoryToBeMonitored.size() &&
 					0 == configuration.compare(0, directoryToBeMonitored.size(), directoryToBeMonitored))
 				{
-					SPDLOG_INFO(
+					LOG_INFO(
 						"removeFromIncrontab: removing incontab configuration"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -229,7 +229,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 				", incrontabConfigurationPathName: {}",
 				ingestionJobKey, encodingJobKey, incrontabConfigurationPathName
 			);
-			SPDLOG_WARN(errorMessage);
+			LOG_WARN(errorMessage);
 		}
 		else
 		{
@@ -243,7 +243,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 					", incrontabConfigurationPathName: {}",
 					ingestionJobKey, encodingJobKey, incrontabConfigurationPathName
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -256,7 +256,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 		{
 			string incrontabExecuteCommand = std::format("{} {}", _incrontabBinary, incrontabConfigurationPathName);
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"removeFromIncrontab: Executing incontab command"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -275,7 +275,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 					", incrontabExecuteCommand: {}",
 					ingestionJobKey, encodingJobKey, executeCommandStatus, incrontabExecuteCommand
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -289,6 +289,6 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 			", encodingJobKey: {}",
 			ingestionJobKey, encodingJobKey
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 	}
 }

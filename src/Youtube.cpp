@@ -21,7 +21,7 @@ using json = nlohmann::json;
 
 pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestionJobKey, string youTubeURL)
 {
-	SPDLOG_INFO(
+	LOG_INFO(
 		"retrieveStreamingYouTubeURL"
 		", youTubeURL: {}"
 		", ingestionJobKey: {}",
@@ -39,7 +39,7 @@ pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestio
 
 		try
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"retrieveStreamingYouTubeURL: Executing youtube command"
 				", ingestionJobKey: {}"
 				", youTubeExecuteCommand: {}",
@@ -61,7 +61,7 @@ pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestio
 					", youTubeExecuteCommand: {}",
 					ingestionJobKey, executeCommandStatus, youTubeExecuteCommand
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = std::format(
@@ -80,7 +80,7 @@ pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestio
 					", youTubeExecuteCommand: {}",
 					ingestionJobKey, executeCommandStatus, youTubeExecuteCommand
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = std::format(
@@ -93,7 +93,7 @@ pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestio
 
 			chrono::system_clock::time_point endYouTubeCommand = chrono::system_clock::now();
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"retrieveStreamingYouTubeURL: Executed youTube command"
 				", ingestionJobKey: {}"
 				", youTubeExecuteCommand: {}"
@@ -111,11 +111,11 @@ pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestio
 				", e.what(): {}",
 				ingestionJobKey, e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			if (fs::exists(detailsYouTubeProfilesPath))
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", detailsYouTubeProfilesPath: {}",
 					detailsYouTubeProfilesPath
@@ -133,11 +133,11 @@ pair<string, string> FFMpegWrapper::retrieveStreamingYouTubeURL(int64_t ingestio
 				", e.what(): {}",
 				ingestionJobKey, e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			if (fs::exists(detailsYouTubeProfilesPath))
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", detailsYouTubeProfilesPath: {}",
 					detailsYouTubeProfilesPath
@@ -174,7 +174,7 @@ format code  extension  resolution note
 		int bestFormatCode = -1;
 		while (getline(detailsFile, line))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"retrieveStreamingYouTubeURL, Details youTube profiles"
 				", ingestionJobKey: {}"
 				", detailsYouTubeProfilesPath: {}"
@@ -212,7 +212,7 @@ format code  extension  resolution note
 				formatCodeLabelFound = true;
 		}
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"retrieveStreamingYouTubeURL, Details youTube profiles, final info"
 			", ingestionJobKey: {}"
 			", detailsYouTubeProfilesPath: {}"
@@ -224,7 +224,7 @@ format code  extension  resolution note
 		);
 
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", detailsYouTubeProfilesPath: {}",
@@ -244,14 +244,14 @@ format code  extension  resolution note
 				", ingestionJobKey: {}",
 				ingestionJobKey
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
 	}
 	catch (runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"retrieveStreamingYouTubeURL: profile error processing or format code not found"
 			", ingestionJobKey: {}"
 			", e.what(): {}",
@@ -260,7 +260,7 @@ format code  extension  resolution note
 
 		if (fs::exists(detailsYouTubeProfilesPath))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", detailsYouTubeProfilesPath: {}",
@@ -273,7 +273,7 @@ format code  extension  resolution note
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"retrieveStreamingYouTubeURL: profile error processing or format code not found"
 			", ingestionJobKey: {}"
 			", e.what(): {}",
@@ -282,7 +282,7 @@ format code  extension  resolution note
 
 		if (fs::exists(detailsYouTubeProfilesPath))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", detailsYouTubeProfilesPath: {}",
@@ -303,7 +303,7 @@ format code  extension  resolution note
 
 		try
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"retrieveStreamingYouTubeURL: Executing youtube command"
 				", ingestionJobKey: {}"
 				", youTubeExecuteCommand: {}",
@@ -315,7 +315,7 @@ format code  extension  resolution note
 			int executeCommandStatus = ProcessUtility::execute(youTubeExecuteCommand);
 			if (executeCommandStatus != 0)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"retrieveStreamingYouTubeURL: youTube command failed"
 					", ingestionJobKey: {}"
 					", executeCommandStatus: {}"
@@ -333,7 +333,7 @@ format code  extension  resolution note
 			}
 			else if (!fs::exists(detailsYouTubeURLPath))
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"retrieveStreamingYouTubeURL: youTube command failed. no URL file created"
 					", ingestionJobKey: {}"
 					", executeCommandStatus: {}"
@@ -352,7 +352,7 @@ format code  extension  resolution note
 
 			chrono::system_clock::time_point endYouTubeCommand = chrono::system_clock::now();
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"retrieveStreamingYouTubeURL: Executed youtube command"
 				", ingestionJobKey: {}"
 				", youTubeExecuteCommand: {}"
@@ -368,7 +368,7 @@ format code  extension  resolution note
 				streamingYouTubeURL = buffer.str();
 				streamingYouTubeURL = StringUtils::trimNewLineToo(streamingYouTubeURL);
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"retrieveStreamingYouTubeURL: Executed youTube command"
 					", ingestionJobKey: {}"
 					", youTubeExecuteCommand: {}"
@@ -378,7 +378,7 @@ format code  extension  resolution note
 			}
 
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", detailsYouTubeURLPath: {}",
@@ -389,7 +389,7 @@ format code  extension  resolution note
 		}
 		catch (runtime_error &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"retrieveStreamingYouTubeURL, youTube command failed"
 				", ingestionJobKey: {}"
 				", e.what(): {}",
@@ -398,7 +398,7 @@ format code  extension  resolution note
 
 			if (fs::exists(detailsYouTubeURLPath))
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", detailsYouTubeURLPath: {}",
@@ -411,7 +411,7 @@ format code  extension  resolution note
 		}
 		catch (exception &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"retrieveStreamingYouTubeURL, youTube command failed"
 				", ingestionJobKey: {}"
 				", e.what(): {}",
@@ -420,7 +420,7 @@ format code  extension  resolution note
 
 			if (fs::exists(detailsYouTubeURLPath))
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", detailsYouTubeURLPath: {}",

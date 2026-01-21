@@ -22,7 +22,7 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 	vector<pair<string, string>> &videoLocalInputDevices, vector<pair<string, string>> &audioLocalInputDevices
 )
 {
-	SPDLOG_INFO("Received retrieveLocalInputDevices");
+	LOG_INFO("Received retrieveLocalInputDevices");
 
 	try
 	{
@@ -44,7 +44,7 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 
 			chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"retrieveLocalInputDevices: Executing ffmpeg command"
 				", ffmpegExecuteCommand: {}",
 				ffmpegExecuteCommand
@@ -59,14 +59,14 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 			// 		", ffmpegExecuteCommand: {}",
 			// 		executeCommandStatus, ffmpegExecuteCommand
 			// 	);
-			// 	SPDLOG_ERROR(errorMessage);
+			// 	LOG_ERROR(errorMessage);
 
 			// 	throw runtime_error(errorMessage);
 			// }
 
 			chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"retrieveLocalInputDevices: Executed ffmpeg command"
 				", ffmpegExecuteCommand: {}"
 				", executeCommandStatus: {}"
@@ -82,11 +82,11 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 				", e.what(): {}",
 				ffmpegExecuteCommand, e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			if (fs::exists(outputFfmpegPathFileName.c_str()))
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", outputFfmpegPathFileName: {}",
 					outputFfmpegPathFileName
@@ -101,7 +101,7 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 		{
 			if (!fs::exists(outputFfmpegPathFileName.c_str()))
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"ffmpeg: ffmpeg status not available"
 					", outputFfmpegPathFileName: {}",
 					outputFfmpegPathFileName
@@ -181,7 +181,7 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 #ifdef _WIN32
 			// Windows non permette la rimozione del file
 #else
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", outputFfmpegPathFileName: {}",
 				outputFfmpegPathFileName
@@ -196,12 +196,12 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 				", e.what(): {}",
 				e.what()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 #ifdef _WIN32
 			// Windows non permette la rimozione del file
 #else
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", outputFfmpegPathFileName: {}",
 				outputFfmpegPathFileName
@@ -219,6 +219,6 @@ void FFMpegWrapper::retrieveLocalInputDevices(
 			", exception: {}",
 			e.what()
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 	}
 }

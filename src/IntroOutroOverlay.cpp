@@ -38,7 +38,7 @@ void FFMpegWrapper::introOutroOverlay(
 
 	_currentApiName = APIName::IntroOutroOverlay;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received {}"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -76,7 +76,7 @@ void FFMpegWrapper::introOutroOverlay(
 				", introVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, introVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -89,7 +89,7 @@ void FFMpegWrapper::introOutroOverlay(
 				", mainVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mainVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -102,7 +102,7 @@ void FFMpegWrapper::introOutroOverlay(
 				", outroVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, outroVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -115,7 +115,7 @@ void FFMpegWrapper::introOutroOverlay(
 				", encodingJobKey: {}",
 				ingestionJobKey, encodingJobKey
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -241,7 +241,7 @@ void FFMpegWrapper::introOutroOverlay(
 					+ ", encodingJobKey: " + to_string(encodingJobKey)
 					+ ", e.what(): " + e.what()
 				;
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = __FILEREF__ + "encodingProfileParameter retrieving failed"
@@ -298,7 +298,7 @@ void FFMpegWrapper::introOutroOverlay(
 					", outroStartOverlayInSeconds: {}",
 					ingestionJobKey, encodingJobKey, introStartOverlayInSeconds, outroStartOverlayInSeconds
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -388,7 +388,7 @@ void FFMpegWrapper::introOutroOverlay(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"introOutroOverlay: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -429,7 +429,7 @@ void FFMpegWrapper::introOutroOverlay(
 							", ffmpegArgumentList: {}",
 							encodingJobKey, ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string("introOutroOverlay command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -439,7 +439,7 @@ void FFMpegWrapper::introOutroOverlay(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"introOutroOverlay: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -475,9 +475,9 @@ void FFMpegWrapper::introOutroOverlay(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -490,7 +490,7 @@ void FFMpegWrapper::introOutroOverlay(
 						throw;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -498,7 +498,7 @@ void FFMpegWrapper::introOutroOverlay(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"introOutroOverlay file generated"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -517,7 +517,7 @@ void FFMpegWrapper::introOutroOverlay(
 					", ffmpegArgumentList: {}",
 					encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = string("command failed, pictureInPicture encoded file size is 0") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -528,7 +528,7 @@ void FFMpegWrapper::introOutroOverlay(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg introOutroOverlay failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -539,7 +539,7 @@ void FFMpegWrapper::introOutroOverlay(
 
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -549,7 +549,7 @@ void FFMpegWrapper::introOutroOverlay(
 
 			// file in case of .3gp content OR directory in case of IPhone content
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", stagingEncodedAssetPathName: {}",
 					stagingEncodedAssetPathName
@@ -579,7 +579,7 @@ void FFMpegWrapper::introOverlay(
 
 	_currentApiName = APIName::IntroOverlay;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received {}"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -610,7 +610,7 @@ void FFMpegWrapper::introOverlay(
 				", introVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, introVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -623,7 +623,7 @@ void FFMpegWrapper::introOverlay(
 				", mainVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mainVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -636,7 +636,7 @@ void FFMpegWrapper::introOverlay(
 				", encodingJobKey: {}",
 				ingestionJobKey, encodingJobKey
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -692,7 +692,7 @@ void FFMpegWrapper::introOverlay(
 					", introStartOverlayInSeconds: {}",
 					toString(_currentApiName), encodingJobKey, ingestionJobKey, introStartOverlayInSeconds
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -858,7 +858,7 @@ void FFMpegWrapper::introOverlay(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"{}: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -899,7 +899,7 @@ void FFMpegWrapper::introOverlay(
 							", ffmpegArgumentList: {}",
 							toString(_currentApiName), encodingJobKey, ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string(toString(_currentApiName)) + " command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -909,7 +909,7 @@ void FFMpegWrapper::introOverlay(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"{}: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -945,9 +945,9 @@ void FFMpegWrapper::introOverlay(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -960,7 +960,7 @@ void FFMpegWrapper::introOverlay(
 						throw;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -968,7 +968,7 @@ void FFMpegWrapper::introOverlay(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"{} file generated"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -987,7 +987,7 @@ void FFMpegWrapper::introOverlay(
 					", ffmpegArgumentList: {}",
 					toString(_currentApiName), encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = string("command failed, ") + toString(_currentApiName) + " encoded file size is 0" +
@@ -998,7 +998,7 @@ void FFMpegWrapper::introOverlay(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg {} failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -1009,7 +1009,7 @@ void FFMpegWrapper::introOverlay(
 
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -1019,7 +1019,7 @@ void FFMpegWrapper::introOverlay(
 
 			// file in case of .3gp content OR directory in case of IPhone content
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", stagingEncodedAssetPathName: {}",
 					stagingEncodedAssetPathName
@@ -1049,7 +1049,7 @@ void FFMpegWrapper::outroOverlay(
 
 	_currentApiName = APIName::OutroOverlay;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received {}"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -1080,7 +1080,7 @@ void FFMpegWrapper::outroOverlay(
 				", mainVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mainVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -1093,7 +1093,7 @@ void FFMpegWrapper::outroOverlay(
 				", outroVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, outroVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -1106,7 +1106,7 @@ void FFMpegWrapper::outroOverlay(
 				", encodingJobKey: {}",
 				ingestionJobKey, encodingJobKey
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -1161,7 +1161,7 @@ void FFMpegWrapper::outroOverlay(
 					", outroStartOverlayInSeconds: {}",
 					toString(_currentApiName), encodingJobKey, ingestionJobKey, outroStartOverlayInSeconds
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -1313,7 +1313,7 @@ void FFMpegWrapper::outroOverlay(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"{}: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -1354,7 +1354,7 @@ void FFMpegWrapper::outroOverlay(
 							", ffmpegArgumentList: {}",
 							toString(_currentApiName), encodingJobKey, ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						// to hide the ffmpeg staff
 						errorMessage = string(toString(_currentApiName)) + " command failed" + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -1364,7 +1364,7 @@ void FFMpegWrapper::outroOverlay(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"{}: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -1400,9 +1400,9 @@ void FFMpegWrapper::outroOverlay(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", _outputFfmpegPathFileName: {}",
 						_outputFfmpegPathFileName
@@ -1415,7 +1415,7 @@ void FFMpegWrapper::outroOverlay(
 						throw;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", _outputFfmpegPathFileName: {}",
 					_outputFfmpegPathFileName
@@ -1423,7 +1423,7 @@ void FFMpegWrapper::outroOverlay(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"{} file generated"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -1442,7 +1442,7 @@ void FFMpegWrapper::outroOverlay(
 					", ffmpegArgumentList: {}",
 					toString(_currentApiName), encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				// to hide the ffmpeg staff
 				errorMessage = string("command failed, ") + toString(_currentApiName) + " encoded file size is 0" +
@@ -1453,7 +1453,7 @@ void FFMpegWrapper::outroOverlay(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg {} failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -1464,7 +1464,7 @@ void FFMpegWrapper::outroOverlay(
 
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -1474,7 +1474,7 @@ void FFMpegWrapper::outroOverlay(
 
 			// file in case of .3gp content OR directory in case of IPhone content
 			{
-				SPDLOG_INFO(
+				LOG_INFO(
 					"Remove"
 					", stagingEncodedAssetPathName: {}",
 					stagingEncodedAssetPathName

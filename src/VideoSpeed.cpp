@@ -47,7 +47,7 @@ void FFMpegWrapper::videoSpeed(
 				", mmsSourceVideoAssetPathName: {}",
 				ingestionJobKey, encodingJobKey, mmsSourceVideoAssetPathName
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
 		}
@@ -116,7 +116,7 @@ void FFMpegWrapper::videoSpeed(
 						+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 				}
@@ -130,13 +130,13 @@ void FFMpegWrapper::videoSpeed(
 						+ ", encodingJobKey: " + to_string(encodingJobKey)
 						+ ", twoPasses: " + to_string(twoPasses)
 					;
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw runtime_error(errorMessage);
 					*/
 					twoPasses = false;
 
-					SPDLOG_WARN(
+					LOG_WARN(
 						"in case of videoSpeed it is not possible to have a two passes encoding. Change it to false"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -182,7 +182,7 @@ void FFMpegWrapper::videoSpeed(
 			}
 			catch (runtime_error &e)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"ffmpeg: encodingProfileParameter retrieving failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -390,7 +390,7 @@ void FFMpegWrapper::videoSpeed(
 					// if (!ffmpegArgumentList.empty())
 					// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"videoSpeed: Executing ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -423,7 +423,7 @@ void FFMpegWrapper::videoSpeed(
 					processId.reset();
 					if (iReturnedStatus != 0)
 					{
-						SPDLOG_ERROR(
+						LOG_ERROR(
 							"videoSpeed: ffmpeg command failed"
 							", encodingJobKey: {}"
 							", ingestionJobKey: {}"
@@ -444,7 +444,7 @@ void FFMpegWrapper::videoSpeed(
 
 					chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"videoSpeed: Executed ffmpeg command"
 						", encodingJobKey: {}"
 						", ingestionJobKey: {}"
@@ -480,9 +480,9 @@ void FFMpegWrapper::videoSpeed(
 							", e.what(): {}",
 							_outputFfmpegPathFileName, encodingJobKey, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 						);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
-					SPDLOG_INFO(
+					LOG_INFO(
 						"remove"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
@@ -497,7 +497,7 @@ void FFMpegWrapper::videoSpeed(
 						throw e;
 				}
 
-				SPDLOG_INFO(
+				LOG_INFO(
 					"remove"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -507,7 +507,7 @@ void FFMpegWrapper::videoSpeed(
 				fs::remove_all(_outputFfmpegPathFileName);
 			}
 
-			SPDLOG_INFO(
+			LOG_INFO(
 				"VideoSpeed file generated"
 				", encodingJobKey: {}"
 				", ingestionJobKey: {}"
@@ -519,7 +519,7 @@ void FFMpegWrapper::videoSpeed(
 
 			if (ulFileSize == 0)
 			{
-				SPDLOG_ERROR(
+				LOG_ERROR(
 					"ffmpeg: ffmpeg command failed, encoded file size is 0"
 					", encodingJobKey: {}"
 					", ingestionJobKey: {}"
@@ -540,7 +540,7 @@ void FFMpegWrapper::videoSpeed(
 	}
 	catch (exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"ffmpeg: ffmpeg VideoSpeed failed"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -553,7 +553,7 @@ void FFMpegWrapper::videoSpeed(
 		if (fs::exists(stagingEncodedAssetPathName))
 		{
 			// file in case of .3gp content OR directory in case of IPhone content
-			SPDLOG_INFO(
+			LOG_INFO(
 				"remove"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"

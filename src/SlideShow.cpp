@@ -60,7 +60,7 @@ void FFMpegWrapper::slideShow(
 		*/
 	);
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Received {}"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -94,7 +94,7 @@ void FFMpegWrapper::slideShow(
 					", sourcePhysicalPath: {}",
 					ingestionJobKey, sourcePhysicalPath
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -131,7 +131,7 @@ void FFMpegWrapper::slideShow(
 
 			// https://trac.ffmpeg.org/wiki/Slideshow
 			slideshowListFile << "file '" << sourcePhysicalPath << "'" << endl;
-			SPDLOG_INFO(
+			LOG_INFO(
 				"slideShow"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -139,7 +139,7 @@ void FFMpegWrapper::slideShow(
 				ingestionJobKey, encodingJobKey, sourcePhysicalPath
 			);
 			slideshowListFile << "duration " << slideDurationInSeconds << endl;
-			SPDLOG_INFO(
+			LOG_INFO(
 				"slideShow"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -150,7 +150,7 @@ void FFMpegWrapper::slideShow(
 			lastSourcePhysicalPath = sourcePhysicalPath;
 		}
 		slideshowListFile << "file '" << lastSourcePhysicalPath << "'" << endl;
-		SPDLOG_INFO(
+		LOG_INFO(
 			"slideShow"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
@@ -177,7 +177,7 @@ void FFMpegWrapper::slideShow(
 					", sourcePhysicalPath: {}",
 					ingestionJobKey, sourcePhysicalPath
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -254,7 +254,7 @@ void FFMpegWrapper::slideShow(
 					+ ", ingestionJobKey: " + to_string(ingestionJobKey)
 					+ ", encodingJobKey: " + to_string(encodingJobKey)
 				;
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 			}
@@ -268,13 +268,13 @@ void FFMpegWrapper::slideShow(
 					+ ", encodingJobKey: " + to_string(encodingJobKey)
 					+ ", twoPasses: " + to_string(twoPasses)
 				;
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw runtime_error(errorMessage);
 				*/
 				twoPasses = false;
 
-				SPDLOG_WARN(
+				LOG_WARN(
 					"in case of introOutroOverlay it is not possible to have a two passes encoding. Change it to false"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -320,7 +320,7 @@ void FFMpegWrapper::slideShow(
 		}
 		catch (exception &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"ffmpeg: encodingProfileParameter retrieving failed"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
@@ -426,7 +426,7 @@ void FFMpegWrapper::slideShow(
 		// if (!ffmpegArgumentList.empty())
 		// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"slideShow: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}",
@@ -449,7 +449,7 @@ void FFMpegWrapper::slideShow(
 		processId.reset();
 		if (iReturnedStatus != 0)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"slideShow: ffmpeg command failed"
 				", ingestionJobKey: {}"
 				", iReturnedStatus: {}"
@@ -464,7 +464,7 @@ void FFMpegWrapper::slideShow(
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"slideShow: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}"
@@ -498,9 +498,9 @@ void FFMpegWrapper::slideShow(
 				", e.what(): {}",
 				_outputFfmpegPathFileName, ingestionJobKey, encodingJobKey, ffMpegEngine.toSingleLine(), e.what()
 			);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", _outputFfmpegPathFileName: {}",
 			_outputFfmpegPathFileName
@@ -509,7 +509,7 @@ void FFMpegWrapper::slideShow(
 
 		if (fs::exists(slideshowListImagesPathName.c_str()))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", slideshowListImagesPathName: {}",
 				slideshowListImagesPathName
@@ -518,7 +518,7 @@ void FFMpegWrapper::slideShow(
 		}
 		if (fs::exists(slideshowListAudiosPathName.c_str()))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", slideshowListAudiosPathName: {}",
 				slideshowListAudiosPathName
@@ -532,7 +532,7 @@ void FFMpegWrapper::slideShow(
 			throw e;
 	}
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Remove"
 		", _outputFfmpegPathFileName: {}",
 		_outputFfmpegPathFileName
@@ -541,7 +541,7 @@ void FFMpegWrapper::slideShow(
 
 	if (fs::exists(slideshowListImagesPathName.c_str()))
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", slideshowListImagesPathName: {}",
 			slideshowListImagesPathName
@@ -550,7 +550,7 @@ void FFMpegWrapper::slideShow(
 	}
 	if (fs::exists(slideshowListAudiosPathName.c_str()))
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", slideshowListAudiosPathName: {}",
 			slideshowListAudiosPathName

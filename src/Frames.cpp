@@ -32,7 +32,7 @@ void FFMpegWrapper::generateFrameToIngest(
 		videoDurationInMilliSeconds, mmsAssetPathName
 	);
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"generateFrameToIngest"
 		", ingestionJobKey: {}"
 		", mmsAssetPathName: {}"
@@ -52,7 +52,7 @@ void FFMpegWrapper::generateFrameToIngest(
 			", mmsAssetPathName: {}",
 			ingestionJobKey, mmsAssetPathName
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
@@ -108,7 +108,7 @@ void FFMpegWrapper::generateFrameToIngest(
 		// if (!ffmpegArgumentList.empty())
 		// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"generateFramesToIngest: Executing ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}",
@@ -147,7 +147,7 @@ void FFMpegWrapper::generateFrameToIngest(
 				", ffmpegArgumentList: {}",
 				ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
 			errorMessage = string("generateFrameToIngest: command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey);
@@ -156,7 +156,7 @@ void FFMpegWrapper::generateFrameToIngest(
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"generateFrameToIngest: Executed ffmpeg command"
 			", ingestionJobKey: {}"
 			", ffmpegArgumentList: {}"
@@ -188,9 +188,9 @@ void FFMpegWrapper::generateFrameToIngest(
 				", e.what(): {}",
 				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 			);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", _outputFfmpegPathFileName: {}",
 			_outputFfmpegPathFileName
@@ -203,7 +203,7 @@ void FFMpegWrapper::generateFrameToIngest(
 			throw e;
 	}
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Remove"
 		", _outputFfmpegPathFileName: {}",
 		_outputFfmpegPathFileName
@@ -224,7 +224,7 @@ void FFMpegWrapper::generateFramesToIngest(
 		// stagingEncodedAssetPathName
 	);
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"generateFramesToIngest"
 		", ingestionJobKey: {}"
 		", encodingJobKey: {}"
@@ -252,14 +252,14 @@ void FFMpegWrapper::generateFramesToIngest(
 			", mmsAssetPathName: {}",
 			ingestionJobKey, encodingJobKey, mmsAssetPathName
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
 	}
 
 	if (fs::exists(imagesDirectory))
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", imagesDirectory: {}",
 			imagesDirectory
@@ -267,7 +267,7 @@ void FFMpegWrapper::generateFramesToIngest(
 		fs::remove_all(imagesDirectory);
 	}
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Create directory"
 			", imagesDirectory: {}",
 			imagesDirectory
@@ -414,7 +414,7 @@ void FFMpegWrapper::generateFramesToIngest(
 		// if (!ffmpegArgumentList.empty())
 		// 	copy(ffmpegArgumentList.begin(), ffmpegArgumentList.end(), ostream_iterator<string>(ffmpegArgumentListStream, " "));
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"generateFramesToIngest: Executing ffmpeg command"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -447,7 +447,7 @@ void FFMpegWrapper::generateFramesToIngest(
 				", ffmpegArgumentList: {}",
 				encodingJobKey, ingestionJobKey, iReturnedStatus, ffMpegEngine.toSingleLine()
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
 			errorMessage = string("generateFramesToIngest: command failed") + ", encodingJobKey: " + to_string(encodingJobKey) +
@@ -457,7 +457,7 @@ void FFMpegWrapper::generateFramesToIngest(
 
 		chrono::system_clock::time_point endFfmpegCommand = chrono::system_clock::now();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"generateFramesToIngest: Executed ffmpeg command"
 			", encodingJobKey: {}"
 			", ingestionJobKey: {}"
@@ -491,11 +491,11 @@ void FFMpegWrapper::generateFramesToIngest(
 				", e.what(): {}",
 				_outputFfmpegPathFileName, ingestionJobKey, ffMpegEngine.toSingleLine(), e.what()
 			);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		if (fs::exists(imagesDirectory))
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"Remove"
 				", imagesDirectory: {}",
 				imagesDirectory
@@ -503,7 +503,7 @@ void FFMpegWrapper::generateFramesToIngest(
 			fs::remove_all(imagesDirectory);
 		}
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", _outputFfmpegPathFileName: {}",
 			_outputFfmpegPathFileName
@@ -516,7 +516,7 @@ void FFMpegWrapper::generateFramesToIngest(
 			throw e;
 	}
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"Remove"
 		", _outputFfmpegPathFileName: {}",
 		_outputFfmpegPathFileName

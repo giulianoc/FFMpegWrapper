@@ -94,7 +94,7 @@ FFMpegEncodingParameters::FFMpegEncodingParameters(
 	}
 	catch (std::runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: init failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -106,7 +106,7 @@ FFMpegEncodingParameters::FFMpegEncodingParameters(
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: init failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -310,7 +310,7 @@ void FFMpegEncodingParameters::applyEncoding(
 							std::string segmentDirectory =
 								std::regex_replace(segmentTemplateDirectory, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
 
-							SPDLOG_INFO(
+							LOG_INFO(
 								"Creating directory"
 								", segmentDirectory: {}",
 								segmentDirectory
@@ -426,7 +426,7 @@ void FFMpegEncodingParameters::applyEncoding(
 					{
 						std::string segmentDirectory = std::regex_replace(segmentTemplateDirectory, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
 
-						SPDLOG_INFO(
+						LOG_INFO(
 							"Creating directory"
 							", segmentDirectory: {}",
 							segmentDirectory
@@ -916,7 +916,7 @@ void FFMpegEncodingParameters::applyEncoding(
 	}
 	catch (std::runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: applyEncoding failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -928,7 +928,7 @@ void FFMpegEncodingParameters::applyEncoding(
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: applyEncoding failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -1155,7 +1155,7 @@ void FFMpegEncodingParameters::applyEncoding(
 							std::string segmentDirectory =
 								std::regex_replace(segmentTemplateDirectory, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
 
-							SPDLOG_INFO(
+							LOG_INFO(
 								"Creating directory"
 								", segmentDirectory: {}",
 								segmentDirectory
@@ -1299,7 +1299,7 @@ void FFMpegEncodingParameters::applyEncoding(
 					{
 						std::string segmentDirectory = std::regex_replace(segmentTemplateDirectory, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
 
-						SPDLOG_INFO(
+						LOG_INFO(
 							"Creating directory"
 							", segmentDirectory: {}",
 							segmentDirectory
@@ -1917,7 +1917,7 @@ void FFMpegEncodingParameters::applyEncoding(
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: applyEncoding failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -1981,7 +1981,7 @@ void FFMpegEncodingParameters::createManifestFile()
 
 		std::string masterManifestPathFileName = std::format("{}/{}", _encodedStagingAssetPathName, manifestFileName);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Writing Master Manifest File"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -1994,7 +1994,7 @@ void FFMpegEncodingParameters::createManifestFile()
 	}
 	catch (std::runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2006,7 +2006,7 @@ void FFMpegEncodingParameters::createManifestFile()
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2077,7 +2077,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 
 		ffmpegAudioBitRateParameter = _audioBitRatesInfo[0];
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Special encoding in order to allow audio/language selection by the player"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}",
@@ -2345,7 +2345,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 	}
 	catch (std::runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: applyEncoding_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2357,7 +2357,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: applyEncoding_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2428,7 +2428,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 
 		ffmpegAudioBitRateParameter = _audioBitRatesInfo[0];
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Special encoding in order to allow audio/language selection by the player"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}",
@@ -2786,7 +2786,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: applyEncoding_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2851,7 +2851,7 @@ void FFMpegEncodingParameters::createManifestFile_audioGroup()
 	}
 	catch (std::runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2863,7 +2863,7 @@ void FFMpegEncodingParameters::createManifestFile_audioGroup()
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2896,7 +2896,7 @@ std::string FFMpegEncodingParameters::getManifestFileName()
 	}
 	catch (std::runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2908,7 +2908,7 @@ std::string FFMpegEncodingParameters::getManifestFileName()
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
@@ -2941,7 +2941,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 	{
 		std::string sEncodingProfileDetailsRoot = JSONUtils::toString(encodingProfileDetailsRoot);
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"settingFfmpegParameters"
 			", sEncodingProfileDetailsRoot: {}",
 			sEncodingProfileDetailsRoot
@@ -2960,7 +2960,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				", Field: {}",
 				field
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw std::runtime_error(errorMessage);
 		}
@@ -3063,7 +3063,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						", Field: {}",
 						field
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw std::runtime_error(errorMessage);
 				}
@@ -3106,7 +3106,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						/*
 						std::string errorMessage = __FILEREF__ + "FFMpeg: codec is wrong"
 							+ ", codec: " + codec;
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						throw std::runtime_error(errorMessage);
 						*/
@@ -3135,7 +3135,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						", Field: {}",
 						field
 					);
-					SPDLOG_ERROR(errorMessage);
+					LOG_ERROR(errorMessage);
 
 					throw std::runtime_error(errorMessage);
 				}
@@ -3204,7 +3204,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					", Field: {}",
 					field
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw std::runtime_error(errorMessage);
 			}
@@ -3229,7 +3229,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 								", Field: {}",
 								field
 							);
-							SPDLOG_ERROR(errorMessage);
+							LOG_ERROR(errorMessage);
 
 							throw std::runtime_error(errorMessage);
 						}
@@ -3245,7 +3245,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 								", Field: {}",
 								field
 							);
-							SPDLOG_ERROR(errorMessage);
+							LOG_ERROR(errorMessage);
 
 							throw std::runtime_error(errorMessage);
 						}
@@ -3290,7 +3290,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 								", Field: {}",
 								field
 							);
-							SPDLOG_ERROR(errorMessage);
+							LOG_ERROR(errorMessage);
 
 							throw std::runtime_error(errorMessage);
 						}
@@ -3350,7 +3350,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				", Field: {}",
 				field
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw std::runtime_error(errorMessage);
 		}
@@ -3367,7 +3367,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					", Field: {}",
 					field
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw std::runtime_error(errorMessage);
 			}
@@ -3434,7 +3434,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				", Field: {}",
 				field
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw std::runtime_error(errorMessage);
 		}
@@ -3456,7 +3456,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							", Field: {}",
 							field
 						);
-						SPDLOG_ERROR(errorMessage);
+						LOG_ERROR(errorMessage);
 
 						throw std::runtime_error(errorMessage);
 					}
@@ -3504,7 +3504,7 @@ void FFMpegEncodingParameters::encodingFileFormatValidation(std::string fileForm
 			", fileFormatLowerCase: {}",
 			fileFormatLowerCase
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -3519,7 +3519,7 @@ void FFMpegEncodingParameters::encodingAudioCodecValidation(std::string codec)
 			", codec: {}",
 			codec
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -3538,7 +3538,7 @@ void FFMpegEncodingParameters::encodingVideoProfileValidation(std::string codec,
 				", profile: {}",
 				codec, profile
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw std::runtime_error(errorMessage);
 		}
@@ -3553,7 +3553,7 @@ void FFMpegEncodingParameters::encodingVideoProfileValidation(std::string codec,
 				", profile: {}",
 				codec, profile
 			);
-			SPDLOG_ERROR(errorMessage);
+			LOG_ERROR(errorMessage);
 
 			throw std::runtime_error(errorMessage);
 		}
@@ -3570,7 +3570,7 @@ void FFMpegEncodingParameters::encodingVideoProfileValidation(std::string codec,
 					", profile: {}",
 					codec, profile
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw std::runtime_error(errorMessage);
 			}
@@ -3583,7 +3583,7 @@ void FFMpegEncodingParameters::encodingVideoProfileValidation(std::string codec,
 			", codec: {}",
 			codec
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -3605,7 +3605,7 @@ void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles()
 				if (entry.path().filename().string().size() >= prefixPasslogFileName.size() &&
 					entry.path().filename().string().compare(0, prefixPasslogFileName.size(), prefixPasslogFileName) == 0)
 				{
-					SPDLOG_INFO(
+					LOG_INFO(
 						"Remove"
 						", pathFileName: {}",
 						entry.path().string()
@@ -3620,7 +3620,7 @@ void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles()
 					", e.what(): {}",
 					e.what()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw e;
 			}
@@ -3631,7 +3631,7 @@ void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles()
 					", e.what(): {}",
 					e.what()
 				);
-				SPDLOG_ERROR(errorMessage);
+				LOG_ERROR(errorMessage);
 
 				throw e;
 			}
@@ -3639,7 +3639,7 @@ void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles()
 	}
 	catch (std::runtime_error &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"removeTwoPassesTemporaryFiles failed"
 			", e.what(): {}",
 			e.what()
@@ -3647,7 +3647,7 @@ void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles()
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"removeTwoPassesTemporaryFiles failed"
 			", e.what(): {}",
 			e.what()
@@ -3666,7 +3666,7 @@ std::string FFMpegEncodingParameters::getMultiTrackEncodedStagingTemplateAssetPa
 			", _encodedStagingAssetPathName: {}",
 			_encodedStagingAssetPathName
 		);
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 
 		throw std::runtime_error(errorMessage);
 	}
@@ -3715,7 +3715,7 @@ void FFMpegEncodingParameters::removeMultiTrackPathNames()
 
 	for (std::string sourcePathName : sourcesPathName)
 	{
-		SPDLOG_INFO(
+		LOG_INFO(
 			"Remove"
 			", sourcePathName: {}",
 			sourcePathName
