@@ -387,94 +387,180 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 				* 5447324 is the countdown duration expressed in seconds
 				*/
 				std::string ffmpegTextPosition_X_InPixel;
-				if (textPosition_X_InPixel == "left")
-					ffmpegTextPosition_X_InPixel = "20";
-				else if (textPosition_X_InPixel == "center")
-					ffmpegTextPosition_X_InPixel = "(w - text_w)/2";
-				else if (textPosition_X_InPixel == "right")
-					ffmpegTextPosition_X_InPixel = "w - (text_w + 20)";
-
-				// t (timestamp): 0, 1, 2, ...
-				else if (textPosition_X_InPixel == "leftToRight_5")
-					ffmpegTextPosition_X_InPixel = "(5 * t) - text_w";
-				else if (textPosition_X_InPixel == "leftToRight_10")
-					ffmpegTextPosition_X_InPixel = "(10 * t) - text_w";
-				else if (textPosition_X_InPixel == "loopLeftToRight_5")
-					ffmpegTextPosition_X_InPixel = "mod(5 * t\\, w + text_w) - text_w";
-				else if (textPosition_X_InPixel == "loopLeftToRight_10")
-					ffmpegTextPosition_X_InPixel = "mod(10 * t\\, w + text_w) - text_w";
-
-				// 15 and 30 sono stati decisi usando un video 1920x1080
-				else if (textPosition_X_InPixel == "rightToLeft_15")
-					ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 15) * t)";
-				else if (textPosition_X_InPixel == "rightToLeft_30")
-					ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 30) * t)";
-
-				// 2026-01-21: rivisti i calcoli per loopRightToLeft
-				else if (textPosition_X_InPixel == "loopRightToLeft_15")
-					ffmpegTextPosition_X_InPixel = "w-mod(t*15\\,w+text_w)";
-				else if (textPosition_X_InPixel == "loopRightToLeft_slow" || textPosition_X_InPixel == "loopRightToLeft_30")
-					ffmpegTextPosition_X_InPixel = "w-mod(t*30\\,w+text_w)";
-				else if (textPosition_X_InPixel == "loopRightToLeft_60")
-					ffmpegTextPosition_X_InPixel = "w-mod(t*60\\,w+text_w)";
-				else if (textPosition_X_InPixel == "loopRightToLeft_90")
-					ffmpegTextPosition_X_InPixel = "w-mod(t*90\\,w+text_w)";
-				else if (textPosition_X_InPixel == "loopRightToLeft_120")
-					ffmpegTextPosition_X_InPixel = "w-mod(t*120\\,w+text_w)";
-				else if (textPosition_X_InPixel == "loopRightToLeft_150")
-					ffmpegTextPosition_X_InPixel = "w-mod(t*150\\,w+text_w)";
-				else if (textPosition_X_InPixel == "loopRightToLeft_180")
-					ffmpegTextPosition_X_InPixel = "w-mod(t*180\\,w+text_w)";
-				else if (textPosition_X_InPixel == "loopRightToLeft_210")
-					ffmpegTextPosition_X_InPixel = "w-mod(t*210\\,w+text_w)";
-				else
+				switch (hash_case(textPosition_X_InPixel))
 				{
-					// ffmpegTextPosition_X_InPixel = regex_replace(textPosition_X_InPixel, regex("video_width"), "w");
-					ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(textPosition_X_InPixel, "video_width", "w");
-					// ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("text_width"), "text_w"); // text_w or tw
-					ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "text_width", "text_w"); // text_w or tw
-					// ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("line_width"), "line_w");
-					ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "line_width", "line_w");
-					// ffmpegTextPosition_X_InPixel = regex_replace(ffmpegTextPosition_X_InPixel, regex("timestampInSeconds"), "t");
-					ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "timestampInSeconds", "t");
+					case "left"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "20";
+						break;
+					}
+					case "center"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "(w - text_w)/2";
+						break;
+					}
+					case "right"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w - (text_w + 20)";
+						break;
+					}
+
+					// t (timestamp): 0, 1, 2, ...
+					case "leftToRight_5"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "(5 * t) - text_w";
+						break;
+					}
+					case "leftToRight_10"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "(10 * t) - text_w";
+						break;
+					}
+					case "loopLeftToRight_5"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "mod(5 * t\\, w + text_w) - text_w";
+						break;
+					}
+					case "loopLeftToRight_10"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "mod(10 * t\\, w + text_w) - text_w";
+						break;
+					}
+
+					// 15 and 30 sono stati decisi usando un video 1920x1080
+					case "rightToLeft_15"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 15) * t)";
+						break;
+					}
+					case "rightToLeft_30"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w - (((w + text_w) / 30) * t)";
+						break;
+					}
+
+					// 2026-01-21: rivisti i calcoli per loopRightToLeft
+					case "loopRightToLeft_15"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w-mod(t*15\\,w+text_w)";
+						break;
+					}
+					case "loopRightToLeft_30"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w-mod(t*30\\,w+text_w)";
+						break;
+					}
+					case "loopRightToLeft_60"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w-mod(t*60\\,w+text_w)";
+						break;
+					}
+					case "loopRightToLeft_90"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w-mod(t*90\\,w+text_w)";
+						break;
+					}
+					case "loopRightToLeft_120"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w-mod(t*120\\,w+text_w)";
+						break;
+					}
+					case "loopRightToLeft_150"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w-mod(t*150\\,w+text_w)";
+						break;
+					}
+					case "loopRightToLeft_180"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w-mod(t*180\\,w+text_w)";
+						break;
+					}
+					case "loopRightToLeft_210"_case:
+					{
+						ffmpegTextPosition_X_InPixel = "w-mod(t*210\\,w+text_w)";
+						break;
+					}
+					default:
+					{
+						ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(textPosition_X_InPixel, ",", std::format("{},", escape));
+
+						ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "video_width", "w");
+						ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "text_width", "text_w"); // text_w or tw
+						ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "line_width", "line_w");
+						ffmpegTextPosition_X_InPixel = StringUtils::replaceAll(ffmpegTextPosition_X_InPixel, "timestampInSeconds", "t");
+					}
 				}
 
 				std::string ffmpegTextPosition_Y_InPixel;
-				if (textPosition_Y_InPixel == "below")
-					ffmpegTextPosition_Y_InPixel = "h - (text_h + 20)";
-				else if (textPosition_Y_InPixel == "center")
-					ffmpegTextPosition_Y_InPixel = "(h - text_h)/2";
-				else if (textPosition_Y_InPixel == "high")
-					ffmpegTextPosition_Y_InPixel = "20";
-
-				// t (timestamp): 0, 1, 2, ...
-				else if (textPosition_Y_InPixel == "bottomToTop_50")
-					ffmpegTextPosition_Y_InPixel = "h - (t * 50)";
-				else if (textPosition_Y_InPixel == "bottomToTop_100")
-					ffmpegTextPosition_Y_InPixel = "h - (t * 100)";
-				else if (textPosition_Y_InPixel == "loopBottomToTop_50")
-					ffmpegTextPosition_Y_InPixel = "h - mod(t * 50\\, h)";
-				else if (textPosition_Y_InPixel == "loopBottomToTop_100")
-					ffmpegTextPosition_Y_InPixel = "h - mod(t * 100\\, h)";
-
-				else if (textPosition_Y_InPixel == "topToBottom_50")
-					ffmpegTextPosition_Y_InPixel = "t * 50";
-				else if (textPosition_Y_InPixel == "topToBottom_100")
-					ffmpegTextPosition_Y_InPixel = "t * 100";
-				else if (textPosition_Y_InPixel == "loopTopToBottom_50")
-					ffmpegTextPosition_Y_InPixel = "mod(t * 50\\, h)";
-				else if (textPosition_Y_InPixel == "loopTopToBottom_100")
-					ffmpegTextPosition_Y_InPixel = "mod(t * 100\\, h)";
-				else
+				switch (hash_case(textPosition_X_InPixel))
 				{
-					// ffmpegTextPosition_Y_InPixel = regex_replace(textPosition_Y_InPixel, regex("video_height"), "h");
-					ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(textPosition_Y_InPixel, "video_height", "h");
-					// ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("text_height"), "text_h");
-					ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "text_height", "text_h");
-					// ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("line_height"), "line_h");
-					ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "line_height", "line_h");
-					// ffmpegTextPosition_Y_InPixel = regex_replace(ffmpegTextPosition_Y_InPixel, regex("timestampInSeconds"), "t");
-					ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "timestampInSeconds", "t");
+					case "below"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "h - (text_h + 20)";
+						break;
+					}
+					case "center"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "(h - text_h)/2";
+						break;
+					}
+					case "high"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "20";
+						break;
+					}
+
+					// t (timestamp): 0, 1, 2, ...
+					case "bottomToTop_50"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "h - (t * 50)";
+						break;
+					}
+					case "bottomToTop_100"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "h - (t * 100)";
+						break;
+					}
+					case "loopBottomToTop_50"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "h - mod(t * 50\\, h)";
+						break;
+					}
+					case "loopBottomToTop_100"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "h - mod(t * 100\\, h)";
+						break;
+					}
+
+					case "topToBottom_50"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "t * 50";
+						break;
+					}
+					case "topToBottom_100"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "t * 100";
+						break;
+					}
+					case "loopTopToBottom_50"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "mod(t * 50\\, h)";
+						break;
+					}
+					case "loopTopToBottom_100"_case:
+					{
+						ffmpegTextPosition_Y_InPixel = "mod(t * 100\\, h)";
+						break;
+					}
+					default:
+					{
+						ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(textPosition_Y_InPixel, ",", std::format("{},", escape));
+
+						ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "video_height", "h");
+						ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "text_height", "text_h");
+						ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "line_height", "line_h");
+						ffmpegTextPosition_Y_InPixel = StringUtils::replaceAll(ffmpegTextPosition_Y_InPixel, "timestampInSeconds", "t");
+					}
 				}
 
 				{

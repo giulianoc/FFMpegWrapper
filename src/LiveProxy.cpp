@@ -1234,8 +1234,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				if (maxStreamingDurationInMinutes == -1)
 					inputDurationInSeconds = utcProxyPeriodEnd - utcNow;
 				else
-					inputDurationInSeconds = utcProxyPeriodEnd - utcNow > maxStreamingDurationInMinutes * 60 ? maxStreamingDurationInMinutes * 60
-																												 : utcProxyPeriodEnd - utcNow;
+					inputDurationInSeconds = utcProxyPeriodEnd - utcNow > maxStreamingDurationInMinutes * 60 ?
+						maxStreamingDurationInMinutes * 60 : utcProxyPeriodEnd - utcNow;
 
 				LOG_INFO(
 					"LiveProxy timing. Streaming duration"
