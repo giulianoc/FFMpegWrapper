@@ -2555,30 +2555,31 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		bool isVideo = encodingProfileContentType == "Video" ? true : false;
 
 		string httpStreamingFileFormat;
-		string ffmpegHttpStreamingParameter = "";
+		string ffmpegHttpStreamingParameter;
 
-		string ffmpegFileFormatParameter = "";
+		string ffmpegFileFormatParameter;
 
-		string ffmpegVideoCodecParameter = "";
-		string ffmpegVideoCodec = "";
-		string ffmpegVideoProfileParameter = "";
-		string ffmpegVideoResolutionParameter = "";
+		string ffmpegVideoCodecParameter;
+		string ffmpegVideoCodec;
+		string ffmpegVideoProfileParameter;
+		string ffmpegVideoResolutionParameter;
 		int videoBitRateInKbps = -1;
-		string ffmpegVideoBitRateParameter = "";
-		string ffmpegVideoOtherParameters = "";
-		string ffmpegVideoMaxRateParameter = "";
-		string ffmpegVideoBufSizeParameter = "";
-		string ffmpegVideoFrameRateParameter = "";
-		string ffmpegVideoKeyFramesRateParameter = "";
+		string ffmpegVideoBitRateParameter;
+		string ffmpegVideoOtherParameters;
+		string ffmpegVideoMaxRateParameter;
+		optional<string> ffmpegVideoMinRateParameter;
+		string ffmpegVideoBufSizeParameter;
+		string ffmpegVideoFrameRateParameter;
+		string ffmpegVideoKeyFramesRateParameter;
 		bool twoPasses;
-		vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
+		vector<tuple<string, int, int, int, string, string, optional<string>, string>> videoBitRatesInfo;
 
-		string ffmpegAudioCodecParameter = "";
-		string ffmpegAudioCodec = "";
-		string ffmpegAudioBitRateParameter = "";
-		string ffmpegAudioOtherParameters = "";
-		string ffmpegAudioChannelsParameter = "";
-		string ffmpegAudioSampleRateParameter = "";
+		string ffmpegAudioCodecParameter;
+		string ffmpegAudioCodec;
+		string ffmpegAudioBitRateParameter;
+		string ffmpegAudioOtherParameters;
+		string ffmpegAudioChannelsParameter;
+		string ffmpegAudioSampleRateParameter;
 		vector<string> audioBitRatesInfo;
 
 		if (encodingProfileDetailsRoot != nullptr)
@@ -2599,9 +2600,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
-				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];
-				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter,
-					ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+				tuple<string, int, int, int, string, string, optional<string>, string> videoBitRateInfo = videoBitRatesInfo[0];
+				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter,
+					ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 				ffmpegAudioBitRateParameter = audioBitRatesInfo[0];
 
@@ -2707,6 +2708,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegOutputArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegOutputArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegOutputArgumentList);
+				if (ffmpegVideoMinRateParameter)
+					FFMpegEncodingParameters::addToArguments(*ffmpegVideoMinRateParameter, ffmpegOutputArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegOutputArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegOutputArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegOutputArgumentList);
@@ -3256,11 +3259,12 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		string ffmpegVideoBitRateParameter;
 		string ffmpegVideoOtherParameters;
 		string ffmpegVideoMaxRateParameter;
+		optional<string> ffmpegVideoMinRateParameter;
 		string ffmpegVideoBufSizeParameter;
 		string ffmpegVideoFrameRateParameter;
 		string ffmpegVideoKeyFramesRateParameter;
 		bool twoPasses;
-		vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
+		vector<tuple<string, int, int, int, string, string, optional<string>, string>> videoBitRatesInfo;
 
 		string ffmpegAudioCodecParameter;
 		string ffmpegAudioCodec;
@@ -3288,9 +3292,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
-				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];
-				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter,
-					ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+				tuple<string, int, int, int, string, string, optional<string>, string> videoBitRateInfo = videoBitRatesInfo[0];
+				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter,
+					ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 				ffmpegAudioBitRateParameter = audioBitRatesInfo[0];
 
@@ -3431,21 +3435,15 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			threadsParameterToBeAdded = true;
 
 			{
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegOutputArgumentList);
 				output.withVideoCodec(ffmpegVideoCodec);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegOutputArgumentList);
 				output.addArgs(ffmpegVideoProfileParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegOutputArgumentList);
 				output.addArgs(ffmpegVideoBitRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegOutputArgumentList);
 				output.addArgs(ffmpegVideoOtherParameters);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegOutputArgumentList);
 				output.addArgs(ffmpegVideoMaxRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegOutputArgumentList);
+				if (ffmpegVideoMinRateParameter)
+					output.addArgs(*ffmpegVideoMinRateParameter);
 				output.addArgs(ffmpegVideoBufSizeParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegOutputArgumentList);
 				output.addArgs(ffmpegVideoFrameRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegOutputArgumentList);
 				output.addArgs(ffmpegVideoKeyFramesRateParameter);
 				// ffmpegVideoResolutionParameter is -vf scale=w=1280:h=720
 				// Since we cannot have more than one -vf (otherwise ffmpeg will use

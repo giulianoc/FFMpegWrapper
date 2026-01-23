@@ -79,31 +79,32 @@ void FFMpegWrapper::overlayImageOnVideo(
 			try
 			{
 				string httpStreamingFileFormat;
-				string ffmpegHttpStreamingParameter = "";
+				string ffmpegHttpStreamingParameter;
 				bool encodingProfileIsVideo = true;
 
-				string ffmpegFileFormatParameter = "";
+				string ffmpegFileFormatParameter;
 
-				string ffmpegVideoCodecParameter = "";
-				string ffmpegVideoCodec = "";
-				string ffmpegVideoProfileParameter = "";
-				string ffmpegVideoResolutionParameter = "";
+				string ffmpegVideoCodecParameter;
+				string ffmpegVideoCodec;
+				string ffmpegVideoProfileParameter;
+				string ffmpegVideoResolutionParameter;
 				int videoBitRateInKbps = -1;
-				string ffmpegVideoBitRateParameter = "";
-				string ffmpegVideoOtherParameters = "";
-				string ffmpegVideoMaxRateParameter = "";
-				string ffmpegVideoBufSizeParameter = "";
-				string ffmpegVideoFrameRateParameter = "";
-				string ffmpegVideoKeyFramesRateParameter = "";
+				string ffmpegVideoBitRateParameter;
+				string ffmpegVideoOtherParameters;
+				string ffmpegVideoMaxRateParameter;
+				optional<string> ffmpegVideoMinRateParameter;
+				string ffmpegVideoBufSizeParameter;
+				string ffmpegVideoFrameRateParameter;
+				string ffmpegVideoKeyFramesRateParameter;
 				bool twoPasses;
-				vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
+				vector<tuple<string, int, int, int, string, string, optional<string>, string>> videoBitRatesInfo;
 
-				string ffmpegAudioCodecParameter = "";
-				string ffmpegAudioCodec = "";
-				string ffmpegAudioBitRateParameter = "";
-				string ffmpegAudioOtherParameters = "";
-				string ffmpegAudioChannelsParameter = "";
-				string ffmpegAudioSampleRateParameter = "";
+				string ffmpegAudioCodecParameter;
+				string ffmpegAudioCodec;
+				string ffmpegAudioBitRateParameter;
+				string ffmpegAudioOtherParameters;
+				string ffmpegAudioChannelsParameter;
+				string ffmpegAudioSampleRateParameter;
 				vector<string> audioBitRatesInfo;
 
 				FFMpegEncodingParameters::settingFfmpegParameters(
@@ -120,9 +121,9 @@ void FFMpegWrapper::overlayImageOnVideo(
 					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
-				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];
-				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter,
-					ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+				tuple<string, int, int, int, string, string, optional<string>, string> videoBitRateInfo = videoBitRatesInfo[0];
+				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter,
+					ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 				ffmpegAudioBitRateParameter = audioBitRatesInfo[0];
 
@@ -162,21 +163,15 @@ void FFMpegWrapper::overlayImageOnVideo(
 					);
 				}
 
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.withVideoCodec(ffmpegVideoCodec);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoProfileParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoBitRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoOtherParameters);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoMaxRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegEncodingProfileArgumentList);
+				if (ffmpegVideoMinRateParameter)
+					mainOutput.addArgs(*ffmpegVideoMinRateParameter);
 				mainOutput.addArgs(ffmpegVideoBufSizeParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoFrameRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoKeyFramesRateParameter);
 				// we cannot have two video filters parameters (-vf), one is for the overlay.
 				// If it is needed we have to combine both using the same -vf parameter and using the
@@ -543,31 +538,32 @@ void FFMpegWrapper::overlayTextOnVideo(
 			try
 			{
 				string httpStreamingFileFormat;
-				string ffmpegHttpStreamingParameter = "";
+				string ffmpegHttpStreamingParameter;
 				bool encodingProfileIsVideo = true;
 
-				string ffmpegFileFormatParameter = "";
+				string ffmpegFileFormatParameter;
 
-				string ffmpegVideoCodecParameter = "";
-				string ffmpegVideoCodec = "";
-				string ffmpegVideoProfileParameter = "";
-				string ffmpegVideoResolutionParameter = "";
+				string ffmpegVideoCodecParameter;
+				string ffmpegVideoCodec;
+				string ffmpegVideoProfileParameter;
+				string ffmpegVideoResolutionParameter;
 				int videoBitRateInKbps = -1;
-				string ffmpegVideoBitRateParameter = "";
-				string ffmpegVideoOtherParameters = "";
-				string ffmpegVideoMaxRateParameter = "";
-				string ffmpegVideoBufSizeParameter = "";
-				string ffmpegVideoFrameRateParameter = "";
-				string ffmpegVideoKeyFramesRateParameter = "";
+				string ffmpegVideoBitRateParameter;
+				string ffmpegVideoOtherParameters;
+				string ffmpegVideoMaxRateParameter;
+				optional<string> ffmpegVideoMinRateParameter;
+				string ffmpegVideoBufSizeParameter;
+				string ffmpegVideoFrameRateParameter;
+				string ffmpegVideoKeyFramesRateParameter;
 				bool twoPasses;
-				vector<tuple<string, int, int, int, string, string, string>> videoBitRatesInfo;
+				vector<tuple<string, int, int, int, string, string, optional<string>, string>> videoBitRatesInfo;
 
-				string ffmpegAudioCodecParameter = "";
-				string ffmpegAudioCodec = "";
-				string ffmpegAudioBitRateParameter = "";
-				string ffmpegAudioOtherParameters = "";
-				string ffmpegAudioChannelsParameter = "";
-				string ffmpegAudioSampleRateParameter = "";
+				string ffmpegAudioCodecParameter;
+				string ffmpegAudioCodec;
+				string ffmpegAudioBitRateParameter;
+				string ffmpegAudioOtherParameters;
+				string ffmpegAudioChannelsParameter;
+				string ffmpegAudioSampleRateParameter;
 				vector<string> audioBitRatesInfo;
 
 				FFMpegEncodingParameters::settingFfmpegParameters(
@@ -584,9 +580,9 @@ void FFMpegWrapper::overlayTextOnVideo(
 					ffmpegAudioSampleRateParameter, audioBitRatesInfo
 				);
 
-				tuple<string, int, int, int, string, string, string> videoBitRateInfo = videoBitRatesInfo[0];
-				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter,
-					ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+				tuple<string, int, int, int, string, string, optional<string>, string> videoBitRateInfo = videoBitRatesInfo[0];
+				tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, ignore, ignore, ffmpegVideoBitRateParameter,
+					ffmpegVideoMaxRateParameter,  ffmpegVideoMinRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 				ffmpegAudioBitRateParameter = audioBitRatesInfo[0];
 
@@ -626,21 +622,15 @@ void FFMpegWrapper::overlayTextOnVideo(
 					);
 				}
 
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoCodecParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.withVideoCodec(ffmpegVideoCodec);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoProfileParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoProfileParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoBitRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoOtherParameters, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoOtherParameters);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoMaxRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegEncodingProfileArgumentList);
+				if (ffmpegVideoMinRateParameter)
+					mainOutput.addArgs(*ffmpegVideoMinRateParameter);
 				mainOutput.addArgs(ffmpegVideoBufSizeParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoFrameRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoFrameRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoKeyFramesRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegVideoKeyFramesRateParameter);
 				// we cannot have two video filters parameters (-vf), one is for the overlay.
 				// If it is needed we have to combine both using the same -vf parameter and using the

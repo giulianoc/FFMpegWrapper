@@ -23,15 +23,15 @@
 namespace fs = std::filesystem;
 
 FFMpegEncodingParameters::FFMpegEncodingParameters(
-	int64_t ingestionJobKey, int64_t encodingJobKey, nlohmann::json encodingProfileDetailsRoot,
-	bool isVideo, // if false it means is audio
-	int videoTrackIndexToBeUsed, int audioTrackIndexToBeUsed, std::string encodedStagingAssetPathName,
-	nlohmann::json videoTracksRoot, // used only in case of _audioGroup
-	nlohmann::json audioTracksRoot, // used only in case of _audioGroup
+	const int64_t ingestionJobKey, const int64_t encodingJobKey, const nlohmann::json& encodingProfileDetailsRoot,
+	const bool isVideo, // if false it means is audio
+	const int videoTrackIndexToBeUsed, const int audioTrackIndexToBeUsed, const std::string &encodedStagingAssetPathName,
+	const nlohmann::json &videoTracksRoot, // used only in case of _audioGroup
+	const nlohmann::json &audioTracksRoot, // used only in case of _audioGroup
 
 	bool &twoPasses, // out
 
-	std::string ffmpegTempDir, std::string ffmpegTtfFontDir
+	const std::string &ffmpegTempDir, const std::string &ffmpegTtfFontDir
 )
 {
 	_ffmpegTempDir = ffmpegTempDir;
@@ -76,7 +76,7 @@ FFMpegEncodingParameters::FFMpegEncodingParameters(
 		_ffmpegAudioSampleRateParameter = "";
 		_audioBitRatesInfo.clear();
 
-		FFMpegEncodingParameters::settingFfmpegParameters(
+		settingFfmpegParameters(
 			encodingProfileDetailsRoot, _isVideo,
 
 			_httpStreamingFileFormat, _ffmpegHttpStreamingParameter,
@@ -92,33 +92,21 @@ FFMpegEncodingParameters::FFMpegEncodingParameters(
 
 		_initialized = true;
 	}
-	catch (std::runtime_error &e)
-	{
-		LOG_ERROR(
-			"FFMpeg: init failed"
-			", _ingestionJobKey: {}"
-			", _encodingJobKey: {}"
-			", e.what(): {}",
-			_ingestionJobKey, _encodingJobKey, e.what()
-		);
-
-		throw e;
-	}
 	catch (std::exception &e)
 	{
 		LOG_ERROR(
 			"FFMpeg: init failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
-			", e.what(): {}",
+			", exception: {}",
 			_ingestionJobKey, _encodingJobKey, e.what()
 		);
 
-		throw e;
+		throw;
 	}
 }
 
-FFMpegEncodingParameters::~FFMpegEncodingParameters() {}
+FFMpegEncodingParameters::~FFMpegEncodingParameters() = default;
 
 void FFMpegEncodingParameters::applyEncoding(
 	// -1: NO two passes
@@ -140,7 +128,7 @@ void FFMpegEncodingParameters::applyEncoding(
 	// e quindi applyEncoding non la aggiunge
 	bool videoResolutionToBeAdded,
 
-	nlohmann::json filtersRoot,
+	const nlohmann::json& filtersRoot,
 
 	// out (in append)
 	std::vector<std::string> &ffmpegArgumentList
@@ -157,18 +145,17 @@ void FFMpegEncodingParameters::applyEncoding(
 
 		FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, _ingestionJobKey, _encodingJobKey, -1);
 
-		if (_httpStreamingFileFormat != "")
+		if (!_httpStreamingFileFormat.empty())
 		{
 			// hls or dash output
 
-			std::string manifestFileName;
 			std::string segmentTemplateDirectory;
 			std::string segmentTemplatePathFileName;
 			std::string stagingTemplateManifestAssetPathName;
 
 			if (outputFileToBeAdded)
 			{
-				manifestFileName = getManifestFileName();
+				std::string manifestFileName = getManifestFileName();
 				if (_httpStreamingFileFormat == "hls")
 				{
 					segmentTemplateDirectory = _encodedStagingAssetPathName + "/" + _multiTrackTemplatePart;
@@ -187,58 +174,62 @@ void FFMpegEncodingParameters::applyEncoding(
 				// check su if (outputFileToBeAdded) è inutile, con 2 passi outputFileToBeAdded deve essere true
 
 				// used also in removeTwoPassesTemporaryFiles
-				std::string prefixPasslogFileName = std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey);
-				std::string ffmpegTemplatePassLogPathFileName = _ffmpegTempDir + "/" + prefixPasslogFileName + "_" + _multiTrackTemplatePart + ".passlog";
-				;
+				std::string prefixPasslogFileName = std::format("{}_{}", _ingestionJobKey, _encodingJobKey);
+				std::string ffmpegTemplatePassLogPathFileName = std::format("{}/{}_{}.passlog",
+					_ffmpegTempDir, prefixPasslogFileName, _multiTrackTemplatePart);
 
 				if (stepNumber == 0) // YES two passes, first step
 				{
-					for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+					for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 					{
-						std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+						videoIndex++;
 
-						std::string ffmpegVideoResolutionParameter = "";
+						std::string ffmpegVideoResolutionParameter;
 						int videoBitRateInKbps = -1;
 						int videoHeight = -1;
-						std::string ffmpegVideoBitRateParameter = "";
-						std::string ffmpegVideoMaxRateParameter = "";
-						std::string ffmpegVideoBufSizeParameter = "";
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegVideoBitRateParameter;
+						std::string ffmpegVideoMaxRateParameter;
+						std::optional<std::string> ffmpegVideoMinRateParameter;
+						std::string ffmpegVideoBufSizeParameter;
+						std::string ffmpegAudioBitRateParameter;
 
-						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-							ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+							ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+							ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 						if (_videoTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:v:") + std::to_string(_videoTrackIndexToBeUsed));
 						}
 						if (_audioTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 						}
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+						if (ffmpegVideoMinRateParameter)
+							addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
 						if (videoResolutionToBeAdded)
 						{
 							if (filtersRoot == nullptr)
-								FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+								addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							else
 							{
 								std::string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
 									"", std::nullopt);
 
-								if (videoFilters != "")
-									FFMpegEncodingParameters::addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
+								if (!videoFilters.empty())
+									addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
 								else
-									FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+									addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							}
 						}
 
@@ -252,23 +243,23 @@ void FFMpegEncodingParameters::applyEncoding(
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[videoIndex];
 						else
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[_audioBitRatesInfo.size() - 1];
-						FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
 							std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-							if (audioFilters != "")
-								FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
+							if (!audioFilters.empty())
+								addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 						}
 
-						ffmpegArgumentList.push_back("-threads");
-						ffmpegArgumentList.push_back("0");
-						ffmpegArgumentList.push_back("-pass");
-						ffmpegArgumentList.push_back("1");
-						ffmpegArgumentList.push_back("-passlogfile");
+						ffmpegArgumentList.emplace_back("-threads");
+						ffmpegArgumentList.emplace_back("0");
+						ffmpegArgumentList.emplace_back("-pass");
+						ffmpegArgumentList.emplace_back("1");
+						ffmpegArgumentList.emplace_back("-passlogfile");
 						{
 							std::string ffmpegPassLogPathFileName =
 								std::regex_replace(ffmpegTemplatePassLogPathFileName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
@@ -282,29 +273,29 @@ void FFMpegEncodingParameters::applyEncoding(
 						// FFMpegEncodingParameters::addToArguments(ffmpegHttpStreamingParameter, ffmpegArgumentList);
 						//
 						// FFMpegEncodingParameters::addToArguments(ffmpegFileFormatParameter, ffmpegArgumentList);
-						ffmpegArgumentList.push_back("-f");
+						ffmpegArgumentList.emplace_back("-f");
 						// 2020-08-21: changed from mp4 to null
-						ffmpegArgumentList.push_back("null");
+						ffmpegArgumentList.emplace_back("null");
 
-						ffmpegArgumentList.push_back("/dev/null");
+						ffmpegArgumentList.emplace_back("/dev/null");
 					}
 				}
 				else if (stepNumber == 1) // YES two passes, second step
 				{
-					for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+					for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 					{
-						std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
-
-						std::string ffmpegVideoResolutionParameter = "";
+						std::string ffmpegVideoResolutionParameter;
 						int videoBitRateInKbps = -1;
 						int videoHeight = -1;
-						std::string ffmpegVideoBitRateParameter = "";
-						std::string ffmpegVideoMaxRateParameter = "";
-						std::string ffmpegVideoBufSizeParameter = "";
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegVideoBitRateParameter;
+						std::string ffmpegVideoMaxRateParameter;
+						std::optional<std::string> ffmpegVideoMinRateParameter;
+						std::string ffmpegVideoBufSizeParameter;
+						std::string ffmpegAudioBitRateParameter;
 
-						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-							ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+							ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+							ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 						{
 							std::string segmentDirectory =
@@ -326,22 +317,24 @@ void FFMpegEncodingParameters::applyEncoding(
 
 						if (_videoTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:v:") + std::to_string(_videoTrackIndexToBeUsed));
 						}
 						if (_audioTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 						}
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+						if (ffmpegVideoMinRateParameter)
+							addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
 						if (videoResolutionToBeAdded)
 						{
 							if (filtersRoot == nullptr)
@@ -351,37 +344,37 @@ void FFMpegEncodingParameters::applyEncoding(
 								std::string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
 									"", std::nullopt);
 
-								if (videoFilters != "")
-									FFMpegEncodingParameters::addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
+								if (!videoFilters.empty())
+									addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
 								else
-									FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+									addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							}
 						}
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						if (_audioBitRatesInfo.size() > videoIndex)
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[videoIndex];
 						else
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[_audioBitRatesInfo.size() - 1];
-						FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
 							std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-							if (audioFilters != "")
-								FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
+							if (!audioFilters.empty())
+								addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 						}
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
 						if (_httpStreamingFileFormat == "hls")
 						{
 							std::string segmentPathFileName =
 								std::regex_replace(segmentTemplatePathFileName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
-							ffmpegArgumentList.push_back("-hls_segment_filename");
+							ffmpegArgumentList.emplace_back("-hls_segment_filename");
 							ffmpegArgumentList.push_back(segmentPathFileName);
 						}
 
@@ -392,11 +385,11 @@ void FFMpegEncodingParameters::applyEncoding(
 							ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 						}
 
-						ffmpegArgumentList.push_back("-threads");
-						ffmpegArgumentList.push_back("0");
-						ffmpegArgumentList.push_back("-pass");
-						ffmpegArgumentList.push_back("2");
-						ffmpegArgumentList.push_back("-passlogfile");
+						ffmpegArgumentList.emplace_back("-threads");
+						ffmpegArgumentList.emplace_back("0");
+						ffmpegArgumentList.emplace_back("-pass");
+						ffmpegArgumentList.emplace_back("2");
+						ffmpegArgumentList.emplace_back("-passlogfile");
 						{
 							std::string ffmpegPassLogPathFileName =
 								std::regex_replace(ffmpegTemplatePassLogPathFileName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
@@ -407,20 +400,22 @@ void FFMpegEncodingParameters::applyEncoding(
 			}
 			else // NO two passes
 			{
-				for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+				for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 				{
-					std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+					videoIndex++;
 
-					std::string ffmpegVideoResolutionParameter = "";
+					std::string ffmpegVideoResolutionParameter;
 					int videoBitRateInKbps = -1;
 					int videoHeight = -1;
-					std::string ffmpegVideoBitRateParameter = "";
-					std::string ffmpegVideoMaxRateParameter = "";
-					std::string ffmpegVideoBufSizeParameter = "";
-					std::string ffmpegAudioBitRateParameter = "";
+					std::string ffmpegVideoBitRateParameter;
+					std::string ffmpegVideoMaxRateParameter;
+					std::optional<std::string> ffmpegVideoMinRateParameter;
+					std::string ffmpegVideoBufSizeParameter;
+					std::string ffmpegAudioBitRateParameter;
 
-					tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-						ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+					tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+						ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+						ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 					if (outputFileToBeAdded)
 					{
@@ -442,72 +437,74 @@ void FFMpegEncodingParameters::applyEncoding(
 
 					if (_videoTrackIndexToBeUsed >= 0)
 					{
-						ffmpegArgumentList.push_back("-map");
+						ffmpegArgumentList.emplace_back("-map");
 						ffmpegArgumentList.push_back(std::string("0:v:") + std::to_string(_videoTrackIndexToBeUsed));
 					}
 					if (_audioTrackIndexToBeUsed >= 0)
 					{
-						ffmpegArgumentList.push_back("-map");
+						ffmpegArgumentList.emplace_back("-map");
 						ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 					}
-					FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+					addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+					addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+					if (ffmpegVideoMinRateParameter)
+						addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+					addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 					if (videoResolutionToBeAdded)
 					{
 						if (filtersRoot == nullptr)
-							FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+							addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 						else
 						{
 							std::string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
 								"", std::nullopt);
 
-							if (videoFilters != "")
-								FFMpegEncodingParameters::addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
+							if (!videoFilters.empty())
+								addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
 							else
-								FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+								addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 						}
 					}
-					ffmpegArgumentList.push_back("-threads");
-					ffmpegArgumentList.push_back("0");
-					FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+					ffmpegArgumentList.emplace_back("-threads");
+					ffmpegArgumentList.emplace_back("0");
+					addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 					if (_audioBitRatesInfo.size() > videoIndex)
 						ffmpegAudioBitRateParameter = _audioBitRatesInfo[videoIndex];
 					else
 						ffmpegAudioBitRateParameter = _audioBitRatesInfo[_audioBitRatesInfo.size() - 1];
-					FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+					addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+					addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 					if (filtersRoot != nullptr)
 					{
 						std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-						if (audioFilters != "")
+						if (!audioFilters.empty())
 							FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 					}
 
 					if (outputFileToBeAdded)
 					{
-						FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
 						if (_httpStreamingFileFormat == "hls")
 						{
 							std::string segmentPathFileName =
 								std::regex_replace(segmentTemplatePathFileName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
-							ffmpegArgumentList.push_back("-hls_segment_filename");
+							ffmpegArgumentList.emplace_back("-hls_segment_filename");
 							ffmpegArgumentList.push_back(segmentPathFileName);
 						}
 
 						{
-							std::string stagingManifestAssetPathName =
-								std::regex_replace(stagingTemplateManifestAssetPathName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
-							FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+							std::string stagingManifestAssetPathName = StringUtils::replaceAll(stagingTemplateManifestAssetPathName,
+								_multiTrackTemplateVariable, std::to_string(videoHeight));
+							addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 							ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 						}
 					}
@@ -527,65 +524,68 @@ void FFMpegEncodingParameters::applyEncoding(
 				// check su if (outputFileToBeAdded) è inutile, con 2 passi outputFileToBeAdded deve essere true
 
 				// used also in removeTwoPassesTemporaryFiles
-				std::string prefixPasslogFileName = std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey);
-				std::string ffmpegTemplatePassLogPathFileName = _ffmpegTempDir + "/" + prefixPasslogFileName + "_" + _multiTrackTemplatePart + ".passlog";
+				std::string prefixPasslogFileName = std::format("{}_{}", _ingestionJobKey, _encodingJobKey);
+				std::string ffmpegTemplatePassLogPathFileName = std::format("{}/{}_{}.passlog",
+					_ffmpegTempDir, prefixPasslogFileName, _multiTrackTemplatePart);
 				;
 
 				if (stepNumber == 0) // YES two passes, first step
 				{
-					for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+					for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 					{
-						std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
-
-						std::string ffmpegVideoResolutionParameter = "";
+						std::string ffmpegVideoResolutionParameter;
 						int videoBitRateInKbps = -1;
 						int videoHeight = -1;
-						std::string ffmpegVideoBitRateParameter = "";
-						std::string ffmpegVideoMaxRateParameter = "";
-						std::string ffmpegVideoBufSizeParameter = "";
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegVideoBitRateParameter;
+						std::string ffmpegVideoMaxRateParameter;
+						std::optional<std::string> ffmpegVideoMinRateParameter;
+						std::string ffmpegVideoBufSizeParameter;
+						std::string ffmpegAudioBitRateParameter;
 
-						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-							ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+							ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+							ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 						if (_videoTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:v:") + std::to_string(_videoTrackIndexToBeUsed));
 						}
 						if (_audioTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 						}
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+						addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+						if (ffmpegVideoMinRateParameter)
+							addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 						if (videoResolutionToBeAdded)
 						{
 							if (filtersRoot == nullptr)
-								FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+								addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							else
 							{
 								std::string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
 									"", std::nullopt);
 
-								if (videoFilters != "")
-									FFMpegEncodingParameters::addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
+								if (!videoFilters.empty())
+									addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
 								else
-									FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+									addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							}
 						}
-						ffmpegArgumentList.push_back("-threads");
-						ffmpegArgumentList.push_back("0");
-						ffmpegArgumentList.push_back("-pass");
-						ffmpegArgumentList.push_back("1");
-						ffmpegArgumentList.push_back("-passlogfile");
+						ffmpegArgumentList.emplace_back("-threads");
+						ffmpegArgumentList.emplace_back("0");
+						ffmpegArgumentList.emplace_back("-pass");
+						ffmpegArgumentList.emplace_back("1");
+						ffmpegArgumentList.emplace_back("-passlogfile");
 						{
 							std::string ffmpegPassLogPathFileName =
 								std::regex_replace(ffmpegTemplatePassLogPathFileName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
@@ -596,115 +596,119 @@ void FFMpegEncodingParameters::applyEncoding(
 						//	it suggested to add the audio parameters too in phase 1. Really, adding the audio prameters, phase 2 was successful.
 						//	So, this is the reason, I'm adding phase 2 as well
 						// + "-an "    // disable audio
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						if (_audioBitRatesInfo.size() > videoIndex)
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[videoIndex];
 						else
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[_audioBitRatesInfo.size() - 1];
-						FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
 							std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-							if (audioFilters != "")
-								FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
+							if (!audioFilters.empty())
+								addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 						}
 
 						// 2020-08-21: changed from ffmpegFileFormatParameter to -f null
 						// FFMpegEncodingParameters::addToArguments(ffmpegFileFormatParameter, ffmpegArgumentList);
-						ffmpegArgumentList.push_back("-f");
-						ffmpegArgumentList.push_back("null");
+						ffmpegArgumentList.emplace_back("-f");
+						ffmpegArgumentList.emplace_back("null");
 
-						ffmpegArgumentList.push_back("/dev/null");
+						ffmpegArgumentList.emplace_back("/dev/null");
 					}
 				}
 				else if (stepNumber == 1) // YES two passes, second step
 				{
 					std::string stagingTemplateEncodedAssetPathName = getMultiTrackEncodedStagingTemplateAssetPathName();
 
-					for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+					for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 					{
-						std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+						videoIndex++;
 
-						std::string ffmpegVideoResolutionParameter = "";
+						std::string ffmpegVideoResolutionParameter;
 						int videoBitRateInKbps = -1;
 						int videoHeight = -1;
-						std::string ffmpegVideoBitRateParameter = "";
-						std::string ffmpegVideoMaxRateParameter = "";
-						std::string ffmpegVideoBufSizeParameter = "";
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegVideoBitRateParameter;
+						std::string ffmpegVideoMaxRateParameter;
+						std::optional<std::string> ffmpegVideoMinRateParameter;
+						std::string ffmpegVideoBufSizeParameter;
+						std::string ffmpegAudioBitRateParameter;
 
-						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-							ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+							ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+							ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 						if (_videoTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:v:") + std::to_string(_videoTrackIndexToBeUsed));
 						}
 						if (_audioTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 						}
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+						addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+						if (ffmpegVideoMinRateParameter)
+							addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 						if (videoResolutionToBeAdded)
 						{
 							if (filtersRoot == nullptr)
-								FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+								addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							else
 							{
 								std::string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
 									"", std::nullopt);
 
-								if (videoFilters != "")
-									FFMpegEncodingParameters::addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
+								if (!videoFilters.empty())
+									addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
 								else
-									FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+									addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 							}
 						}
-						ffmpegArgumentList.push_back("-threads");
-						ffmpegArgumentList.push_back("0");
-						ffmpegArgumentList.push_back("-pass");
-						ffmpegArgumentList.push_back("2");
-						ffmpegArgumentList.push_back("-passlogfile");
+						ffmpegArgumentList.emplace_back("-threads");
+						ffmpegArgumentList.emplace_back("0");
+						ffmpegArgumentList.emplace_back("-pass");
+						ffmpegArgumentList.emplace_back("2");
+						ffmpegArgumentList.emplace_back("-passlogfile");
 						{
-							std::string ffmpegPassLogPathFileName =
-								std::regex_replace(ffmpegTemplatePassLogPathFileName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
+							std::string ffmpegPassLogPathFileName = StringUtils::replaceAll(ffmpegTemplatePassLogPathFileName,
+								_multiTrackTemplateVariable, std::to_string(videoHeight));
 							ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
 						}
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						if (_audioBitRatesInfo.size() > videoIndex)
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[videoIndex];
 						else
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[_audioBitRatesInfo.size() - 1];
-						FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
 							std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-							if (audioFilters != "")
-								FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
+							if (!audioFilters.empty())
+								addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 						}
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 						if (_videoBitRatesInfo.size() > 1)
 						{
-							std::string newStagingEncodedAssetPathName =
-								std::regex_replace(stagingTemplateEncodedAssetPathName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
+							std::string newStagingEncodedAssetPathName = StringUtils::replaceAll(stagingTemplateEncodedAssetPathName,
+								_multiTrackTemplateVariable, std::to_string(videoHeight));
 							ffmpegArgumentList.push_back(newStagingEncodedAssetPathName);
 						}
 						else
@@ -720,83 +724,86 @@ void FFMpegEncodingParameters::applyEncoding(
 
 				if (_isVideo)
 				{
-					if (_videoBitRatesInfo.size() != 0)
+					if (!_videoBitRatesInfo.empty())
 					{
-						for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+						for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 						{
-							std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+							videoIndex++;
 
-							std::string ffmpegVideoResolutionParameter = "";
+							std::string ffmpegVideoResolutionParameter;
 							int videoBitRateInKbps = -1;
 							int videoHeight = -1;
-							std::string ffmpegVideoBitRateParameter = "";
-							std::string ffmpegVideoMaxRateParameter = "";
-							std::string ffmpegVideoBufSizeParameter = "";
-							std::string ffmpegAudioBitRateParameter = "";
+							std::string ffmpegVideoBitRateParameter;
+							std::string ffmpegVideoMaxRateParameter;
+							std::optional<std::string> ffmpegVideoMinRateParameter;
+							std::string ffmpegVideoBufSizeParameter;
+							std::string ffmpegAudioBitRateParameter;
 
-							tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-								ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+							tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+								ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+								ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 							if (_videoTrackIndexToBeUsed >= 0)
 							{
-								ffmpegArgumentList.push_back("-map");
+								ffmpegArgumentList.emplace_back("-map");
 								ffmpegArgumentList.push_back(std::string("0:v:") + std::to_string(_videoTrackIndexToBeUsed));
 							}
 							if (_audioTrackIndexToBeUsed >= 0)
 							{
-								ffmpegArgumentList.push_back("-map");
+								ffmpegArgumentList.emplace_back("-map");
 								ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 							}
-							FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+							addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+							addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+							addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+							addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+							addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+							if (ffmpegVideoMinRateParameter)
+								addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+							addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+							addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+							addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 							if (videoResolutionToBeAdded)
 							{
 								if (filtersRoot == nullptr)
-									FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+									addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 								else
 								{
 									std::string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
 										"", std::nullopt);
 
-									if (videoFilters != "")
-										FFMpegEncodingParameters::addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
+									if (!videoFilters.empty())
+										addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
 									else
-										FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+										addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 								}
 							}
-							ffmpegArgumentList.push_back("-threads");
-							ffmpegArgumentList.push_back("0");
-							FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+							ffmpegArgumentList.emplace_back("-threads");
+							ffmpegArgumentList.emplace_back("0");
+							addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 							if (_audioBitRatesInfo.size() > videoIndex)
 								ffmpegAudioBitRateParameter = _audioBitRatesInfo[videoIndex];
 							else
 								ffmpegAudioBitRateParameter = _audioBitRatesInfo[_audioBitRatesInfo.size() - 1];
-							FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-							FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+							addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+							addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+							addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+							addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 							if (filtersRoot != nullptr)
 							{
 								std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-								if (audioFilters != "")
-									FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
+								if (!audioFilters.empty())
+									addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 							}
 
 							if (outputFileToBeAdded)
 							{
-								FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+								addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 								if (_videoBitRatesInfo.size() > 1)
 								{
-									std::string newStagingEncodedAssetPathName = std::regex_replace(
-										stagingTemplateEncodedAssetPathName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight)
-									);
+									std::string newStagingEncodedAssetPathName = StringUtils::replaceAll(stagingTemplateEncodedAssetPathName,
+										_multiTrackTemplateVariable, std::to_string(videoHeight));
 									ffmpegArgumentList.push_back(newStagingEncodedAssetPathName);
 								}
 								else
@@ -811,11 +818,11 @@ void FFMpegEncodingParameters::applyEncoding(
 						//	In questo scenario _ffmpegVideoCodecParameter è stato inizializzato con "c:v copy "
 						//	in settingFfmpegParameters
 
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegAudioBitRateParameter;
 
 						if (_videoTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:v:") + std::to_string(_videoTrackIndexToBeUsed));
 						}
 						if (_audioTrackIndexToBeUsed >= 0)
@@ -823,7 +830,7 @@ void FFMpegEncodingParameters::applyEncoding(
 							ffmpegArgumentList.push_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 						}
-						FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
@@ -834,23 +841,23 @@ void FFMpegEncodingParameters::applyEncoding(
 						// if (videoResolutionToBeAdded)
 						// 	FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter,
 						// 		ffmpegArgumentList);
-						ffmpegArgumentList.push_back("-threads");
-						ffmpegArgumentList.push_back("0");
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+						ffmpegArgumentList.emplace_back("-threads");
+						ffmpegArgumentList.emplace_back("0");
+						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						// if (_audioBitRatesInfo.size() > videoIndex)
 						// 	ffmpegAudioBitRateParameter = _audioBitRatesInfo[videoIndex];
 						// else
 						ffmpegAudioBitRateParameter = _audioBitRatesInfo[_audioBitRatesInfo.size() - 1];
-						FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
 							std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-							if (audioFilters != "")
-								FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
+							if (!audioFilters.empty())
+								addToArguments(std::format("-filter:a {}", audioFilters), ffmpegArgumentList);
 						}
 
 						if (outputFileToBeAdded)
@@ -870,33 +877,31 @@ void FFMpegEncodingParameters::applyEncoding(
 				}
 				else
 				{
-					for (int audioIndex = 0; audioIndex < _audioBitRatesInfo.size(); audioIndex++)
+					for (auto ffmpegAudioBitRateParameter : _audioBitRatesInfo)
 					{
-						std::string ffmpegAudioBitRateParameter = _audioBitRatesInfo[audioIndex];
-
 						if (_audioTrackIndexToBeUsed >= 0)
 						{
-							ffmpegArgumentList.push_back("-map");
+							ffmpegArgumentList.emplace_back("-map");
 							ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 						}
-						ffmpegArgumentList.push_back("-threads");
-						ffmpegArgumentList.push_back("0");
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+						ffmpegArgumentList.emplace_back("-threads");
+						ffmpegArgumentList.emplace_back("0");
+						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						if (filtersRoot != nullptr)
 						{
 							std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-							if (audioFilters != "")
-								FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
+							if (!audioFilters.empty())
+								addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 						}
 
 						if (outputFileToBeAdded)
 						{
-							FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+							addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 							/*
 							if (videoBitRatesInfo.size() > 1)
 							{
@@ -914,29 +919,17 @@ void FFMpegEncodingParameters::applyEncoding(
 			}
 		}
 	}
-	catch (std::runtime_error &e)
-	{
-		LOG_ERROR(
-			"FFMpeg: applyEncoding failed"
-			", _ingestionJobKey: {}"
-			", _encodingJobKey: {}"
-			", e.what(): {}",
-			_ingestionJobKey, _encodingJobKey, e.what()
-		);
-
-		throw e;
-	}
 	catch (std::exception &e)
 	{
 		LOG_ERROR(
 			"FFMpeg: applyEncoding failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
-			", e.what(): {}",
+			", exception: {}",
 			_ingestionJobKey, _encodingJobKey, e.what()
 		);
 
-		throw e;
+		throw;
 	}
 }
 
@@ -977,18 +970,17 @@ void FFMpegEncodingParameters::applyEncoding(
 
 		FFMpegFilters ffmpegFilters(_ffmpegTempDir, _ffmpegTtfFontDir, _ingestionJobKey, _encodingJobKey, -1);
 
-		if (_httpStreamingFileFormat != "")
+		if (!_httpStreamingFileFormat.empty())
 		{
 			// hls or dash output
 
-			std::string manifestFileName;
 			std::string segmentTemplateDirectory;
 			std::string segmentTemplatePathFileName;
 			std::string stagingTemplateManifestAssetPathName;
 
 			if (outputFileToBeAdded)
 			{
-				manifestFileName = getManifestFileName();
+				std::string manifestFileName = getManifestFileName();
 				if (_httpStreamingFileFormat == "hls")
 				{
 					segmentTemplateDirectory = _encodedStagingAssetPathName + "/" + _multiTrackTemplatePart;
@@ -1007,26 +999,29 @@ void FFMpegEncodingParameters::applyEncoding(
 				// check su if (outputFileToBeAdded) è inutile, con 2 passi outputFileToBeAdded deve essere true
 
 				// used also in removeTwoPassesTemporaryFiles
-				std::string prefixPasslogFileName = std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey);
-				std::string ffmpegTemplatePassLogPathFileName = _ffmpegTempDir + "/" + prefixPasslogFileName + "_" + _multiTrackTemplatePart + ".passlog";
+				std::string prefixPasslogFileName = std::format("{}_{}", _ingestionJobKey, _encodingJobKey);
+				std::string ffmpegTemplatePassLogPathFileName = std::format("{}/{}_{}.passlog",
+					_ffmpegTempDir, prefixPasslogFileName, _multiTrackTemplatePart);
 				;
 
 				if (stepNumber == 0) // YES two passes, first step
 				{
-					for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+					for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 					{
-						std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+						videoIndex++;
 
-						std::string ffmpegVideoResolutionParameter = "";
+						std::string ffmpegVideoResolutionParameter;
 						int videoBitRateInKbps = -1;
 						int videoHeight = -1;
-						std::string ffmpegVideoBitRateParameter = "";
-						std::string ffmpegVideoMaxRateParameter = "";
-						std::string ffmpegVideoBufSizeParameter = "";
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegVideoBitRateParameter;
+						std::string ffmpegVideoMaxRateParameter;
+						std::optional<std::string> ffmpegVideoMinRateParameter;
+						std::string ffmpegVideoBufSizeParameter;
+						std::string ffmpegAudioBitRateParameter;
 
-						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-							ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+							ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+							ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 						FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput();
 
@@ -1042,21 +1037,15 @@ void FFMpegEncodingParameters::applyEncoding(
 							// ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 							mainOutput.map(std::format("0:a:{}", _audioTrackIndexToBeUsed));
 						}
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 						mainOutput.withVideoCodec(_ffmpegVideoCodec);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoProfileParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegVideoBitRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoOtherParameters);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoFrameRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegVideoMaxRateParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+						if (ffmpegVideoMinRateParameter)
+							mainOutput.addArgs(*ffmpegVideoMinRateParameter);
 						mainOutput.addArgs(ffmpegVideoBufSizeParameter);
 						if (videoResolutionToBeAdded)
 						{
@@ -1100,7 +1089,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						{
 							std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
-							if (audioFilters != "")
+							if (!audioFilters.empty())
 								// FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 								mainOutput.addArgs(std::format("-filter:a {}", audioFilters));
 						}
@@ -1136,24 +1125,26 @@ void FFMpegEncodingParameters::applyEncoding(
 				}
 				else if (stepNumber == 1) // YES two passes, second step
 				{
-					for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+					for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 					{
-						std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+						videoIndex++;
 
-						std::string ffmpegVideoResolutionParameter = "";
+						std::string ffmpegVideoResolutionParameter;
 						int videoBitRateInKbps = -1;
 						int videoHeight = -1;
-						std::string ffmpegVideoBitRateParameter = "";
-						std::string ffmpegVideoMaxRateParameter = "";
-						std::string ffmpegVideoBufSizeParameter = "";
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegVideoBitRateParameter;
+						std::string ffmpegVideoMaxRateParameter;
+						std::optional<std::string> ffmpegVideoMinRateParameter;
+						std::string ffmpegVideoBufSizeParameter;
+						std::string ffmpegAudioBitRateParameter;
 
-						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-							ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+							ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+							ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 						{
-							std::string segmentDirectory =
-								std::regex_replace(segmentTemplateDirectory, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
+							std::string segmentDirectory = StringUtils::replaceAll(segmentTemplateDirectory,
+								_multiTrackTemplateVariable, std::to_string(videoHeight));
 
 							LOG_INFO(
 								"Creating directory"
@@ -1183,21 +1174,15 @@ void FFMpegEncodingParameters::applyEncoding(
 							// ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 							mainOutput.map(std::format("0:a:{}", _audioTrackIndexToBeUsed));
 						}
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 						mainOutput.withVideoCodec(_ffmpegVideoCodec);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoProfileParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegVideoBitRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoOtherParameters);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoFrameRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegVideoMaxRateParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+						if (ffmpegVideoMinRateParameter)
+							mainOutput.addArgs(*ffmpegVideoMinRateParameter);
 						mainOutput.addArgs(ffmpegVideoBufSizeParameter);
 						if (videoResolutionToBeAdded)
 						{
@@ -1280,24 +1265,27 @@ void FFMpegEncodingParameters::applyEncoding(
 			}
 			else // NO two passes
 			{
-				for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+				for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 				{
-					std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+					videoIndex++;
 
-					std::string ffmpegVideoResolutionParameter = "";
+					std::string ffmpegVideoResolutionParameter;
 					int videoBitRateInKbps = -1;
 					int videoHeight = -1;
-					std::string ffmpegVideoBitRateParameter = "";
-					std::string ffmpegVideoMaxRateParameter = "";
-					std::string ffmpegVideoBufSizeParameter = "";
-					std::string ffmpegAudioBitRateParameter = "";
+					std::string ffmpegVideoBitRateParameter;
+					std::string ffmpegVideoMaxRateParameter;
+					std::optional<std::string> ffmpegVideoMinRateParameter;
+					std::string ffmpegVideoBufSizeParameter;
+					std::string ffmpegAudioBitRateParameter;
 
-					tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-						ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+					tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+						ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+						ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 					if (outputFileToBeAdded)
 					{
-						std::string segmentDirectory = std::regex_replace(segmentTemplateDirectory, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
+						std::string segmentDirectory = StringUtils::replaceAll(segmentTemplateDirectory,
+							_multiTrackTemplateVariable, std::to_string(videoHeight));
 
 						LOG_INFO(
 							"Creating directory"
@@ -1327,21 +1315,15 @@ void FFMpegEncodingParameters::applyEncoding(
 						// ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 						mainOutput.map(std::format("0:a:{}", _audioTrackIndexToBeUsed));
 					}
-					// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 					mainOutput.withVideoCodec(_ffmpegVideoCodec);
-					// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 					mainOutput.addArgs(_ffmpegVideoProfileParameter);
-					// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 					mainOutput.addArgs(ffmpegVideoBitRateParameter);
-					// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 					mainOutput.addArgs(_ffmpegVideoOtherParameters);
-					// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 					mainOutput.addArgs(ffmpegVideoMaxRateParameter);
-					// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+					if (ffmpegVideoMinRateParameter)
+						mainOutput.addArgs(*ffmpegVideoMinRateParameter);
 					mainOutput.addArgs(ffmpegVideoBufSizeParameter);
-					// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 					mainOutput.addArgs(_ffmpegVideoFrameRateParameter);
-					// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 					mainOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
 					if (videoResolutionToBeAdded)
 					{
@@ -1403,8 +1385,8 @@ void FFMpegEncodingParameters::applyEncoding(
 						}
 
 						{
-							std::string stagingManifestAssetPathName =
-								std::regex_replace(stagingTemplateManifestAssetPathName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
+							std::string stagingManifestAssetPathName = StringUtils::replaceAll(stagingTemplateManifestAssetPathName,
+								_multiTrackTemplateVariable, std::to_string(videoHeight));
 							// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 							mainOutput.addArgs(_ffmpegFileFormatParameter);
 							// ffmpegArgumentList.push_back(stagingManifestAssetPathName);
@@ -1427,26 +1409,28 @@ void FFMpegEncodingParameters::applyEncoding(
 				// check su if (outputFileToBeAdded) è inutile, con 2 passi outputFileToBeAdded deve essere true
 
 				// used also in removeTwoPassesTemporaryFiles
-				std::string prefixPasslogFileName = std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey);
-				std::string ffmpegTemplatePassLogPathFileName = _ffmpegTempDir + "/" + prefixPasslogFileName + "_" + _multiTrackTemplatePart + ".passlog";
-				;
+				std::string prefixPasslogFileName = std::format("{}_{}", _ingestionJobKey, _encodingJobKey);
+				std::string ffmpegTemplatePassLogPathFileName = std::format("{}/{}_{}.passlog",
+					_ffmpegTempDir, prefixPasslogFileName, _multiTrackTemplatePart);
 
 				if (stepNumber == 0) // YES two passes, first step
 				{
-					for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+					for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 					{
-						std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+						videoIndex++;
 
-						std::string ffmpegVideoResolutionParameter = "";
+						std::string ffmpegVideoResolutionParameter;
 						int videoBitRateInKbps = -1;
 						int videoHeight = -1;
-						std::string ffmpegVideoBitRateParameter = "";
-						std::string ffmpegVideoMaxRateParameter = "";
-						std::string ffmpegVideoBufSizeParameter = "";
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegVideoBitRateParameter;
+						std::string ffmpegVideoMaxRateParameter;
+						std::optional<std::string> ffmpegVideoMinRateParameter;
+						std::string ffmpegVideoBufSizeParameter;
+						std::string ffmpegAudioBitRateParameter;
 
-						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-							ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+							ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+							ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 						FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput();
 
@@ -1462,21 +1446,15 @@ void FFMpegEncodingParameters::applyEncoding(
 							// ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 							mainOutput.map(std::format(("0:a:{}"), _audioTrackIndexToBeUsed));
 						}
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 						mainOutput.withVideoCodec(_ffmpegVideoCodec);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoProfileParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegVideoBitRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoOtherParameters);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegVideoMaxRateParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+						if (ffmpegVideoMinRateParameter)
+							mainOutput.addArgs(*ffmpegVideoMinRateParameter);
 						mainOutput.addArgs(ffmpegVideoBufSizeParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoFrameRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
 						if (videoResolutionToBeAdded)
 						{
@@ -1496,16 +1474,10 @@ void FFMpegEncodingParameters::applyEncoding(
 									mainOutput.addArgs(std::format("-vf {}", ffmpegVideoResolutionParameter));
 							}
 						}
-						// ffmpegArgumentList.push_back("-threads");
-						// ffmpegArgumentList.push_back("0");
-						// ffmpegArgumentList.push_back("-pass");
-						// ffmpegArgumentList.push_back("1");
-						// ffmpegArgumentList.push_back("-passlogfile");
 						mainOutput.addArgs("-threads 0 -pass 1 -passlogfile");
 						{
-							std::string ffmpegPassLogPathFileName =
-								std::regex_replace(ffmpegTemplatePassLogPathFileName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
-							// ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
+							std::string ffmpegPassLogPathFileName = StringUtils::replaceAll(ffmpegTemplatePassLogPathFileName,
+								_multiTrackTemplateVariable, std::to_string(videoHeight));
 							mainOutput.addArg(ffmpegPassLogPathFileName);
 						}
 						// It should be useless to add the audio parameters in phase 1 but,
@@ -1519,20 +1491,15 @@ void FFMpegEncodingParameters::applyEncoding(
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[videoIndex];
 						else
 							ffmpegAudioBitRateParameter = _audioBitRatesInfo[_audioBitRatesInfo.size() - 1];
-						// FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegAudioBitRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegAudioOtherParameters);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegAudioChannelsParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegAudioSampleRateParameter);
 						if (filtersRoot != nullptr)
 						{
 							std::string audioFilters = ffmpegFilters.addAudioFilters(filtersRoot, std::nullopt);
 
 							if (!audioFilters.empty())
-								// FFMpegEncodingParameters::addToArguments(std::string("-filter:a ") + audioFilters, ffmpegArgumentList);
 								mainOutput.addArgs("-filter:a " + audioFilters);
 						}
 
@@ -1550,20 +1517,22 @@ void FFMpegEncodingParameters::applyEncoding(
 				{
 					std::string stagingTemplateEncodedAssetPathName = getMultiTrackEncodedStagingTemplateAssetPathName();
 
-					for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+					for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 					{
-						std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+						videoIndex++;
 
-						std::string ffmpegVideoResolutionParameter = "";
+						std::string ffmpegVideoResolutionParameter;
 						int videoBitRateInKbps = -1;
 						int videoHeight = -1;
-						std::string ffmpegVideoBitRateParameter = "";
-						std::string ffmpegVideoMaxRateParameter = "";
-						std::string ffmpegVideoBufSizeParameter = "";
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegVideoBitRateParameter;
+						std::string ffmpegVideoMaxRateParameter;
+						std::optional<std::string> ffmpegVideoMinRateParameter;
+						std::string ffmpegVideoBufSizeParameter;
+						std::string ffmpegAudioBitRateParameter;
 
-						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-							ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+						tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+							ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+							ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 						FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput();
 
@@ -1579,21 +1548,15 @@ void FFMpegEncodingParameters::applyEncoding(
 							// ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 							mainOutput.map(std::format("0:a:{}", _audioTrackIndexToBeUsed));
 						}
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 						mainOutput.withVideoCodec(_ffmpegVideoCodec);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoProfileParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegVideoBitRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoOtherParameters);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(ffmpegVideoMaxRateParameter);
-						// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+						if (ffmpegVideoMinRateParameter)
+							mainOutput.addArgs(*ffmpegVideoMinRateParameter);
 						mainOutput.addArgs(ffmpegVideoBufSizeParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoFrameRateParameter);
-						// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 						mainOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
 						if (videoResolutionToBeAdded)
 						{
@@ -1605,7 +1568,7 @@ void FFMpegEncodingParameters::applyEncoding(
 								std::string videoFilters = ffmpegFilters.addVideoFilters(filtersRoot, ffmpegVideoResolutionParameter,
 									"", std::nullopt);
 
-								if (videoFilters != "")
+								if (!videoFilters.empty())
 									// FFMpegEncodingParameters::addToArguments(std::string("-filter:v ") + videoFilters, ffmpegArgumentList);
 									mainOutput.addArgs("-filter:v " + videoFilters);
 								else
@@ -1652,8 +1615,8 @@ void FFMpegEncodingParameters::applyEncoding(
 						mainOutput.addArgs(_ffmpegFileFormatParameter);
 						if (_videoBitRatesInfo.size() > 1)
 						{
-							std::string newStagingEncodedAssetPathName =
-								std::regex_replace(stagingTemplateEncodedAssetPathName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
+							std::string newStagingEncodedAssetPathName = StringUtils::replaceAll(stagingTemplateEncodedAssetPathName,
+								_multiTrackTemplateVariable, std::to_string(videoHeight));
 							// ffmpegArgumentList.push_back(newStagingEncodedAssetPathName);
 							mainOutput.setPath(newStagingEncodedAssetPathName);
 						}
@@ -1671,22 +1634,24 @@ void FFMpegEncodingParameters::applyEncoding(
 
 				if (_isVideo)
 				{
-					if (_videoBitRatesInfo.size() != 0)
+					if (!_videoBitRatesInfo.empty())
 					{
-						for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+						for (int videoIndex = -1; const auto& videoBitRateInfo: _videoBitRatesInfo)
 						{
-							std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
+							videoIndex++;
 
-							std::string ffmpegVideoResolutionParameter = "";
+							std::string ffmpegVideoResolutionParameter;
 							int videoBitRateInKbps = -1;
 							int videoHeight = -1;
-							std::string ffmpegVideoBitRateParameter = "";
-							std::string ffmpegVideoMaxRateParameter = "";
-							std::string ffmpegVideoBufSizeParameter = "";
-							std::string ffmpegAudioBitRateParameter = "";
+							std::string ffmpegVideoBitRateParameter;
+							std::string ffmpegVideoMaxRateParameter;
+							std::optional<std::string> ffmpegVideoMinRateParameter;
+							std::string ffmpegVideoBufSizeParameter;
+							std::string ffmpegAudioBitRateParameter;
 
-							tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight, ffmpegVideoBitRateParameter,
-								ffmpegVideoMaxRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+							tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, videoHeight,
+								ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter,
+								ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 							FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput();
 
@@ -1702,21 +1667,15 @@ void FFMpegEncodingParameters::applyEncoding(
 								// ffmpegArgumentList.push_back(std::string("0:a:") + std::to_string(_audioTrackIndexToBeUsed));
 								mainOutput.addArgs(std::format("0:a:{}", _audioTrackIndexToBeUsed));
 							}
-							// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 							mainOutput.withVideoCodec(_ffmpegVideoCodec);
-							// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 							mainOutput.addArgs(_ffmpegVideoProfileParameter);
-							// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 							mainOutput.addArgs(ffmpegVideoBitRateParameter);
-							// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 							mainOutput.addArgs(_ffmpegVideoOtherParameters);
-							// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 							mainOutput.addArgs(ffmpegVideoMaxRateParameter);
-							// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+							if (ffmpegVideoMinRateParameter)
+								mainOutput.addArgs(*ffmpegVideoMinRateParameter);
 							mainOutput.addArgs(ffmpegVideoBufSizeParameter);
-							// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 							mainOutput.addArgs(_ffmpegVideoFrameRateParameter);
-							// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 							mainOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
 							if (videoResolutionToBeAdded)
 							{
@@ -1787,7 +1746,7 @@ void FFMpegEncodingParameters::applyEncoding(
 						//	In questo scenario _ffmpegVideoCodecParameter è stato inizializzato con "c:v copy "
 						//	in settingFfmpegParameters
 
-						std::string ffmpegAudioBitRateParameter = "";
+						std::string ffmpegAudioBitRateParameter;
 
 						FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput();
 
@@ -1859,10 +1818,8 @@ void FFMpegEncodingParameters::applyEncoding(
 				}
 				else
 				{
-					for (int audioIndex = 0; audioIndex < _audioBitRatesInfo.size(); audioIndex++)
+					for (const auto& ffmpegAudioBitRateParameter : _audioBitRatesInfo)
 					{
-						std::string ffmpegAudioBitRateParameter = _audioBitRatesInfo[audioIndex];
-
 						FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput();
 
 						if (_audioTrackIndexToBeUsed >= 0)
@@ -1935,8 +1892,10 @@ void FFMpegEncodingParameters::createManifestFile()
 	{
 		if (!_initialized)
 		{
-			std::string errorMessage = std::string("FFMpegEncodingParameters is not initialized") + ", _ingestionJobKey: " + std::to_string(_ingestionJobKey) +
-								  ", _encodingJobKey: " + std::to_string(_encodingJobKey);
+			std::string errorMessage = std::format("FFMpegEncodingParameters is not initialized"
+				", _ingestionJobKey: {}"
+				", _encodingJobKey: {}", _ingestionJobKey, _encodingJobKey);
+			LOG_ERROR(errorMessage);
 			throw std::runtime_error(errorMessage);
 		}
 
@@ -1956,27 +1915,27 @@ void FFMpegEncodingParameters::createManifestFile()
 			1080p.m3u8
 		 */
 		std::string endLine = "\n";
-		std::string masterManifest = "#EXTM3U" + endLine + "#EXT-X-VERSION:3" + endLine;
+		std::string masterManifest = std::format("#EXTM3U{}#EXT-X-VERSION:3", endLine, endLine);
 
-		for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+		for (const auto& videoBitRateInfo : _videoBitRatesInfo)
 		{
-			std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
-
 			int videoBitRateInKbps = -1;
 			int videoWidth = -1;
 			int videoHeight = -1;
 
-			tie(std::ignore, videoBitRateInKbps, videoWidth, videoHeight, std::ignore, std::ignore, std::ignore) = videoBitRateInfo;
+			tie(std::ignore, videoBitRateInKbps, videoWidth, videoHeight, std::ignore, std::ignore,
+				std::ignore, std::ignore) = videoBitRateInfo;
 
-			masterManifest += "#EXT-X-STREAM-INF:BANDWIDTH=" + std::to_string(videoBitRateInKbps * 1000) + ",RESOLUTION=" + std::to_string(videoWidth) + "x" +
-							  std::to_string(videoHeight) + endLine;
+			masterManifest += std::format("#EXT-X-STREAM-INF:BANDWIDTH={},RESOLUTION={}x{}{}",
+				videoBitRateInKbps * 1000, videoWidth, videoHeight, endLine);
 
 			std::string manifestRelativePathName;
 			{
-				manifestRelativePathName = _multiTrackTemplatePart + "/" + manifestFileName;
-				manifestRelativePathName = std::regex_replace(manifestRelativePathName, std::regex(_multiTrackTemplateVariable), std::to_string(videoHeight));
+				manifestRelativePathName = std::format("{}/{}", _multiTrackTemplatePart, manifestFileName);
+				manifestRelativePathName = StringUtils::replaceAll(manifestRelativePathName,
+					_multiTrackTemplateVariable, std::to_string(videoHeight));
 			}
-			masterManifest += manifestRelativePathName + endLine;
+			masterManifest += std::format ("{}{}", manifestRelativePathName, endLine);
 		}
 
 		std::string masterManifestPathFileName = std::format("{}/{}", _encodedStagingAssetPathName, manifestFileName);
@@ -1992,29 +1951,17 @@ void FFMpegEncodingParameters::createManifestFile()
 		std::ofstream ofMasterManifestFile(masterManifestPathFileName);
 		ofMasterManifestFile << masterManifest;
 	}
-	catch (std::runtime_error &e)
-	{
-		LOG_ERROR(
-			"FFMpeg: createManifestFile_audioGroup failed"
-			", _ingestionJobKey: {}"
-			", _encodingJobKey: {}"
-			", e.what(): {}",
-			_ingestionJobKey, _encodingJobKey, e.what()
-		);
-
-		throw e;
-	}
 	catch (std::exception &e)
 	{
 		LOG_ERROR(
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
-			", e.what(): {}",
+			", exception: {}",
 			_ingestionJobKey, _encodingJobKey, e.what()
 		);
 
-		throw e;
+		throw;
 	}
 }
 
@@ -2032,8 +1979,10 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 	{
 		if (!_initialized)
 		{
-			std::string errorMessage = std::string("FFMpegEncodingParameters is not initialized") + ", _ingestionJobKey: " + std::to_string(_ingestionJobKey) +
-								  ", _encodingJobKey: " + std::to_string(_encodingJobKey);
+			std::string errorMessage = std::format("FFMpegEncodingParameters is not initialized"
+				", _ingestionJobKey: {}"
+				", _encodingJobKey: {}", _ingestionJobKey, _encodingJobKey);
+			LOG_ERROR(errorMessage);
 			throw std::runtime_error(errorMessage);
 		}
 
@@ -2064,16 +2013,18 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 
 		*/
 
-		std::string ffmpegVideoResolutionParameter = "";
+		std::string ffmpegVideoResolutionParameter;
 		int videoBitRateInKbps = -1;
-		std::string ffmpegVideoBitRateParameter = "";
-		std::string ffmpegVideoMaxRateParameter = "";
-		std::string ffmpegVideoBufSizeParameter = "";
-		std::string ffmpegAudioBitRateParameter = "";
+		std::string ffmpegVideoBitRateParameter;
+		std::string ffmpegVideoMaxRateParameter;
+		std::optional<std::string> ffmpegVideoMinRateParameter;
+		std::string ffmpegVideoBufSizeParameter;
+		std::string ffmpegAudioBitRateParameter;
 
-		std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[0];
-		tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, std::ignore, ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter,
-			ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+		std::tuple<std::string, int, int, int, std::string, std::string, std::optional<std::string>,
+			std::string> videoBitRateInfo = _videoBitRatesInfo[0];
+		tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, std::ignore, ffmpegVideoBitRateParameter,
+			ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 		ffmpegAudioBitRateParameter = _audioBitRatesInfo[0];
 
@@ -2090,9 +2041,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 		if (stepNumber == 0 || stepNumber == 1) // YES two passes
 		{
 			// used also in removeTwoPassesTemporaryFiles
-			std::string prefixPasslogFileName = std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey) + ".passlog";
-			std::string ffmpegPassLogPathFileName = _ffmpegTempDir // std::string(stagingEncodedAssetPath)
-											   + "/" + prefixPasslogFileName;
+			std::string prefixPasslogFileName = std::format("{}_{}.passlog", _ingestionJobKey, _encodingJobKey);
+			std::string ffmpegPassLogPathFileName = std::format("{}/{}", _ffmpegTempDir, prefixPasslogFileName);
 
 			if (stepNumber == 0) // YES two passes, first step
 			{
@@ -2103,34 +2053,33 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// + "-an "    // disable audio
 				if (_audioTracksRoot != nullptr)
 				{
-					for (int index = 0; index < _audioTracksRoot.size(); index++)
+					for (const auto& audioTrack : _audioTracksRoot)
 					{
-						nlohmann::json audioTrack = _audioTracksRoot[index];
-
-						ffmpegArgumentList.push_back("-map");
+						ffmpegArgumentList.emplace_back("-map");
 						ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
 						std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
 
 						{
-							std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" +
-														 std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey) + "_%04d.ts";
-							ffmpegArgumentList.push_back("-hls_segment_filename");
+							std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+								_encodedStagingAssetPathName, audioTrackDirectoryName, _ingestionJobKey,
+								_encodingJobKey);
+							ffmpegArgumentList.emplace_back("-hls_segment_filename");
 							ffmpegArgumentList.push_back(segmentPathFileName);
 						}
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 						{
-							std::string stagingManifestAssetPathName =
-								_encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" + manifestFileName;
+							std::string stagingManifestAssetPathName = std::format("{}/{}/{}",
+								_encodedStagingAssetPathName, audioTrackDirectoryName, manifestFileName);
 							ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 						}
 					}
@@ -2140,23 +2089,25 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				{
 					nlohmann::json videoTrack = _videoTracksRoot[0];
 
-					ffmpegArgumentList.push_back("-map");
+					ffmpegArgumentList.emplace_back("-map");
 					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
 				}
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
-				ffmpegArgumentList.push_back("-threads");
-				ffmpegArgumentList.push_back("0");
-				ffmpegArgumentList.push_back("-pass");
-				ffmpegArgumentList.push_back("1");
-				ffmpegArgumentList.push_back("-passlogfile");
+				addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+				addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+				addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+				if (ffmpegVideoMinRateParameter)
+					addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+				addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+				addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+				ffmpegArgumentList.emplace_back("-threads");
+				ffmpegArgumentList.emplace_back("0");
+				ffmpegArgumentList.emplace_back("-pass");
+				ffmpegArgumentList.emplace_back("1");
+				ffmpegArgumentList.emplace_back("-passlogfile");
 				ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
 				// 2020-01-20: I removed the hls file format parameter because it was not working
 				//	and added -f mp4. At the end it has to generate just the log file
@@ -2164,11 +2115,11 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// FFMpegEncodingParameters::addToArguments(ffmpegHttpStreamingParameter, ffmpegArgumentList);
 				//
 				// FFMpegEncodingParameters::addToArguments(ffmpegFileFormatParameter, ffmpegArgumentList);
-				ffmpegArgumentList.push_back("-f");
+				ffmpegArgumentList.emplace_back("-f");
 				// 2020-08-21: changed from mp4 to null
-				ffmpegArgumentList.push_back("null");
+				ffmpegArgumentList.emplace_back("null");
 
-				ffmpegArgumentList.push_back("/dev/null");
+				ffmpegArgumentList.emplace_back("/dev/null");
 			}
 			else if (stepNumber == 1) // YES two passes, second step
 			{
@@ -2179,34 +2130,33 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// + "-an "    // disable audio
 				if (_audioTracksRoot != nullptr)
 				{
-					for (int index = 0; index < _audioTracksRoot.size(); index++)
+					for (const auto& audioTrack : _audioTracksRoot)
 					{
-						nlohmann::json audioTrack = _audioTracksRoot[index];
-
-						ffmpegArgumentList.push_back("-map");
+						ffmpegArgumentList.emplace_back("-map");
 						ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-						FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
 						std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
 
 						{
-							std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" +
-														 std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey) + "_%04d.ts";
-							ffmpegArgumentList.push_back("-hls_segment_filename");
+							std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+								_encodedStagingAssetPathName, audioTrackDirectoryName, _ingestionJobKey,
+								_encodingJobKey);
+							ffmpegArgumentList.emplace_back("-hls_segment_filename");
 							ffmpegArgumentList.push_back(segmentPathFileName);
 						}
 
-						FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+						addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 						{
-							std::string stagingManifestAssetPathName =
-								_encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" + manifestFileName;
+							std::string stagingManifestAssetPathName = std::format("{}/{}/{}",
+								_encodedStagingAssetPathName, audioTrackDirectoryName, manifestFileName);
 							ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 						}
 					}
@@ -2216,26 +2166,28 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				{
 					nlohmann::json videoTrack = _videoTracksRoot[0];
 
-					ffmpegArgumentList.push_back("-map");
+					ffmpegArgumentList.emplace_back("-map");
 					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
 				}
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
-				FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
-				ffmpegArgumentList.push_back("-threads");
-				ffmpegArgumentList.push_back("0");
-				ffmpegArgumentList.push_back("-pass");
-				ffmpegArgumentList.push_back("2");
-				ffmpegArgumentList.push_back("-passlogfile");
+				addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+				addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+				addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+				if (ffmpegVideoMinRateParameter)
+					addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+				addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+				addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+				ffmpegArgumentList.emplace_back("-threads");
+				ffmpegArgumentList.emplace_back("0");
+				ffmpegArgumentList.emplace_back("-pass");
+				ffmpegArgumentList.emplace_back("2");
+				ffmpegArgumentList.emplace_back("-passlogfile");
 				ffmpegArgumentList.push_back(ffmpegPassLogPathFileName);
 
-				FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
 				std::string videoTrackDirectoryName;
 				if (_videoTracksRoot != nullptr)
@@ -2246,15 +2198,17 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				}
 
 				{
-					std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + videoTrackDirectoryName + "/" + std::to_string(_ingestionJobKey) +
-												 "_" + std::to_string(_encodingJobKey) + "_%04d.ts";
-					ffmpegArgumentList.push_back("-hls_segment_filename");
+					std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+						_encodedStagingAssetPathName, videoTrackDirectoryName, _ingestionJobKey,
+						_encodingJobKey);
+					ffmpegArgumentList.emplace_back("-hls_segment_filename");
 					ffmpegArgumentList.push_back(segmentPathFileName);
 				}
 
-				FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+				addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 				{
-					std::string stagingManifestAssetPathName = _encodedStagingAssetPathName + "/" + videoTrackDirectoryName + "/" + manifestFileName;
+					std::string stagingManifestAssetPathName = std::format("{}/{}/{}",
+						_encodedStagingAssetPathName, videoTrackDirectoryName, manifestFileName);
 					ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 				}
 			}
@@ -2268,33 +2222,33 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			// + "-an "    // disable audio
 			if (_audioTracksRoot != nullptr)
 			{
-				for (int index = 0; index < _audioTracksRoot.size(); index++)
+				for (const auto& audioTrack : _audioTracksRoot)
 				{
-					nlohmann::json audioTrack = _audioTracksRoot[index];
-
-					ffmpegArgumentList.push_back("-map");
+					ffmpegArgumentList.emplace_back("-map");
 					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
 
-					FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
-					FFMpegEncodingParameters::addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
+					addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegAudioOtherParameters, ffmpegArgumentList);
+					addToArguments(_ffmpegAudioChannelsParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegAudioSampleRateParameter, ffmpegArgumentList);
 
-					FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
 					std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
 
 					{
-						std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" +
-													 std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey) + "_%04d.ts";
-						ffmpegArgumentList.push_back("-hls_segment_filename");
+						std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+							_encodedStagingAssetPathName, audioTrackDirectoryName, _ingestionJobKey,
+							_encodingJobKey);
+						ffmpegArgumentList.emplace_back("-hls_segment_filename");
 						ffmpegArgumentList.push_back(segmentPathFileName);
 					}
 
-					FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+					addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 					{
-						std::string stagingManifestAssetPathName = _encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" + manifestFileName;
+						std::string stagingManifestAssetPathName = std::format("{}/{}/{}",
+							_encodedStagingAssetPathName, audioTrackDirectoryName, manifestFileName);
 						ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 					}
 				}
@@ -2304,22 +2258,24 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			{
 				nlohmann::json videoTrack = _videoTracksRoot[0];
 
-				ffmpegArgumentList.push_back("-map");
+				ffmpegArgumentList.emplace_back("-map");
 				ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
 			}
-			FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
-			FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
-			FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
-			FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
-			FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
-			FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
-			FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
-			ffmpegArgumentList.push_back("-threads");
-			ffmpegArgumentList.push_back("0");
+			addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
+			addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
+			addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
+			addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
+			addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
+			if (ffmpegVideoMinRateParameter)
+				addToArguments(*ffmpegVideoMinRateParameter, ffmpegArgumentList);
+			addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+			addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
+			addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
+			addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
+			ffmpegArgumentList.emplace_back("-threads");
+			ffmpegArgumentList.emplace_back("0");
 
-			FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
+			addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
 			std::string videoTrackDirectoryName;
 			if (_videoTracksRoot != nullptr)
@@ -2330,30 +2286,19 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			}
 
 			{
-				std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + videoTrackDirectoryName + "/" + std::to_string(_ingestionJobKey) + "_" +
-											 std::to_string(_encodingJobKey) + "_%04d.ts";
-				ffmpegArgumentList.push_back("-hls_segment_filename");
+				std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+					_encodedStagingAssetPathName, videoTrackDirectoryName, _ingestionJobKey, _encodingJobKey);
+				ffmpegArgumentList.emplace_back("-hls_segment_filename");
 				ffmpegArgumentList.push_back(segmentPathFileName);
 			}
 
-			FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
+			addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 			{
-				std::string stagingManifestAssetPathName = _encodedStagingAssetPathName + "/" + videoTrackDirectoryName + "/" + manifestFileName;
+				std::string stagingManifestAssetPathName = std::format("{}/{}/{}",
+					_encodedStagingAssetPathName, videoTrackDirectoryName, manifestFileName);
 				ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 			}
 		}
-	}
-	catch (std::runtime_error &e)
-	{
-		LOG_ERROR(
-			"FFMpeg: applyEncoding_audioGroup failed"
-			", _ingestionJobKey: {}"
-			", _encodingJobKey: {}"
-			", e.what(): {}",
-			_ingestionJobKey, _encodingJobKey, e.what()
-		);
-
-		throw e;
 	}
 	catch (std::exception &e)
 	{
@@ -2361,11 +2306,11 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			"FFMpeg: applyEncoding_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
-			", e.what(): {}",
+			", exception: {}",
 			_ingestionJobKey, _encodingJobKey, e.what()
 		);
 
-		throw e;
+		throw;
 	}
 }
 
@@ -2383,8 +2328,10 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 	{
 		if (!_initialized)
 		{
-			std::string errorMessage = std::string("FFMpegEncodingParameters is not initialized") + ", _ingestionJobKey: " + std::to_string(_ingestionJobKey) +
-								  ", _encodingJobKey: " + std::to_string(_encodingJobKey);
+			std::string errorMessage = std::format("FFMpegEncodingParameters is not initialized"
+				", _ingestionJobKey: {}"
+				", _encodingJobKey: {}", _ingestionJobKey, _encodingJobKey);
+			LOG_ERROR(errorMessage);
 			throw std::runtime_error(errorMessage);
 		}
 
@@ -2415,16 +2362,18 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 
 		*/
 
-		std::string ffmpegVideoResolutionParameter = "";
+		std::string ffmpegVideoResolutionParameter;
 		int videoBitRateInKbps = -1;
-		std::string ffmpegVideoBitRateParameter = "";
-		std::string ffmpegVideoMaxRateParameter = "";
-		std::string ffmpegVideoBufSizeParameter = "";
-		std::string ffmpegAudioBitRateParameter = "";
+		std::string ffmpegVideoBitRateParameter;
+		std::string ffmpegVideoMaxRateParameter;
+		std::optional<std::string> ffmpegVideoMinRateParameter;
+		std::string ffmpegVideoBufSizeParameter;
+		std::string ffmpegAudioBitRateParameter;
 
-		std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[0];
-		tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, std::ignore, ffmpegVideoBitRateParameter, ffmpegVideoMaxRateParameter,
-			ffmpegVideoBufSizeParameter) = videoBitRateInfo;
+		std::tuple<std::string, int, int, int, std::string, std::string, std::optional<std::string>,
+			std::string> videoBitRateInfo = _videoBitRatesInfo[0];
+		tie(ffmpegVideoResolutionParameter, videoBitRateInKbps, std::ignore, std::ignore, ffmpegVideoBitRateParameter,
+			ffmpegVideoMaxRateParameter, ffmpegVideoMinRateParameter, ffmpegVideoBufSizeParameter) = videoBitRateInfo;
 
 		ffmpegAudioBitRateParameter = _audioBitRatesInfo[0];
 
@@ -2441,9 +2390,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 		if (stepNumber == 0 || stepNumber == 1) // YES two passes
 		{
 			// used also in removeTwoPassesTemporaryFiles
-			std::string prefixPasslogFileName = std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey) + ".passlog";
-			std::string ffmpegPassLogPathFileName = _ffmpegTempDir // std::string(stagingEncodedAssetPath)
-											   + "/" + prefixPasslogFileName;
+			std::string prefixPasslogFileName = std::format("{}_{}.passlog", _ingestionJobKey, _encodingJobKey);
+			std::string ffmpegPassLogPathFileName = std::format("{}/{}", _ffmpegTempDir, prefixPasslogFileName);
 
 			if (stepNumber == 0) // YES two passes, first step
 			{
@@ -2454,10 +2402,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// + "-an "    // disable audio
 				if (_audioTracksRoot != nullptr)
 				{
-					for (int index = 0; index < _audioTracksRoot.size(); index++)
+					for (const auto& audioTrack : _audioTracksRoot)
 					{
-						nlohmann::json audioTrack = _audioTracksRoot[index];
-
 						FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
 
 						// ffmpegArgumentList.push_back("-map");
@@ -2481,8 +2427,9 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 						std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
 
 						{
-							std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" +
-														 std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey) + "_%04d.ts";
+							std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+								_encodedStagingAssetPathName, audioTrackDirectoryName, _ingestionJobKey,
+								_encodingJobKey);
 							// ffmpegArgumentList.push_back("-hls_segment_filename");
 							// ffmpegArgumentList.push_back(segmentPathFileName);
 							audioOutput.addArg("-hls_segment_filename");
@@ -2492,8 +2439,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 						// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 						audioOutput.addArgs(_ffmpegFileFormatParameter);
 						{
-							std::string stagingManifestAssetPathName =
-								_encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" + manifestFileName;
+							std::string stagingManifestAssetPathName = std::format("{}/{}/{}",
+								_encodedStagingAssetPathName, audioTrackDirectoryName, manifestFileName);
 							// ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 							audioOutput.setPath(stagingManifestAssetPathName);
 						}
@@ -2509,23 +2456,16 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
 					videoOutput.map(std::format("0:{}", JSONUtils::asInt32(videoTrack, "trackIndex")));
 				}
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 				videoOutput.withVideoCodec(_ffmpegVideoCodec);
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegVideoProfileParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 				videoOutput.addArgs(ffmpegVideoBitRateParameter);
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegVideoOtherParameters);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 				videoOutput.addArgs(ffmpegVideoMaxRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+				if (ffmpegVideoMinRateParameter)
+					videoOutput.addArgs(*ffmpegVideoMinRateParameter);
 				videoOutput.addArgs(ffmpegVideoBufSizeParameter);
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegVideoFrameRateParameter);
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
-				// FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 				videoOutput.addArgs(std::format("-vf {}", ffmpegVideoResolutionParameter));
 				// ffmpegArgumentList.push_back("-threads");
 				// ffmpegArgumentList.push_back("0");
@@ -2558,10 +2498,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// + "-an "    // disable audio
 				if (_audioTracksRoot != nullptr)
 				{
-					for (int index = 0; index < _audioTracksRoot.size(); index++)
+					for (const auto& audioTrack : _audioTracksRoot)
 					{
-						nlohmann::json audioTrack = _audioTracksRoot[index];
-
 						FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
 						// ffmpegArgumentList.push_back("-map");
 						// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
@@ -2584,8 +2522,9 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 						std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
 
 						{
-							std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" +
-														 std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey) + "_%04d.ts";
+							std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+								_encodedStagingAssetPathName, audioTrackDirectoryName, _ingestionJobKey,
+								_encodingJobKey);
 							// ffmpegArgumentList.push_back("-hls_segment_filename");
 							// ffmpegArgumentList.push_back(segmentPathFileName);
 							audioOutput.addArg("-hls_segment_filename");
@@ -2595,8 +2534,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 						// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 						audioOutput.addArgs(_httpStreamingFileFormat);
 						{
-							std::string stagingManifestAssetPathName =
-								_encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" + manifestFileName;
+							std::string stagingManifestAssetPathName = std::format("{}/{}/{}",
+								_encodedStagingAssetPathName, audioTrackDirectoryName, manifestFileName);
 							// ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 							audioOutput.setPath(stagingManifestAssetPathName);
 						}
@@ -2613,23 +2552,16 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
 					videoOutput.map(std::format("0:{}", JSONUtils::asInt32(videoTrack, "trackIndex")));
 				}
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 				videoOutput.withVideoCodec(_ffmpegVideoCodec);
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegVideoProfileParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 				videoOutput.addArgs(ffmpegVideoBitRateParameter);
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegVideoOtherParameters);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 				videoOutput.addArgs(ffmpegVideoMaxRateParameter);
-				// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+				if (ffmpegVideoMinRateParameter)
+					videoOutput.addArgs(*ffmpegVideoMinRateParameter);
 				videoOutput.addArgs(ffmpegVideoBufSizeParameter);
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegVideoFrameRateParameter);
-				// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
-				// FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 				videoOutput.addArgs(std::format("-vf {}", ffmpegVideoResolutionParameter));
 				// ffmpegArgumentList.push_back("-threads");
 				// ffmpegArgumentList.push_back("0");
@@ -2652,8 +2584,9 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				}
 
 				{
-					std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + videoTrackDirectoryName + "/" + std::to_string(_ingestionJobKey) +
-												 "_" + std::to_string(_encodingJobKey) + "_%04d.ts";
+					std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+								_encodedStagingAssetPathName, videoTrackDirectoryName, _ingestionJobKey,
+								_encodingJobKey);
 					// ffmpegArgumentList.push_back("-hls_segment_filename");
 					// ffmpegArgumentList.push_back(segmentPathFileName);
 					videoOutput.addArg("-hls_segment_filename");
@@ -2663,7 +2596,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// FFMpegEncodingParameters::addToArguments(_ffmpegFileFormatParameter, ffmpegArgumentList);
 				videoOutput.addArgs(_ffmpegFileFormatParameter);
 				{
-					std::string stagingManifestAssetPathName = _encodedStagingAssetPathName + "/" + videoTrackDirectoryName + "/" + manifestFileName;
+					std::string stagingManifestAssetPathName = std::format("{}/{}/{}",
+						_encodedStagingAssetPathName, videoTrackDirectoryName, manifestFileName);
 					// ffmpegArgumentList.push_back(stagingManifestAssetPathName);
 					videoOutput.setPath(stagingManifestAssetPathName);
 				}
@@ -2678,10 +2612,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			// + "-an "    // disable audio
 			if (_audioTracksRoot != nullptr)
 			{
-				for (int index = 0; index < _audioTracksRoot.size(); index++)
+				for (const auto& audioTrack : _audioTracksRoot)
 				{
-					nlohmann::json audioTrack = _audioTracksRoot[index];
-
 					FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
 
 					// ffmpegArgumentList.push_back("-map");
@@ -2705,8 +2637,9 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
 
 					{
-						std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + audioTrackDirectoryName + "/" +
-													 std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey) + "_%04d.ts";
+						std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+							_encodedStagingAssetPathName, audioTrackDirectoryName, _ingestionJobKey,
+							_encodingJobKey);
 						// ffmpegArgumentList.push_back("-hls_segment_filename");
 						// ffmpegArgumentList.push_back(segmentPathFileName);
 						audioOutput.addArgs("-hls_segment_filename");
@@ -2733,23 +2666,16 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
 				videoOutput.map(std::format("0:{}", JSONUtils::asInt32(videoTrack, "trackIndex")));
 			}
-			// FFMpegEncodingParameters::addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 			videoOutput.withVideoCodec(_ffmpegVideoCodec);
-			// FFMpegEncodingParameters::addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
 			videoOutput.addArgs(_ffmpegVideoProfileParameter);
-			// FFMpegEncodingParameters::addToArguments(ffmpegVideoBitRateParameter, ffmpegArgumentList);
 			videoOutput.addArgs(ffmpegVideoBitRateParameter);
-			// FFMpegEncodingParameters::addToArguments(_ffmpegVideoOtherParameters, ffmpegArgumentList);
 			videoOutput.addArgs(_ffmpegVideoOtherParameters);
-			// FFMpegEncodingParameters::addToArguments(ffmpegVideoMaxRateParameter, ffmpegArgumentList);
 			videoOutput.addArgs(ffmpegVideoMaxRateParameter);
-			// FFMpegEncodingParameters::addToArguments(ffmpegVideoBufSizeParameter, ffmpegArgumentList);
+			if (ffmpegVideoMinRateParameter)
+				videoOutput.addArgs(*ffmpegVideoMinRateParameter);
 			videoOutput.addArgs(ffmpegVideoBufSizeParameter);
-			// FFMpegEncodingParameters::addToArguments(_ffmpegVideoFrameRateParameter, ffmpegArgumentList);
 			videoOutput.addArgs(_ffmpegVideoFrameRateParameter);
-			// FFMpegEncodingParameters::addToArguments(_ffmpegVideoKeyFramesRateParameter, ffmpegArgumentList);
 			videoOutput.addArgs(_ffmpegVideoKeyFramesRateParameter);
-			// FFMpegEncodingParameters::addToArguments(std::string("-vf ") + ffmpegVideoResolutionParameter, ffmpegArgumentList);
 			videoOutput.addArgs(std::format("-vf {}", ffmpegVideoResolutionParameter));
 			// ffmpegArgumentList.push_back("-threads");
 			// ffmpegArgumentList.push_back("0");
@@ -2767,8 +2693,9 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			}
 
 			{
-				std::string segmentPathFileName = _encodedStagingAssetPathName + "/" + videoTrackDirectoryName + "/" + std::to_string(_ingestionJobKey) + "_" +
-											 std::to_string(_encodingJobKey) + "_%04d.ts";
+				std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
+							_encodedStagingAssetPathName, videoTrackDirectoryName, _ingestionJobKey,
+							_encodingJobKey);
 				// ffmpegArgumentList.push_back("-hls_segment_filename");
 				// ffmpegArgumentList.push_back(segmentPathFileName);
 				videoOutput.addArg("-hls_segment_filename");
@@ -2804,38 +2731,41 @@ void FFMpegEncodingParameters::createManifestFile_audioGroup()
 	{
 		if (!_initialized)
 		{
-			std::string errorMessage = std::string("FFMpegEncodingParameters is not initialized") + ", _ingestionJobKey: " + std::to_string(_ingestionJobKey) +
-								  ", _encodingJobKey: " + std::to_string(_encodingJobKey);
+			std::string errorMessage = std::format("FFMpegEncodingParameters is not initialized"
+				", _ingestionJobKey: {}"
+				", _encodingJobKey: {}", _ingestionJobKey, _encodingJobKey);
+			LOG_ERROR(errorMessage);
 			throw std::runtime_error(errorMessage);
 		}
 
 		std::string manifestFileName = getManifestFileName();
 
-		std::string mainManifestPathName = _encodedStagingAssetPathName + "/" + manifestFileName;
+		std::string mainManifestPathName = std::format("{}/{}", _encodedStagingAssetPathName, manifestFileName);
 
 		std::string mainManifest;
 
-		mainManifest = std::string("#EXTM3U") + "\n";
+		mainManifest = std::format("#EXTM3U{}", "\n");
 
 		if (_audioTracksRoot != nullptr)
 		{
-			for (int index = 0; index < _audioTracksRoot.size(); index++)
+			for (const auto& audioTrack : _audioTracksRoot)
 			{
-				nlohmann::json audioTrack = _audioTracksRoot[index];
-
 				std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
 
 				std::string audioLanguage = JSONUtils::asString(audioTrack, "language", "");
 
-				std::string audioManifestLine = "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",LANGUAGE=\"" + audioLanguage + "\",NAME=\"" + audioLanguage +
-										   "\",AUTOSELECT=YES, DEFAULT=YES,URI=\"" + audioTrackDirectoryName + "/" + manifestFileName + "\"";
+				// std::string audioManifestLine = "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",LANGUAGE=\"" + audioLanguage + "\",NAME=\"" + audioLanguage +
+				//	"\",AUTOSELECT=YES, DEFAULT=YES,URI=\"" + audioTrackDirectoryName + "/" + manifestFileName + "\"";
+				std::string audioManifestLine = std::format("#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",LANGUAGE=\"{}"
+					"\",NAME=\"{}\",AUTOSELECT=YES, DEFAULT=YES,URI=\"{}/{}\"",
+					audioLanguage, audioLanguage, audioTrackDirectoryName, manifestFileName);
 
-				mainManifest += (audioManifestLine + "\n");
+				mainManifest += std::format("{}\n", audioManifestLine);
 			}
 		}
 
 		std::string videoManifestLine = "#EXT-X-STREAM-INF:PROGRAM-ID=1,AUDIO=\"audio\"";
-		mainManifest += (videoManifestLine + "\n");
+		mainManifest += std::format("{}\n", videoManifestLine);
 
 		std::string videoTrackDirectoryName;
 		if (_videoTracksRoot != nullptr)
@@ -2844,22 +2774,10 @@ void FFMpegEncodingParameters::createManifestFile_audioGroup()
 
 			videoTrackDirectoryName = std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex"));
 		}
-		mainManifest += (videoTrackDirectoryName + "/" + manifestFileName + "\n");
+		mainManifest += std::format("{}/{}\n", videoTrackDirectoryName, manifestFileName);
 
 		std::ofstream manifestFile(mainManifestPathName);
 		manifestFile << mainManifest;
-	}
-	catch (std::runtime_error &e)
-	{
-		LOG_ERROR(
-			"FFMpeg: createManifestFile_audioGroup failed"
-			", _ingestionJobKey: {}"
-			", _encodingJobKey: {}"
-			", e.what(): {}",
-			_ingestionJobKey, _encodingJobKey, e.what()
-		);
-
-		throw e;
 	}
 	catch (std::exception &e)
 	{
@@ -2867,11 +2785,11 @@ void FFMpegEncodingParameters::createManifestFile_audioGroup()
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
-			", e.what(): {}",
+			", exception: {}",
 			_ingestionJobKey, _encodingJobKey, e.what()
 		);
 
-		throw e;
+		throw;
 	}
 }
 
@@ -2881,12 +2799,14 @@ std::string FFMpegEncodingParameters::getManifestFileName()
 	{
 		if (!_initialized)
 		{
-			std::string errorMessage = std::string("FFMpegEncodingParameters is not initialized") + ", _ingestionJobKey: " + std::to_string(_ingestionJobKey) +
-								  ", _encodingJobKey: " + std::to_string(_encodingJobKey);
+			std::string errorMessage = std::format("FFMpegEncodingParameters is not initialized"
+				", _ingestionJobKey: {}"
+				", _encodingJobKey: {}", _ingestionJobKey, _encodingJobKey);
+			LOG_ERROR(errorMessage);
 			throw std::runtime_error(errorMessage);
 		}
 
-		std::string manifestFileName = std::to_string(_ingestionJobKey) + "_" + std::to_string(_encodingJobKey);
+		std::string manifestFileName = std::format("{}_{}", _ingestionJobKey, _encodingJobKey);
 		if (_httpStreamingFileFormat == "hls")
 			manifestFileName += ".m3u8";
 		else // if (_httpStreamingFileFormat == "dash")
@@ -2894,29 +2814,17 @@ std::string FFMpegEncodingParameters::getManifestFileName()
 
 		return manifestFileName;
 	}
-	catch (std::runtime_error &e)
-	{
-		LOG_ERROR(
-			"FFMpeg: createManifestFile_audioGroup failed"
-			", _ingestionJobKey: {}"
-			", _encodingJobKey: {}"
-			", e.what(): {}",
-			_ingestionJobKey, _encodingJobKey, e.what()
-		);
-
-		throw e;
-	}
 	catch (std::exception &e)
 	{
 		LOG_ERROR(
 			"FFMpeg: createManifestFile_audioGroup failed"
 			", _ingestionJobKey: {}"
 			", _encodingJobKey: {}"
-			", e.what(): {}",
+			", exception: {}",
 			_ingestionJobKey, _encodingJobKey, e.what()
 		);
 
-		throw e;
+		throw;
 	}
 }
 
@@ -2930,7 +2838,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 	std::string &ffmpegVideoCodecParameter, std::string &ffmpegVideoCodec, std::string &ffmpegVideoProfileParameter, std::string &ffmpegVideoOtherParameters,
 	bool &twoPasses, std::string &ffmpegVideoFrameRateParameter, std::string &ffmpegVideoKeyFramesRateParameter,
-	std::vector<std::tuple<std::string, int, int, int, std::string, std::string, std::string>> &videoBitRatesInfo,
+	std::vector<std::tuple<std::string, int, int, int, std::string, std::string, std::optional<std::string>, std::string>> &videoBitRatesInfo,
 
 	std::string &ffmpegAudioCodecParameter, std::string &ffmpegAudioCodec, std::string &ffmpegAudioOtherParameters, std::string &ffmpegAudioChannelsParameter,
 	std::string &ffmpegAudioSampleRateParameter, std::vector<std::string> &audioBitRatesInfo
@@ -2949,11 +2857,12 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 	}
 
 	// fileFormat
-	std::string fileFormat;
-	std::string fileFormatLowerCase;
 	{
+		std::string fileFormatLowerCase;
+		std::string fileFormat;
+
 		field = "fileFormat";
-		if (!JSONUtils::isPresent(encodingProfileDetailsRoot, field))
+		if (!JSONUtils::isPresent(encodingProfileDetailsRoot, field, true))
 		{
 			std::string errorMessage = std::format(
 				"FFMpeg: Field is not present or it is null"
@@ -2964,23 +2873,21 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 			throw std::runtime_error(errorMessage);
 		}
-
 		fileFormat = JSONUtils::asString(encodingProfileDetailsRoot, field, "");
-		fileFormatLowerCase.resize(fileFormat.size());
-		transform(fileFormat.begin(), fileFormat.end(), fileFormatLowerCase.begin(), [](unsigned char c) { return tolower(c); });
+		fileFormatLowerCase = StringUtils::lowerCase(fileFormat);
 
-		FFMpegEncodingParameters::encodingFileFormatValidation(fileFormat);
+		encodingFileFormatValidation(fileFormat);
 
 		if (fileFormatLowerCase == "hls")
 		{
 			httpStreamingFileFormat = "hls";
 
-			ffmpegFileFormatParameter = +"-f hls ";
+			ffmpegFileFormatParameter = "-f hls ";
 
 			long segmentDurationInSeconds = 10;
 
 			field = "HLS";
-			if (JSONUtils::isPresent(encodingProfileDetailsRoot, field))
+			if (JSONUtils::isPresent(encodingProfileDetailsRoot, field, true))
 			{
 				nlohmann::json hlsRoot = encodingProfileDetailsRoot[field];
 
@@ -2988,7 +2895,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				segmentDurationInSeconds = JSONUtils::asInt32(hlsRoot, field, 10);
 			}
 
-			ffmpegHttpStreamingParameter = "-hls_time " + std::to_string(segmentDurationInSeconds) + " ";
+			ffmpegHttpStreamingParameter = std::format("-hls_time {} ", segmentDurationInSeconds);
 
 			// hls_list_size: set the maximum number of playlist entries. If set to 0 the list file
 			//	will contain all the segments. Default value is 5.
@@ -2998,20 +2905,19 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		{
 			httpStreamingFileFormat = "dash";
 
-			ffmpegFileFormatParameter = +"-f dash ";
+			ffmpegFileFormatParameter = "-f dash ";
 
 			long segmentDurationInSeconds = 10;
 
 			field = "DASH";
-			if (JSONUtils::isPresent(encodingProfileDetailsRoot, field))
+			if (JSONUtils::isPresent(encodingProfileDetailsRoot, field, true))
 			{
 				nlohmann::json dashRoot = encodingProfileDetailsRoot[field];
 
 				field = "segmentDuration";
 				segmentDurationInSeconds = JSONUtils::asInt32(dashRoot, field, 10);
 			}
-
-			ffmpegHttpStreamingParameter = "-seg_duration " + std::to_string(segmentDurationInSeconds) + " ";
+			ffmpegHttpStreamingParameter = std::format("-seg_duration {} ", segmentDurationInSeconds);
 
 			// hls_list_size: set the maximum number of playlist entries. If set to 0 the list file
 			//	will contain all the segments. Default value is 5.
@@ -3041,7 +2947,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			}
 			else
 			{
-				ffmpegFileFormatParameter = " -f " + fileFormatLowerCase + " ";
+				ffmpegFileFormatParameter = std::format(" -f {} ", fileFormatLowerCase);
 			}
 		}
 	}
@@ -3049,14 +2955,14 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 	if (isVideo)
 	{
 		field = "video";
-		if (JSONUtils::isPresent(encodingProfileDetailsRoot, field))
+		if (JSONUtils::isPresent(encodingProfileDetailsRoot, field, true))
 		{
 			nlohmann::json videoRoot = encodingProfileDetailsRoot[field];
 
 			// codec
 			{
 				field = "codec";
-				if (!JSONUtils::isPresent(videoRoot, field))
+				if (!JSONUtils::isPresent(videoRoot, field, true))
 				{
 					std::string errorMessage = std::format(
 						"FFMpeg: Field is not present or it is null"
@@ -3074,50 +2980,36 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				//		In case the codec is wrong, ffmpeg will generate the error later
 				// FFMpeg::encodingVideoCodecValidation(codec, logger);
 
-				ffmpegVideoCodecParameter = "-codec:v " + ffmpegVideoCodec + " ";
+				ffmpegVideoCodecParameter = std::format("-codec:v {} ", ffmpegVideoCodec);
 			}
 
 			// profile
 			{
 				field = "profile";
-				if (JSONUtils::isPresent(videoRoot, field))
+				if (JSONUtils::isPresent(videoRoot, field, true))
 				{
 					std::string profile = JSONUtils::asString(videoRoot, field, "");
 
-					if (ffmpegVideoCodec == "libx264" || ffmpegVideoCodec == "libvpx" || ffmpegVideoCodec == "mpeg4" || ffmpegVideoCodec == "xvid")
+					if (ffmpegVideoCodec == "libx264" || ffmpegVideoCodec == "libvpx"
+						|| ffmpegVideoCodec == "mpeg4" || ffmpegVideoCodec == "xvid")
 					{
-						FFMpegEncodingParameters::encodingVideoProfileValidation(ffmpegVideoCodec, profile);
-						if (ffmpegVideoCodec == "libx264" && profile != "")
-						{
-							ffmpegVideoProfileParameter = "-profile:v " + profile + " ";
-						}
-						else if (ffmpegVideoCodec == "libvpx" && profile != "")
-						{
-							ffmpegVideoProfileParameter = "-quality " + profile + " ";
-						}
-						else if ((ffmpegVideoCodec == "mpeg4" || ffmpegVideoCodec == "xvid") && profile != "")
-						{
-							ffmpegVideoProfileParameter = "-qscale:v " + profile + " ";
-						}
+						encodingVideoProfileValidation(ffmpegVideoCodec, profile);
+						if (ffmpegVideoCodec == "libx264" && !profile.empty())
+							ffmpegVideoProfileParameter = std::format("-profile:v {} ", profile);
+						else if (ffmpegVideoCodec == "libvpx" && !profile.empty())
+							ffmpegVideoProfileParameter = std::format("-quality {} ", profile);
+						else if ((ffmpegVideoCodec == "mpeg4" || ffmpegVideoCodec == "xvid") && !profile.empty())
+							ffmpegVideoProfileParameter = std::format("-qscale:v {} ", profile);
 					}
-					else if (profile != "")
-					{
-						ffmpegVideoProfileParameter = "-profile:v " + profile + " ";
-						/*
-						std::string errorMessage = __FILEREF__ + "FFMpeg: codec is wrong"
-							+ ", codec: " + codec;
-						LOG_ERROR(errorMessage);
-
-						throw std::runtime_error(errorMessage);
-						*/
-					}
+					else if (!profile.empty())
+						ffmpegVideoProfileParameter = std::format("-profile:v {} ", profile);
 				}
 			}
 
 			// OtherOutputParameters
 			{
 				field = "otherOutputParameters";
-				if (JSONUtils::isPresent(videoRoot, field))
+				if (JSONUtils::isPresent(videoRoot, field, true))
 				{
 					std::string otherOutputParameters = JSONUtils::asString(videoRoot, field, "");
 
@@ -3128,7 +3020,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			// twoPasses
 			{
 				field = "twoPasses";
-				if (!JSONUtils::isPresent(videoRoot, field))
+				if (!JSONUtils::isPresent(videoRoot, field, true))
 				{
 					std::string errorMessage = std::format(
 						"FFMpeg: Field is not present or it is null"
@@ -3139,19 +3031,19 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 					throw std::runtime_error(errorMessage);
 				}
-				twoPasses = JSONUtils::JSONUtils::asBool(videoRoot, field, false);
+				twoPasses = JSONUtils::asBool(videoRoot, field, false);
 			}
 
 			// frameRate
 			{
 				field = "frameRate";
-				if (JSONUtils::isPresent(videoRoot, field))
+				if (JSONUtils::isPresent(videoRoot, field, true))
 				{
 					int frameRate = JSONUtils::asInt32(videoRoot, field, 0);
 
 					if (frameRate != 0)
 					{
-						ffmpegVideoFrameRateParameter = "-r " + std::to_string(frameRate) + " ";
+						ffmpegVideoFrameRateParameter = std::format("-r {} ", frameRate);
 
 						// keyFrameIntervalInSeconds
 						{
@@ -3177,7 +3069,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							*/
 
 							field = "keyFrameIntervalInSeconds";
-							if (JSONUtils::isPresent(videoRoot, field))
+							if (JSONUtils::isPresent(videoRoot, field, true))
 							{
 								int keyFrameIntervalInSeconds = JSONUtils::asInt32(videoRoot, field, 5);
 
@@ -3186,10 +3078,11 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 								// -g specifies the number of frames in a GOP
 								if (forceKeyFrames)
-									ffmpegVideoKeyFramesRateParameter =
-										"-force_key_frames expr:gte(t,n_forced*" + std::to_string(keyFrameIntervalInSeconds) + ") ";
+									ffmpegVideoKeyFramesRateParameter = std::format(
+										"-force_key_frames expr:gte(t,n_forced*{}) ", keyFrameIntervalInSeconds);
 								else
-									ffmpegVideoKeyFramesRateParameter = "-g " + std::to_string(frameRate * keyFrameIntervalInSeconds) + " ";
+									ffmpegVideoKeyFramesRateParameter = std::format("-g {} ",
+										frameRate * keyFrameIntervalInSeconds);
 							}
 						}
 					}
@@ -3197,7 +3090,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			}
 
 			field = "bitRates";
-			if (!JSONUtils::isPresent(videoRoot, field))
+			if (!JSONUtils::isPresent(videoRoot, field, true))
 			{
 				std::string errorMessage = std::format(
 					"FFMpeg: Field is not present or it is null"
@@ -3212,17 +3105,15 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 			videoBitRatesInfo.clear();
 			{
-				for (int bitRateIndex = 0; bitRateIndex < bitRatesRoot.size(); bitRateIndex++)
+				for (const auto& bitRateInfo : bitRatesRoot)
 				{
-					nlohmann::json bitRateInfo = bitRatesRoot[bitRateIndex];
-
 					// resolution
 					std::string ffmpegVideoResolution;
 					int videoWidth;
 					int videoHeight;
 					{
 						field = "width";
-						if (!JSONUtils::isPresent(bitRateInfo, field))
+						if (!JSONUtils::isPresent(bitRateInfo, field, true))
 						{
 							std::string errorMessage = std::format(
 								"FFMpeg: Field is not present or it is null"
@@ -3238,7 +3129,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							videoWidth = -2; // h264 requires always a even width/height
 
 						field = "height";
-						if (!JSONUtils::isPresent(bitRateInfo, field))
+						if (!JSONUtils::isPresent(bitRateInfo, field, true))
 						{
 							std::string errorMessage = std::format(
 								"FFMpeg: Field is not present or it is null"
@@ -3259,7 +3150,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						forceOriginalAspectRatio = JSONUtils::asString(bitRateInfo, field, "");
 
 						bool pad = false;
-						if (forceOriginalAspectRatio != "")
+						if (!forceOriginalAspectRatio.empty())
 						{
 							field = "pad";
 							pad = JSONUtils::asBool(bitRateInfo, field, false);
@@ -3268,12 +3159,12 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						// -vf "scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:(ow-iw)/2:(oh-ih)/2"
 
 						// ffmpegVideoResolution = "-vf scale=w=" + std::to_string(videoWidth)
-						ffmpegVideoResolution = "scale=w=" + std::to_string(videoWidth) + ":h=" + std::to_string(videoHeight);
-						if (forceOriginalAspectRatio != "")
+						ffmpegVideoResolution = std::format("scale=w={}:h={}", videoWidth, videoHeight);
+						if (!forceOriginalAspectRatio.empty())
 						{
-							ffmpegVideoResolution += (":force_original_aspect_ratio=" + forceOriginalAspectRatio);
+							ffmpegVideoResolution += std::format(":force_original_aspect_ratio={}", forceOriginalAspectRatio);
 							if (pad)
-								ffmpegVideoResolution += (",pad=" + std::to_string(videoWidth) + ":" + std::to_string(videoHeight) + ":(ow-iw)/2:(oh-ih)/2");
+								ffmpegVideoResolution += std::format(",pad={}:{}:(ow-iw)/2:(oh-ih)/2", videoWidth, videoHeight);
 						}
 
 						// ffmpegVideoResolution += " ";
@@ -3283,7 +3174,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					int kBitRate;
 					{
 						field = "kBitRate";
-						if (!JSONUtils::isPresent(bitRateInfo, field))
+						if (!JSONUtils::isPresent(bitRateInfo, field, true))
 						{
 							std::string errorMessage = std::format(
 								"FFMpeg: Field is not present or it is null"
@@ -3297,18 +3188,30 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 						kBitRate = JSONUtils::asInt32(bitRateInfo, field, 0);
 
-						ffmpegVideoBitRate = "-b:v " + std::to_string(kBitRate) + "k ";
+						ffmpegVideoBitRate = std::format("-b:v {}k ", kBitRate);
 					}
 
 					// maxRate
 					std::string ffmpegVideoMaxRate;
 					{
 						field = "kMaxRate";
-						if (JSONUtils::isPresent(bitRateInfo, field))
+						if (JSONUtils::isPresent(bitRateInfo, field, true))
 						{
 							int maxRate = JSONUtils::asInt32(bitRateInfo, field, 0);
 
-							ffmpegVideoMaxRate = "-maxrate " + std::to_string(maxRate) + "k ";
+							ffmpegVideoMaxRate = std::format("-maxrate {}k ", maxRate);
+						}
+					}
+
+					// minRate
+					std::optional<std::string> ffmpegVideoMinRate{};
+					{
+						field = "kMinRate";
+						if (JSONUtils::isPresent(bitRateInfo, field, true))
+						{
+							int minRate = JSONUtils::asInt32(bitRateInfo, field, 0);
+
+							ffmpegVideoMinRate = std::format("-minrate {}k ", minRate);
 						}
 					}
 
@@ -3316,17 +3219,17 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					std::string ffmpegVideoBufSize;
 					{
 						field = "kBufferSize";
-						if (JSONUtils::isPresent(bitRateInfo, field))
+						if (JSONUtils::isPresent(bitRateInfo, field, true))
 						{
 							int bufferSize = JSONUtils::asInt32(bitRateInfo, field, 0);
 
-							ffmpegVideoBufSize = "-bufsize " + std::to_string(bufferSize) + "k ";
+							ffmpegVideoBufSize = std::format("-bufsize {}k ", bufferSize);
 						}
 					}
 
-					videoBitRatesInfo.push_back(make_tuple(
-						ffmpegVideoResolution, kBitRate, videoWidth, videoHeight, ffmpegVideoBitRate, ffmpegVideoMaxRate, ffmpegVideoBufSize
-					));
+					videoBitRatesInfo.emplace_back(ffmpegVideoResolution, kBitRate, videoWidth, videoHeight,
+						ffmpegVideoBitRate, ffmpegVideoMaxRate, ffmpegVideoMinRate, ffmpegVideoBufSize
+					);
 				}
 			}
 		}
@@ -3343,7 +3246,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 	// if (contentType == "video" || contentType == "audio")
 	{
 		field = "audio";
-		if (!JSONUtils::isPresent(encodingProfileDetailsRoot, field))
+		if (!JSONUtils::isPresent(encodingProfileDetailsRoot, field, true))
 		{
 			std::string errorMessage = std::format(
 				"FFMpeg: Field is not present or it is null"
@@ -3360,7 +3263,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		// codec
 		{
 			field = "codec";
-			if (!JSONUtils::isPresent(audioRoot, field))
+			if (!JSONUtils::isPresent(audioRoot, field, true))
 			{
 				std::string errorMessage = std::format(
 					"FFMpeg: Field is not present or it is null"
@@ -3375,7 +3278,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 			FFMpegEncodingParameters::encodingAudioCodecValidation(ffmpegAudioCodec);
 
-			ffmpegAudioCodecParameter = "-acodec " + ffmpegAudioCodec + " ";
+			ffmpegAudioCodecParameter = std::format("-acodec {} ", ffmpegAudioCodec);
 		}
 
 		// kBitRate
@@ -3396,7 +3299,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		// OtherOutputParameters
 		{
 			field = "otherOutputParameters";
-			if (JSONUtils::isPresent(audioRoot, field))
+			if (JSONUtils::isPresent(audioRoot, field, true))
 			{
 				std::string otherOutputParameters = JSONUtils::asString(audioRoot, field, "");
 
@@ -3407,27 +3310,27 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 		// channelsNumber
 		{
 			field = "channelsNumber";
-			if (JSONUtils::isPresent(audioRoot, field))
+			if (JSONUtils::isPresent(audioRoot, field, true))
 			{
 				int channelsNumber = JSONUtils::asInt32(audioRoot, field, 0);
 
-				ffmpegAudioChannelsParameter = "-ac " + std::to_string(channelsNumber) + " ";
+				ffmpegAudioChannelsParameter = std::format("-ac {} ", channelsNumber);
 			}
 		}
 
 		// sample rate
 		{
 			field = "sampleRate";
-			if (JSONUtils::isPresent(audioRoot, field))
+			if (JSONUtils::isPresent(audioRoot, field, true))
 			{
 				int sampleRate = JSONUtils::asInt32(audioRoot, field, 0);
 
-				ffmpegAudioSampleRateParameter = "-ar " + std::to_string(sampleRate) + " ";
+				ffmpegAudioSampleRateParameter = std::format("-ar {} ", sampleRate);
 			}
 		}
 
 		field = "bitRates";
-		if (!JSONUtils::isPresent(audioRoot, field))
+		if (!JSONUtils::isPresent(audioRoot, field, true))
 		{
 			std::string errorMessage = std::format(
 				"FFMpeg: Field is not present or it is null"
@@ -3442,14 +3345,12 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 		audioBitRatesInfo.clear();
 		{
-			for (int bitRateIndex = 0; bitRateIndex < bitRatesRoot.size(); bitRateIndex++)
+			for (const auto& bitRateInfo : bitRatesRoot)
 			{
-				nlohmann::json bitRateInfo = bitRatesRoot[bitRateIndex];
-
 				std::string ffmpegAudioBitRate;
 				{
 					field = "kBitRate";
-					if (!JSONUtils::isPresent(bitRateInfo, field))
+					if (!JSONUtils::isPresent(bitRateInfo, field, true))
 					{
 						std::string errorMessage = std::format(
 							"FFMpeg: Field is not present or it is null"
@@ -3463,7 +3364,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 					int kBitRate = JSONUtils::asInt32(bitRateInfo, field, 0);
 
-					ffmpegAudioBitRate = "-b:a " + std::to_string(kBitRate) + "k ";
+					ffmpegAudioBitRate = std::format("-b:a {}k ", kBitRate);
 				}
 
 				audioBitRatesInfo.push_back(ffmpegAudioBitRate);
@@ -3472,16 +3373,16 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 	}
 }
 
-void FFMpegEncodingParameters::addToArguments(std::string parameter, std::vector<std::string> &argumentList)
+void FFMpegEncodingParameters::addToArguments(const std::string& parameter, std::vector<std::string> &argumentList)
 {
-	if (parameter != "")
+	if (!parameter.empty())
 	{
 		std::string item;
 		std::stringstream parameterStream(parameter);
 
 		while (getline(parameterStream, item, ' '))
 		{
-			if (item != "")
+			if (!item.empty())
 				argumentList.push_back(item);
 		}
 	}
@@ -3491,7 +3392,7 @@ void FFMpegEncodingParameters::encodingFileFormatValidation(std::string fileForm
 {
 	std::string fileFormatLowerCase;
 	fileFormatLowerCase.resize(fileFormat.size());
-	transform(fileFormat.begin(), fileFormat.end(), fileFormatLowerCase.begin(), [](unsigned char c) { return tolower(c); });
+	std::ranges::transform(fileFormat, fileFormatLowerCase.begin(), [](unsigned char c) { return tolower(c); });
 
 	if (fileFormatLowerCase != "3gp" && fileFormatLowerCase != "mp4" && fileFormatLowerCase != "mov" && fileFormatLowerCase != "webm" &&
 		fileFormatLowerCase != "hls" && fileFormatLowerCase != "dash" && fileFormatLowerCase != "ts" && fileFormatLowerCase != "mts" &&
@@ -3499,7 +3400,7 @@ void FFMpegEncodingParameters::encodingFileFormatValidation(std::string fileForm
 		fileFormatLowerCase != "wmv" && fileFormatLowerCase != "yuv" && fileFormatLowerCase != "mpg" && fileFormatLowerCase != "mpeg" &&
 		fileFormatLowerCase != "mjpeg" && fileFormatLowerCase != "mxf")
 	{
-		std::string errorMessage = std::format(
+		const std::string errorMessage = std::format(
 			"FFMpeg: fileFormat is wrong"
 			", fileFormatLowerCase: {}",
 			fileFormatLowerCase
@@ -3514,7 +3415,7 @@ void FFMpegEncodingParameters::encodingAudioCodecValidation(std::string codec)
 {
 	if (codec != "aac" && codec != "libfdk_aac" && codec != "libvo_aacenc" && codec != "libvorbis" && codec != "pcm_s16le" && codec != "pcm_s32le")
 	{
-		std::string errorMessage = std::format(
+		const std::string errorMessage = std::format(
 			"FFMpeg: Audio codec is wrong"
 			", codec: {}",
 			codec
@@ -3532,7 +3433,7 @@ void FFMpegEncodingParameters::encodingVideoProfileValidation(std::string codec,
 		if (profile != "high" && profile != "baseline" && profile != "main" && profile != "high422" // used in case of mxf
 		)
 		{
-			std::string errorMessage = std::format(
+			const std::string errorMessage = std::format(
 				"FFMpeg: Profile is wrong"
 				", codec: {}"
 				", profile: {}",
@@ -3547,7 +3448,7 @@ void FFMpegEncodingParameters::encodingVideoProfileValidation(std::string codec,
 	{
 		if (profile != "best" && profile != "good")
 		{
-			std::string errorMessage = std::format(
+			const std::string errorMessage = std::format(
 				"FFMpeg: Profile is wrong"
 				", codec: {}"
 				", profile: {}",
@@ -3560,7 +3461,7 @@ void FFMpegEncodingParameters::encodingVideoProfileValidation(std::string codec,
 	}
 	else if (codec == "mpeg4" || codec == "xvid")
 	{
-		if (profile != "")
+		if (!profile.empty())
 		{
 			if (profile.find_first_not_of("0123456789") != std::string::npos || stoi(profile) < 1 || stoi(profile) > 31)
 			{
@@ -3589,7 +3490,7 @@ void FFMpegEncodingParameters::encodingVideoProfileValidation(std::string codec,
 	}
 }
 
-void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles()
+void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles() const
 {
 	try
 	{
@@ -3637,19 +3538,11 @@ void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles()
 			}
 		}
 	}
-	catch (std::runtime_error &e)
-	{
-		LOG_ERROR(
-			"removeTwoPassesTemporaryFiles failed"
-			", e.what(): {}",
-			e.what()
-		);
-	}
 	catch (std::exception &e)
 	{
 		LOG_ERROR(
 			"removeTwoPassesTemporaryFiles failed"
-			", e.what(): {}",
+			", exception: {}",
 			e.what()
 		);
 	}
@@ -3658,7 +3551,7 @@ void FFMpegEncodingParameters::removeTwoPassesTemporaryFiles()
 std::string FFMpegEncodingParameters::getMultiTrackEncodedStagingTemplateAssetPathName()
 {
 
-	size_t extensionIndex = _encodedStagingAssetPathName.find_last_of(".");
+	size_t extensionIndex = _encodedStagingAssetPathName.find_last_of('.');
 	if (extensionIndex == std::string::npos)
 	{
 		std::string errorMessage = std::format(
@@ -3688,13 +3581,12 @@ bool FFMpegEncodingParameters::getMultiTrackPathNames(std::vector<std::string> &
 
 	sourcesPathName.clear();
 
-	for (int videoIndex = 0; videoIndex < _videoBitRatesInfo.size(); videoIndex++)
+	for (const auto& videoBitRateInfo : _videoBitRatesInfo)
 	{
-		std::tuple<std::string, int, int, int, std::string, std::string, std::string> videoBitRateInfo = _videoBitRatesInfo[videoIndex];
-
 		int videoHeight = -1;
 
-		tie(std::ignore, std::ignore, std::ignore, videoHeight, std::ignore, std::ignore, std::ignore) = videoBitRateInfo;
+		tie(std::ignore, std::ignore, std::ignore, videoHeight, std::ignore, std::ignore,
+			std::ignore, std::ignore) = videoBitRateInfo;
 
 		std::string encodedStagingTemplateAssetPathName = getMultiTrackEncodedStagingTemplateAssetPathName();
 
