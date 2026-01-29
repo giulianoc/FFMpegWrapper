@@ -214,7 +214,7 @@ void FFMpegWrapper::encodeContent(
 				{
 					json audioTrack = audioTracksRoot[index];
 
-					string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
+					string audioTrackDirectoryName = JSONUtils::as<string>(audioTrack, "language", "");
 
 					string audioPathName = std::format("{}/{}", encodedStagingAssetPathName, audioTrackDirectoryName);
 
@@ -238,7 +238,7 @@ void FFMpegWrapper::encodeContent(
 					{
 						json videoTrack = videoTracksRoot[0];
 
-						videoTrackDirectoryName = to_string(JSONUtils::asInt32(videoTrack, "trackIndex"));
+						videoTrackDirectoryName = to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex"));
 					}
 
 					string videoPathName = std::format("{}/{}", encodedStagingAssetPathName, videoTrackDirectoryName);

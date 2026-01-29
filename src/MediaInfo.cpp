@@ -376,7 +376,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 				throw runtime_error(errorMessage);
 			}
-			string codecType = JSONUtils::asString(streamRoot, field, "");
+			string codecType = JSONUtils::as<string>(streamRoot, field, "");
 
 			if (codecType == "video")
 			{
@@ -406,7 +406,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				trackIndex = JSONUtils::asInt32(streamRoot, field, 0);
+				trackIndex = JSONUtils::as<int32_t>(streamRoot, field, 0);
 
 				field = "codec_name";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -427,14 +427,14 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 						throw runtime_error(errorMessage);
 					}
 				}
-				videoCodecName = JSONUtils::asString(streamRoot, field, "");
+				videoCodecName = JSONUtils::as<string>(streamRoot, field, "");
 
 				if (firstVideoCodecName == "")
 					firstVideoCodecName = videoCodecName;
 
 				field = "profile";
 				if (JSONUtils::isPresent(streamRoot, field))
-					videoProfile = JSONUtils::asString(streamRoot, field, "");
+					videoProfile = JSONUtils::as<string>(streamRoot, field, "");
 				else
 				{
 					/*
@@ -465,7 +465,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				videoWidth = JSONUtils::asInt32(streamRoot, field, 0);
+				videoWidth = JSONUtils::as<int32_t>(streamRoot, field, 0);
 
 				field = "height";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -481,7 +481,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				videoHeight = JSONUtils::asInt32(streamRoot, field, 0);
+				videoHeight = JSONUtils::as<int32_t>(streamRoot, field, 0);
 
 				field = "avg_frame_rate";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -497,7 +497,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				videoAvgFrameRate = JSONUtils::asString(streamRoot, field, "");
+				videoAvgFrameRate = JSONUtils::as<string>(streamRoot, field, "");
 
 				field = "bit_rate";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -518,7 +518,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					}
 				}
 				else
-					videoBitRate = stol(JSONUtils::asString(streamRoot, field, ""));
+					videoBitRate = stol(JSONUtils::as<string>(streamRoot, field, ""));
 
 				field = "duration";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -540,7 +540,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 				}
 				else
 				{
-					string duration = JSONUtils::asString(streamRoot, field, "0");
+					string duration = JSONUtils::as<string>(streamRoot, field, "0");
 
 					// 2020-01-13: atoll remove the milliseconds and this is wrong
 					// durationInMilliSeconds = atoll(duration.c_str()) * 1000;
@@ -578,7 +578,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				trackIndex = JSONUtils::asInt32(streamRoot, field, 0);
+				trackIndex = JSONUtils::as<int32_t>(streamRoot, field, 0);
 
 				field = "codec_name";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -594,7 +594,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				audioCodecName = JSONUtils::asString(streamRoot, field, "");
+				audioCodecName = JSONUtils::as<string>(streamRoot, field, "");
 
 				field = "sample_rate";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -610,7 +610,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				audioSampleRate = stol(JSONUtils::asString(streamRoot, field, ""));
+				audioSampleRate = stol(JSONUtils::as<string>(streamRoot, field, ""));
 
 				field = "channels";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -626,7 +626,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 
 					throw runtime_error(errorMessage);
 				}
-				audioChannels = JSONUtils::asInt32(streamRoot, field, 0);
+				audioChannels = JSONUtils::as<int32_t>(streamRoot, field, 0);
 
 				field = "bit_rate";
 				if (!JSONUtils::isPresent(streamRoot, field))
@@ -645,12 +645,12 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					// throw runtime_error(errorMessage);
 				}
 				else
-					audioBitRate = stol(JSONUtils::asString(streamRoot, field, ""));
+					audioBitRate = stol(JSONUtils::as<string>(streamRoot, field, ""));
 
 				field = "duration";
 				if (JSONUtils::isPresent(streamRoot, field))
 				{
-					string duration = JSONUtils::asString(streamRoot, field, "0");
+					string duration = JSONUtils::as<string>(streamRoot, field, "0");
 
 					// 2020-01-13: atoll remove the milliseconds and this is wrong
 					// durationInMilliSeconds = atoll(duration.c_str()) * 1000;
@@ -666,7 +666,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 					field = "language";
 					if (JSONUtils::isPresent(streamRoot[tagsField], field))
 					{
-						language = JSONUtils::asString(streamRoot[tagsField], field, "");
+						language = JSONUtils::as<string>(streamRoot[tagsField], field, "");
 					}
 				}
 
@@ -713,7 +713,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		}
 		else
 		{
-			string duration = JSONUtils::asString(formatRoot, field, "");
+			string duration = JSONUtils::as<string>(formatRoot, field, "");
 
 			// 2020-01-13: atoll remove the milliseconds and this is wrong
 			// durationInMilliSeconds = atoll(duration.c_str()) * 1000;
@@ -740,7 +740,7 @@ tuple<int64_t, long, json> FFMpegWrapper::getMediaInfo(
 		}
 		else
 		{
-			string bit_rate = JSONUtils::asString(formatRoot, "bit_rate", "");
+			string bit_rate = JSONUtils::as<string>(formatRoot, "bit_rate", "");
 			bitRate = atoll(bit_rate.c_str());
 		}
 
@@ -1127,7 +1127,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 
 				throw runtime_error(errorMessage);
 			}
-			string pts_time = JSONUtils::asString(packetRoot, field, "");
+			string pts_time = JSONUtils::as<string>(packetRoot, field, "");
 
 			field = "flags";
 			if (!JSONUtils::isPresent(packetRoot, field))
@@ -1143,7 +1143,7 @@ string FFMpegWrapper::getNearestKeyFrameTime(
 
 				throw runtime_error(errorMessage);
 			}
-			string flags = JSONUtils::asString(packetRoot, field, "");
+			string flags = JSONUtils::as<string>(packetRoot, field, "");
 
 			if (flags.find("K") != string::npos)
 			{

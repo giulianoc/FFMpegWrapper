@@ -20,6 +20,7 @@
 #include <fstream>
 #include <regex>
 
+using namespace std;
 namespace fs = std::filesystem;
 
 FFMpegEncodingParameters::FFMpegEncodingParameters(
@@ -2056,7 +2057,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					for (const auto& audioTrack : _audioTracksRoot)
 					{
 						ffmpegArgumentList.emplace_back("-map");
-						ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
+						ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
 
 						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
@@ -2066,7 +2067,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 
 						addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
-						std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
+						std::string audioTrackDirectoryName = JSONUtils::as<string>(audioTrack, "language", "");
 
 						{
 							std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
@@ -2090,7 +2091,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					nlohmann::json videoTrack = _videoTracksRoot[0];
 
 					ffmpegArgumentList.emplace_back("-map");
-					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
+					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
 				}
 				addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 				addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
@@ -2133,7 +2134,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					for (const auto& audioTrack : _audioTracksRoot)
 					{
 						ffmpegArgumentList.emplace_back("-map");
-						ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
+						ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
 
 						addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
@@ -2143,7 +2144,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 
 						addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
-						std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
+						std::string audioTrackDirectoryName = JSONUtils::as<string>(audioTrack, "language", "");
 
 						{
 							std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
@@ -2167,7 +2168,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					nlohmann::json videoTrack = _videoTracksRoot[0];
 
 					ffmpegArgumentList.emplace_back("-map");
-					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
+					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
 				}
 				addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 				addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
@@ -2194,7 +2195,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				{
 					nlohmann::json videoTrack = _videoTracksRoot[0];
 
-					videoTrackDirectoryName = std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex"));
+					videoTrackDirectoryName = std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex"));
 				}
 
 				{
@@ -2225,7 +2226,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				for (const auto& audioTrack : _audioTracksRoot)
 				{
 					ffmpegArgumentList.emplace_back("-map");
-					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
+					ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
 
 					addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 					addToArguments(ffmpegAudioBitRateParameter, ffmpegArgumentList);
@@ -2235,7 +2236,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 
 					addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 
-					std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
+					std::string audioTrackDirectoryName = JSONUtils::as<string>(audioTrack, "language", "");
 
 					{
 						std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
@@ -2259,7 +2260,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				nlohmann::json videoTrack = _videoTracksRoot[0];
 
 				ffmpegArgumentList.emplace_back("-map");
-				ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
+				ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
 			}
 			addToArguments(_ffmpegVideoCodecParameter, ffmpegArgumentList);
 			addToArguments(_ffmpegVideoProfileParameter, ffmpegArgumentList);
@@ -2282,7 +2283,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			{
 				nlohmann::json videoTrack = _videoTracksRoot[0];
 
-				videoTrackDirectoryName = std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex"));
+				videoTrackDirectoryName = std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex"));
 			}
 
 			{
@@ -2407,8 +2408,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 						FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
 
 						// ffmpegArgumentList.push_back("-map");
-						// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
-						audioOutput.map(std::format("0:{}", JSONUtils::asInt32(audioTrack, "trackIndex")));
+						// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
+						audioOutput.map(std::format("0:{}", JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
 
 						// FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						audioOutput.withAudioCodec(_ffmpegAudioCodec);
@@ -2424,7 +2425,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 						// FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 						audioOutput.addArgs(_ffmpegHttpStreamingParameter);
 
-						std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
+						std::string audioTrackDirectoryName = JSONUtils::as<string>(audioTrack, "language", "");
 
 						{
 							std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
@@ -2453,8 +2454,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					nlohmann::json videoTrack = _videoTracksRoot[0];
 
 					// ffmpegArgumentList.push_back("-map");
-					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
-					videoOutput.map(std::format("0:{}", JSONUtils::asInt32(videoTrack, "trackIndex")));
+					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
+					videoOutput.map(std::format("0:{}", JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
 				}
 				videoOutput.withVideoCodec(_ffmpegVideoCodec);
 				videoOutput.addArgs(_ffmpegVideoProfileParameter);
@@ -2502,8 +2503,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					{
 						FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
 						// ffmpegArgumentList.push_back("-map");
-						// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
-						audioOutput.map(std::format("0:{}", JSONUtils::asInt32(audioTrack, "trackIndex")));
+						// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
+						audioOutput.map(std::format("0:{}", JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
 
 						// FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 						audioOutput.withAudioCodec(_ffmpegAudioCodec);
@@ -2519,7 +2520,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 						// FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 						audioOutput.addArgs(_ffmpegHttpStreamingParameter);
 
-						std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
+						std::string audioTrackDirectoryName = JSONUtils::as<string>(audioTrack, "language", "");
 
 						{
 							std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
@@ -2549,8 +2550,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					nlohmann::json videoTrack = _videoTracksRoot[0];
 
 					// ffmpegArgumentList.push_back("-map");
-					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
-					videoOutput.map(std::format("0:{}", JSONUtils::asInt32(videoTrack, "trackIndex")));
+					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
+					videoOutput.map(std::format("0:{}", JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
 				}
 				videoOutput.withVideoCodec(_ffmpegVideoCodec);
 				videoOutput.addArgs(_ffmpegVideoProfileParameter);
@@ -2580,7 +2581,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				{
 					nlohmann::json videoTrack = _videoTracksRoot[0];
 
-					videoTrackDirectoryName = std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex"));
+					videoTrackDirectoryName = std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex"));
 				}
 
 				{
@@ -2617,8 +2618,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
 
 					// ffmpegArgumentList.push_back("-map");
-					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(audioTrack, "trackIndex")));
-					audioOutput.map(std::format("0:{}", JSONUtils::asInt32(audioTrack, "trackIndex")));
+					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
+					audioOutput.map(std::format("0:{}", JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
 
 					// FFMpegEncodingParameters::addToArguments(_ffmpegAudioCodecParameter, ffmpegArgumentList);
 					audioOutput.withAudioCodec(_ffmpegAudioCodec);
@@ -2634,7 +2635,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					// FFMpegEncodingParameters::addToArguments(_ffmpegHttpStreamingParameter, ffmpegArgumentList);
 					audioOutput.addArgs(_ffmpegHttpStreamingParameter);
 
-					std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
+					std::string audioTrackDirectoryName = JSONUtils::as<string>(audioTrack, "language", "");
 
 					{
 						std::string segmentPathFileName = std::format("{}/{}/{}_{}_%04d.ts",
@@ -2663,8 +2664,8 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				nlohmann::json videoTrack = _videoTracksRoot[0];
 
 				// ffmpegArgumentList.push_back("-map");
-				// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex")));
-				videoOutput.map(std::format("0:{}", JSONUtils::asInt32(videoTrack, "trackIndex")));
+				// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
+				videoOutput.map(std::format("0:{}", JSONUtils::as<int32_t>(videoTrack, "trackIndex")));
 			}
 			videoOutput.withVideoCodec(_ffmpegVideoCodec);
 			videoOutput.addArgs(_ffmpegVideoProfileParameter);
@@ -2689,7 +2690,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			{
 				nlohmann::json videoTrack = _videoTracksRoot[0];
 
-				videoTrackDirectoryName = std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex"));
+				videoTrackDirectoryName = std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex"));
 			}
 
 			{
@@ -2750,9 +2751,9 @@ void FFMpegEncodingParameters::createManifestFile_audioGroup()
 		{
 			for (const auto& audioTrack : _audioTracksRoot)
 			{
-				std::string audioTrackDirectoryName = JSONUtils::asString(audioTrack, "language", "");
+				std::string audioTrackDirectoryName = JSONUtils::as<string>(audioTrack, "language", "");
 
-				std::string audioLanguage = JSONUtils::asString(audioTrack, "language", "");
+				std::string audioLanguage = JSONUtils::as<string>(audioTrack, "language", "");
 
 				// std::string audioManifestLine = "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",LANGUAGE=\"" + audioLanguage + "\",NAME=\"" + audioLanguage +
 				//	"\",AUTOSELECT=YES, DEFAULT=YES,URI=\"" + audioTrackDirectoryName + "/" + manifestFileName + "\"";
@@ -2772,7 +2773,7 @@ void FFMpegEncodingParameters::createManifestFile_audioGroup()
 		{
 			nlohmann::json videoTrack = _videoTracksRoot[0];
 
-			videoTrackDirectoryName = std::to_string(JSONUtils::asInt32(videoTrack, "trackIndex"));
+			videoTrackDirectoryName = std::to_string(JSONUtils::as<int32_t>(videoTrack, "trackIndex"));
 		}
 		mainManifest += std::format("{}/{}\n", videoTrackDirectoryName, manifestFileName);
 
@@ -2873,7 +2874,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 			throw std::runtime_error(errorMessage);
 		}
-		fileFormat = JSONUtils::asString(encodingProfileDetailsRoot, field, "");
+		fileFormat = JSONUtils::as<string>(encodingProfileDetailsRoot, field, "");
 		fileFormatLowerCase = StringUtils::lowerCase(fileFormat);
 
 		encodingFileFormatValidation(fileFormat);
@@ -2892,7 +2893,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				nlohmann::json hlsRoot = encodingProfileDetailsRoot[field];
 
 				field = "segmentDuration";
-				segmentDurationInSeconds = JSONUtils::asInt32(hlsRoot, field, 10);
+				segmentDurationInSeconds = JSONUtils::as<int32_t>(hlsRoot, field, 10);
 			}
 
 			ffmpegHttpStreamingParameter = std::format("-hls_time {} ", segmentDurationInSeconds);
@@ -2915,7 +2916,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				nlohmann::json dashRoot = encodingProfileDetailsRoot[field];
 
 				field = "segmentDuration";
-				segmentDurationInSeconds = JSONUtils::asInt32(dashRoot, field, 10);
+				segmentDurationInSeconds = JSONUtils::as<int32_t>(dashRoot, field, 10);
 			}
 			ffmpegHttpStreamingParameter = std::format("-seg_duration {} ", segmentDurationInSeconds);
 
@@ -2974,7 +2975,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 					throw std::runtime_error(errorMessage);
 				}
 
-				ffmpegVideoCodec = JSONUtils::asString(videoRoot, field, "");
+				ffmpegVideoCodec = JSONUtils::as<string>(videoRoot, field, "");
 
 				// 2020-03-27: commented just to avoid to add the check every time a new codec is added
 				//		In case the codec is wrong, ffmpeg will generate the error later
@@ -2988,7 +2989,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				field = "profile";
 				if (JSONUtils::isPresent(videoRoot, field, true))
 				{
-					std::string profile = JSONUtils::asString(videoRoot, field, "");
+					std::string profile = JSONUtils::as<string>(videoRoot, field, "");
 
 					if (ffmpegVideoCodec == "libx264" || ffmpegVideoCodec == "libvpx"
 						|| ffmpegVideoCodec == "mpeg4" || ffmpegVideoCodec == "xvid")
@@ -3011,7 +3012,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				field = "otherOutputParameters";
 				if (JSONUtils::isPresent(videoRoot, field, true))
 				{
-					std::string otherOutputParameters = JSONUtils::asString(videoRoot, field, "");
+					std::string otherOutputParameters = JSONUtils::as<string>(videoRoot, field, "");
 
 					ffmpegVideoOtherParameters = otherOutputParameters + " ";
 				}
@@ -3031,7 +3032,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 					throw std::runtime_error(errorMessage);
 				}
-				twoPasses = JSONUtils::asBool(videoRoot, field, false);
+				twoPasses = JSONUtils::as<bool>(videoRoot, field, false);
 			}
 
 			// frameRate
@@ -3039,7 +3040,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 				field = "frameRate";
 				if (JSONUtils::isPresent(videoRoot, field, true))
 				{
-					int frameRate = JSONUtils::asInt32(videoRoot, field, 0);
+					int frameRate = JSONUtils::as<int32_t>(videoRoot, field, 0);
 
 					if (frameRate != 0)
 					{
@@ -3071,10 +3072,10 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							field = "keyFrameIntervalInSeconds";
 							if (JSONUtils::isPresent(videoRoot, field, true))
 							{
-								int keyFrameIntervalInSeconds = JSONUtils::asInt32(videoRoot, field, 5);
+								int keyFrameIntervalInSeconds = JSONUtils::as<int32_t>(videoRoot, field, 5);
 
 								field = "forceKeyFrames";
-								bool forceKeyFrames = JSONUtils::asInt32(videoRoot, field, false);
+								bool forceKeyFrames = JSONUtils::as<bool>(videoRoot, field, false);
 
 								// -g specifies the number of frames in a GOP
 								if (forceKeyFrames)
@@ -3124,7 +3125,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 							throw std::runtime_error(errorMessage);
 						}
-						videoWidth = JSONUtils::asInt32(bitRateInfo, field, 0);
+						videoWidth = JSONUtils::as<int32_t>(bitRateInfo, field, 0);
 						if (videoWidth == -1 && ffmpegVideoCodec == "libx264")
 							videoWidth = -2; // h264 requires always a even width/height
 
@@ -3140,20 +3141,20 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 							throw std::runtime_error(errorMessage);
 						}
-						videoHeight = JSONUtils::asInt32(bitRateInfo, field, 0);
+						videoHeight = JSONUtils::as<int32_t>(bitRateInfo, field, 0);
 						if (videoHeight == -1 && ffmpegVideoCodec == "libx264")
 							videoHeight = -2; // h264 requires always a even width/height
 
 						// forceOriginalAspectRatio could be: decrease or increase
 						std::string forceOriginalAspectRatio;
 						field = "forceOriginalAspectRatio";
-						forceOriginalAspectRatio = JSONUtils::asString(bitRateInfo, field, "");
+						forceOriginalAspectRatio = JSONUtils::as<string>(bitRateInfo, field, "");
 
 						bool pad = false;
 						if (!forceOriginalAspectRatio.empty())
 						{
 							field = "pad";
-							pad = JSONUtils::asBool(bitRateInfo, field, false);
+							pad = JSONUtils::as<bool>(bitRateInfo, field, false);
 						}
 
 						// -vf "scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:(ow-iw)/2:(oh-ih)/2"
@@ -3186,7 +3187,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 							throw std::runtime_error(errorMessage);
 						}
 
-						kBitRate = JSONUtils::asInt32(bitRateInfo, field, 0);
+						kBitRate = JSONUtils::as<int32_t>(bitRateInfo, field, 0);
 
 						ffmpegVideoBitRate = std::format("-b:v {}k ", kBitRate);
 					}
@@ -3197,7 +3198,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						field = "kMaxRate";
 						if (JSONUtils::isPresent(bitRateInfo, field, true))
 						{
-							int maxRate = JSONUtils::asInt32(bitRateInfo, field, 0);
+							int maxRate = JSONUtils::as<int32_t>(bitRateInfo, field, 0);
 
 							ffmpegVideoMaxRate = std::format("-maxrate {}k ", maxRate);
 						}
@@ -3209,7 +3210,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						field = "kMinRate";
 						if (JSONUtils::isPresent(bitRateInfo, field, true))
 						{
-							int minRate = JSONUtils::asInt32(bitRateInfo, field, 0);
+							int minRate = JSONUtils::as<int32_t>(bitRateInfo, field, 0);
 
 							ffmpegVideoMinRate = std::format("-minrate {}k ", minRate);
 						}
@@ -3221,7 +3222,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						field = "kBufferSize";
 						if (JSONUtils::isPresent(bitRateInfo, field, true))
 						{
-							int bufferSize = JSONUtils::asInt32(bitRateInfo, field, 0);
+							int bufferSize = JSONUtils::as<int32_t>(bitRateInfo, field, 0);
 
 							ffmpegVideoBufSize = std::format("-bufsize {}k ", bufferSize);
 						}
@@ -3274,7 +3275,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 
 				throw std::runtime_error(errorMessage);
 			}
-			ffmpegAudioCodec = JSONUtils::asString(audioRoot, field, "");
+			ffmpegAudioCodec = JSONUtils::as<string>(audioRoot, field, "");
 
 			FFMpegEncodingParameters::encodingAudioCodecValidation(ffmpegAudioCodec);
 
@@ -3287,7 +3288,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			field = "kBitRate";
 			if (JSONUtils::isPresent(audioRoot, field))
 			{
-				int bitRate = JSONUtils::asInt32(audioRoot, field, 0);
+				int bitRate = JSONUtils::as<int32_t>(audioRoot, field, 0);
 
 				ffmpegAudioBitRateParameter =
 						"-b:a " + std::to_string(bitRate) + "k "
@@ -3301,7 +3302,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			field = "otherOutputParameters";
 			if (JSONUtils::isPresent(audioRoot, field, true))
 			{
-				std::string otherOutputParameters = JSONUtils::asString(audioRoot, field, "");
+				std::string otherOutputParameters = JSONUtils::as<string>(audioRoot, field, "");
 
 				ffmpegAudioOtherParameters = otherOutputParameters + " ";
 			}
@@ -3312,7 +3313,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			field = "channelsNumber";
 			if (JSONUtils::isPresent(audioRoot, field, true))
 			{
-				int channelsNumber = JSONUtils::asInt32(audioRoot, field, 0);
+				int channelsNumber = JSONUtils::as<int32_t>(audioRoot, field, 0);
 
 				ffmpegAudioChannelsParameter = std::format("-ac {} ", channelsNumber);
 			}
@@ -3323,7 +3324,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 			field = "sampleRate";
 			if (JSONUtils::isPresent(audioRoot, field, true))
 			{
-				int sampleRate = JSONUtils::asInt32(audioRoot, field, 0);
+				int sampleRate = JSONUtils::as<int32_t>(audioRoot, field, 0);
 
 				ffmpegAudioSampleRateParameter = std::format("-ar {} ", sampleRate);
 			}
@@ -3362,7 +3363,7 @@ void FFMpegEncodingParameters::settingFfmpegParameters(
 						throw std::runtime_error(errorMessage);
 					}
 
-					int kBitRate = JSONUtils::asInt32(bitRateInfo, field, 0);
+					int kBitRate = JSONUtils::as<int32_t>(bitRateInfo, field, 0);
 
 					ffmpegAudioBitRate = std::format("-b:a {}k ", kBitRate);
 				}

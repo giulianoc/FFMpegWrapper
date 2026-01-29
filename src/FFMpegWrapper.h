@@ -86,7 +86,7 @@ class FFMpegWrapper
 		RestartWithinEncoder,
 		KillToRestartByEngine
 	};
-	static constexpr std::string_view toString(const KillType &killType)
+	static constexpr std::string toString(const KillType &killType)
 	{
 		switch (killType)
 		{

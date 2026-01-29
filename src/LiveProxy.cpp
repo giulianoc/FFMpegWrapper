@@ -101,13 +101,13 @@ void FFMpegWrapper::liveProxy(
 		for (const auto& inputRoot : *inputsRoot)
 		{
 			bool timePeriod = false;
-			timePeriod = JSONUtils::asBool(inputRoot, "timePeriod", false);
+			timePeriod = JSONUtils::as<bool>(inputRoot, "timePeriod", false);
 
 			int64_t utcProxyPeriodStart = -1;
-			utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, "utcScheduleStart", -1);
+			utcProxyPeriodStart = JSONUtils::as<int64_t>(inputRoot, "utcScheduleStart", -1);
 
 			int64_t utcProxyPeriodEnd = -1;
-			utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, "utcScheduleEnd", -1);
+			utcProxyPeriodEnd = JSONUtils::as<int64_t>(inputRoot, "utcScheduleEnd", -1);
 
 			if (!timePeriod || utcProxyPeriodStart == -1 || utcProxyPeriodEnd == -1)
 			{
@@ -136,12 +136,12 @@ void FFMpegWrapper::liveProxy(
 			for (const auto& inputRoot : *inputsRoot)
 			{
 				string field = "utcScheduleStart";
-				int64_t utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
+				int64_t utcProxyPeriodStart = JSONUtils::as<int64_t>(inputRoot, field, -1);
 				if (utcFirstProxyPeriodStart == -1)
 					utcFirstProxyPeriodStart = utcProxyPeriodStart;
 
 				field = "utcScheduleEnd";
-				utcLastProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
+				utcLastProxyPeriodEnd = JSONUtils::as<int64_t>(inputRoot, field, -1);
 			}
 		}
 
@@ -857,10 +857,10 @@ int FFMpegWrapper::getNextLiveProxyInput(
 			json inputRoot = (*inputsRoot)[inputIndex];
 
 			string field = "utcScheduleStart";
-			int64_t utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
+			int64_t utcProxyPeriodStart = JSONUtils::as<int64_t>(inputRoot, field, -1);
 
 			field = "utcScheduleEnd";
-			int64_t utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
+			int64_t utcProxyPeriodEnd = JSONUtils::as<int64_t>(inputRoot, field, -1);
 
 			LOG_INFO(
 				"getNextLiveProxyInput"
@@ -991,14 +991,14 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 	// }
 	bool timePeriod = false;
 	string field = "timePeriod";
-	timePeriod = JSONUtils::asBool(inputRoot, field, false);
+	timePeriod = JSONUtils::as<bool>(inputRoot, field, false);
 
 	field = "utcScheduleStart";
-	utcProxyPeriodStart = JSONUtils::asInt64(inputRoot, field, -1);
+	utcProxyPeriodStart = JSONUtils::as<int64_t>(inputRoot, field, -1);
 
 	int64_t utcProxyPeriodEnd = -1;
 	field = "utcScheduleEnd";
-	utcProxyPeriodEnd = JSONUtils::asInt64(inputRoot, field, -1);
+	utcProxyPeriodEnd = JSONUtils::as<int64_t>(inputRoot, field, -1);
 
 	//	"streamInput": { "captureAudioDeviceNumber": -1, "captureChannelsNumber": -1, "captureFrameRate": -1, "captureHeight": -1,
 	//"captureVideoDeviceNumber": -1, "captureVideoInputFormat": "", "captureWidth": -1, "confKey": 2464, "configurationLabel":
@@ -1024,60 +1024,60 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			throw runtime_error(errorMessage);
 		}
-		string streamSourceType = JSONUtils::asString(streamInputRoot, field, "");
+		string streamSourceType = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		int maxWidth = -1;
 		field = "maxWidth";
-		maxWidth = JSONUtils::asInt32(streamInputRoot, field, -1);
+		maxWidth = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
 
 		string url;
 		field = "url";
-		url = JSONUtils::asString(streamInputRoot, field, "");
+		url = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		field = "useVideoTrackFromPhysicalPathName";
-		string useVideoTrackFromPhysicalPathName = JSONUtils::asString(streamInputRoot, field, "");
+		string useVideoTrackFromPhysicalPathName = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		field = "useVideoTrackFromPhysicalDeliveryURL";
-		string useVideoTrackFromPhysicalDeliveryURL = JSONUtils::asString(streamInputRoot, field, "");
+		string useVideoTrackFromPhysicalDeliveryURL = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		string userAgent;
 		field = "userAgent";
-		userAgent = JSONUtils::asString(streamInputRoot, field, "");
+		userAgent = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		field = "pushListenTimeout";
-		pushListenTimeout = JSONUtils::asInt32(streamInputRoot, field, -1);
+		pushListenTimeout = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
 
 		string otherInputOptions;
 		field = "otherInputOptions";
-		otherInputOptions = JSONUtils::asString(streamInputRoot, field, "");
+		otherInputOptions = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		string captureLive_videoInputFormat;
 		field = "captureVideoInputFormat";
-		captureLive_videoInputFormat = JSONUtils::asString(streamInputRoot, field, "");
+		captureLive_videoInputFormat = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		int captureLive_frameRate = -1;
 		field = "captureFrameRate";
-		captureLive_frameRate = JSONUtils::asInt32(streamInputRoot, field, -1);
+		captureLive_frameRate = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
 
 		int captureLive_width = -1;
 		field = "captureWidth";
-		captureLive_width = JSONUtils::asInt32(streamInputRoot, field, -1);
+		captureLive_width = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
 
 		int captureLive_height = -1;
 		field = "captureHeight";
-		captureLive_height = JSONUtils::asInt32(streamInputRoot, field, -1);
+		captureLive_height = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
 
 		int captureLive_videoDeviceNumber = -1;
 		field = "captureVideoDeviceNumber";
-		captureLive_videoDeviceNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
+		captureLive_videoDeviceNumber = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
 
 		int captureLive_channelsNumber = -1;
 		field = "captureChannelsNumber";
-		captureLive_channelsNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
+		captureLive_channelsNumber = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
 
 		int captureLive_audioDeviceNumber = -1;
 		field = "captureAudioDeviceNumber";
-		captureLive_audioDeviceNumber = JSONUtils::asInt32(streamInputRoot, field, -1);
+		captureLive_audioDeviceNumber = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
 
 		LOG_INFO(
 			"liveProxy: setting dynamic -map option"
@@ -1570,7 +1570,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
 									auto& imageInput = ffMpegEngine.addInput();
-									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
+									imageInput.setSource(JSONUtils::as<string>(complexFilterRoot["imagePhysicalDeliveryURL"]));
 								}
 								else
 								{
@@ -1589,7 +1589,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
 									auto& imageInput = ffMpegEngine.addInput();
-									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
+									imageInput.setSource(JSONUtils::as<string>(complexFilterRoot["imagePhysicalPathName"]));
 								}
 							}
 						}
@@ -1613,9 +1613,9 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		field = "directURLInput";
 		json directURLInputRoot = inputRoot[field];
 
-		string otherInputOptions = JSONUtils::asString(directURLInputRoot, "otherInputOptions");
-		string inputFormat = JSONUtils::asString(directURLInputRoot, "inputFormat", "");
-		string url = JSONUtils::asString(directURLInputRoot, "url", "");
+		string otherInputOptions = JSONUtils::as<string>(directURLInputRoot, "otherInputOptions");
+		string inputFormat = JSONUtils::as<string>(directURLInputRoot, "inputFormat", "");
+		string url = JSONUtils::as<string>(directURLInputRoot, "url", "");
 
 		LOG_INFO(
 			"liveProxy, url"
@@ -1743,7 +1743,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
 									auto& imageInput = ffMpegEngine.addInput();
-									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
+									imageInput.setSource(JSONUtils::as<string>(complexFilterRoot["imagePhysicalDeliveryURL"]));
 								}
 								else
 								{
@@ -1762,7 +1762,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
 									auto& imageInput = ffMpegEngine.addInput();
-									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
+									imageInput.setSource(JSONUtils::as<string>(complexFilterRoot["imagePhysicalPathName"]));
 								}
 							}
 						}
@@ -1800,7 +1800,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			throw runtime_error(errorMessage);
 		}
-		string vodContentType = JSONUtils::asString(vodInputRoot, field, "Video");
+		string vodContentType = JSONUtils::as<string>(vodInputRoot, field, "Video");
 
 		vector<string> sources;
 		// int64_t durationOfInputsInMilliSeconds = 0;
@@ -1842,16 +1842,16 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 					throw runtime_error(errorMessage);
 				}
-				string sourcePhysicalReference = JSONUtils::asString(sourceRoot, field, "");
+				string sourcePhysicalReference = JSONUtils::as<string>(sourceRoot, field, "");
 				sources.push_back(sourcePhysicalReference);
 
 				// field = "durationInMilliSeconds";
 				// if (JSONUtils::isPresent(sourceRoot, field))
-				// 	durationOfInputsInMilliSeconds += JSONUtils::asInt64(sourceRoot, field, 0);
+				// 	durationOfInputsInMilliSeconds += JSONUtils::as<int64_t>(sourceRoot, field, 0);
 			}
 		}
 
-		string otherInputOptions = JSONUtils::asString(vodInputRoot, "otherInputOptions");
+		string otherInputOptions = JSONUtils::as<string>(vodInputRoot, "otherInputOptions");
 
 		time_t utcNow;
 		{
@@ -2169,7 +2169,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
 									auto& imageInput = ffMpegEngine.addInput();
-									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
+									imageInput.setSource(JSONUtils::as<string>(complexFilterRoot["imagePhysicalDeliveryURL"]));
 								}
 								else
 								{
@@ -2188,7 +2188,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 									// ffmpegInputArgumentList.push_back("-i");
 									// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
 									auto& imageInput = ffMpegEngine.addInput();
-									imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
+									imageInput.setSource(JSONUtils::as<string>(complexFilterRoot["imagePhysicalPathName"]));
 								}
 							}
 						}
@@ -2231,7 +2231,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			throw runtime_error(errorMessage);
 		}
-		string mmsSourceVideoAssetPathName = JSONUtils::asString(countdownInputRoot, field, "");
+		string mmsSourceVideoAssetPathName = JSONUtils::as<string>(countdownInputRoot, field, "");
 
 		field = "videoDurationInMilliSeconds";
 		if (!JSONUtils::isPresent(countdownInputRoot, field))
@@ -2247,7 +2247,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			throw runtime_error(errorMessage);
 		}
-		int64_t videoDurationInMilliSeconds = JSONUtils::asInt64(countdownInputRoot, field, -1);
+		int64_t videoDurationInMilliSeconds = JSONUtils::as<int64_t>(countdownInputRoot, field, -1);
 
 		if (!externalEncoder && !fs::exists(mmsSourceVideoAssetPathName))
 		{
@@ -2358,7 +2358,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								// ffmpegInputArgumentList.push_back("-i");
 								// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalDeliveryURL"]);
 								auto& imageInput = ffMpegEngine.addInput();
-								imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalDeliveryURL"]));
+								imageInput.setSource(JSONUtils::as<string>(complexFilterRoot["imagePhysicalDeliveryURL"]));
 							}
 							else
 							{
@@ -2377,7 +2377,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								// ffmpegInputArgumentList.push_back("-i");
 								// ffmpegInputArgumentList.push_back(complexFilterRoot["imagePhysicalPathName"]);
 								auto& imageInput = ffMpegEngine.addInput();
-								imageInput.setSource(JSONUtils::asString(complexFilterRoot["imagePhysicalPathName"]));
+								imageInput.setSource(JSONUtils::as<string>(complexFilterRoot["imagePhysicalPathName"]));
 							}
 						}
 					}
@@ -2486,7 +2486,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 	if (inputFiltersRoot != nullptr)
 	{
 		{
-			string text = JSONUtils::asString(inputFiltersRoot, "text", "");
+			string text = JSONUtils::as<string>(inputFiltersRoot, "text", "");
 
 			string textTemporaryFileName = getDrawTextTemporaryPathName(ingestionJobKey, encodingJobKey);
 			{
@@ -2515,10 +2515,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 		json outputRoot = outputsRoot[outputIndex];
 
-		string outputType = JSONUtils::asString(outputRoot, "outputType", "");
+		string outputType = JSONUtils::as<string>(outputRoot, "outputType", "");
 
-		string inputVideoMap = JSONUtils::asString(outputRoot, "inputVideoMap", "");
-		string inputAudioMap = JSONUtils::asString(outputRoot, "inputAudioMap", "");
+		string inputVideoMap = JSONUtils::as<string>(outputRoot, "inputVideoMap", "");
+		string inputAudioMap = JSONUtils::as<string>(outputRoot, "inputAudioMap", "");
 
 		// 2024-05-17: inputFiltersRoot se presente si aggiunge al filtersRoot dell'output,
 		// 	Scenario di un Broadcast (Live Channel).
@@ -2542,16 +2542,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			JSONUtils::toString(filtersRoot)
 		);
 
-		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", json(nullptr));
+		json encodingProfileDetailsRoot = JSONUtils::as<json>(outputRoot, "encodingProfileDetails", json(nullptr));
 		/*
 		json encodingProfileDetailsRoot = nullptr;
 		if (JSONUtils::isPresent(outputRoot, "encodingProfileDetails"))
 			encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
 		*/
 
-		string otherOutputOptions = JSONUtils::asString(outputRoot, "otherOutputOptions", "");
+		string otherOutputOptions = JSONUtils::as<string>(outputRoot, "otherOutputOptions", "");
 
-		string encodingProfileContentType = JSONUtils::asString(outputRoot, "encodingProfileContentType", "Video");
+		string encodingProfileContentType = JSONUtils::as<string>(outputRoot, "encodingProfileContentType", "Video");
 		bool isVideo = encodingProfileContentType == "Video" ? true : false;
 
 		string httpStreamingFileFormat;
@@ -2813,7 +2813,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		// output file
 		if (outputType == "RTMP_Channel")
 		{
-			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
+			string rtmpUrl = JSONUtils::as<string>(outputRoot, "rtmpUrl", "");
 			if (rtmpUrl.empty())
 			{
 				string errorMessage = std::format(
@@ -2898,7 +2898,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "SRT_Channel")
 		{
-			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
+			string srtUrl = JSONUtils::as<string>(outputRoot, "srtUrl", "");
 			if (srtUrl == "")
 			{
 				string errorMessage = std::format(
@@ -2927,10 +2927,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "HLS_Channel")
 		{
-			string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
-			string manifestFileName = JSONUtils::asString(outputRoot, "manifestFileName", "");
-			int segmentDurationInSeconds = JSONUtils::asInt32(outputRoot, "segmentDurationInSeconds", 10);
-			int playlistEntriesNumber = JSONUtils::asInt32(outputRoot, "playlistEntriesNumber", 5);
+			string manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
+			string manifestFileName = JSONUtils::as<string>(outputRoot, "manifestFileName", "");
+			int segmentDurationInSeconds = JSONUtils::as<int32_t>(outputRoot, "segmentDurationInSeconds", 10);
+			int playlistEntriesNumber = JSONUtils::as<int32_t>(outputRoot, "playlistEntriesNumber", 5);
 
 			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
 
@@ -3048,7 +3048,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "UDP_Stream")
 		{
-			string udpUrl = JSONUtils::asString(outputRoot, "udpUrl", "");
+			string udpUrl = JSONUtils::as<string>(outputRoot, "udpUrl", "");
 
 			if (udpUrl == "")
 			{
@@ -3178,7 +3178,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 	if (inputFiltersRoot != nullptr)
 	{
 		{
-			string text = JSONUtils::asString(inputFiltersRoot, "text", "");
+			string text = JSONUtils::as<string>(inputFiltersRoot, "text", "");
 
 			string textTemporaryFileName = getDrawTextTemporaryPathName(ingestionJobKey, encodingJobKey);
 			{
@@ -3207,10 +3207,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 		json outputRoot = outputsRoot[outputIndex];
 
-		string outputType = JSONUtils::asString(outputRoot, "outputType", "");
+		string outputType = JSONUtils::as<string>(outputRoot, "outputType", "");
 
-		string inputVideoMap = JSONUtils::asString(outputRoot, "inputVideoMap", "");
-		string inputAudioMap = JSONUtils::asString(outputRoot, "inputAudioMap", "");
+		string inputVideoMap = JSONUtils::as<string>(outputRoot, "inputVideoMap", "");
+		string inputAudioMap = JSONUtils::as<string>(outputRoot, "inputAudioMap", "");
 
 		// 2024-05-17: inputFiltersRoot se presente si aggiunge al filtersRoot dell'output,
 		// 	Scenario di un Broadcast (Live Channel).
@@ -3234,16 +3234,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			JSONUtils::toString(filtersRoot)
 		);
 
-		json encodingProfileDetailsRoot = JSONUtils::asJson(outputRoot, "encodingProfileDetails", json(nullptr));
+		json encodingProfileDetailsRoot = JSONUtils::as<json>(outputRoot, "encodingProfileDetails", json(nullptr));
 		/*
 		json encodingProfileDetailsRoot = nullptr;
 		if (JSONUtils::isPresent(outputRoot, "encodingProfileDetails"))
 			encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
 		*/
 
-		string otherOutputOptions = JSONUtils::asString(outputRoot, "otherOutputOptions", "");
+		string otherOutputOptions = JSONUtils::as<string>(outputRoot, "otherOutputOptions", "");
 
-		string encodingProfileContentType = JSONUtils::asString(outputRoot, "encodingProfileContentType", "Video");
+		string encodingProfileContentType = JSONUtils::as<string>(outputRoot, "encodingProfileContentType", "Video");
 		bool isVideo = encodingProfileContentType == "Video" ? true : false;
 
 		string httpStreamingFileFormat;
@@ -3546,7 +3546,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		// output file
 		if (outputType == "RTMP_Channel")
 		{
-			string rtmpUrl = JSONUtils::asString(outputRoot, "rtmpUrl", "");
+			string rtmpUrl = JSONUtils::as<string>(outputRoot, "rtmpUrl", "");
 			if (rtmpUrl.empty())
 			{
 				string errorMessage = std::format(
@@ -3645,7 +3645,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "SRT_Channel")
 		{
-			string srtUrl = JSONUtils::asString(outputRoot, "srtUrl", "");
+			string srtUrl = JSONUtils::as<string>(outputRoot, "srtUrl", "");
 			if (srtUrl.empty())
 			{
 				string errorMessage = std::format(
@@ -3687,10 +3687,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "HLS_Channel")
 		{
-			string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
-			string manifestFileName = JSONUtils::asString(outputRoot, "manifestFileName", "");
-			int segmentDurationInSeconds = JSONUtils::asInt32(outputRoot, "segmentDurationInSeconds", 10);
-			int playlistEntriesNumber = JSONUtils::asInt32(outputRoot, "playlistEntriesNumber", 5);
+			string manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
+			string manifestFileName = JSONUtils::as<string>(outputRoot, "manifestFileName", "");
+			int segmentDurationInSeconds = JSONUtils::as<int32_t>(outputRoot, "segmentDurationInSeconds", 10);
+			int playlistEntriesNumber = JSONUtils::as<int32_t>(outputRoot, "playlistEntriesNumber", 5);
 
 			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
 
@@ -3826,7 +3826,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "UDP_Stream")
 		{
-			string udpUrl = JSONUtils::asString(outputRoot, "udpUrl", "");
+			string udpUrl = JSONUtils::as<string>(outputRoot, "udpUrl", "");
 
 			if (udpUrl.empty())
 			{
@@ -3963,12 +3963,12 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 	{
 		json outputRoot = outputsRoot[outputIndex];
 
-		string outputType = JSONUtils::asString(outputRoot, "outputType", "");
+		string outputType = JSONUtils::as<string>(outputRoot, "outputType", "");
 
 		// if (outputType == "HLS" || outputType == "DASH")
 		if (outputType == "HLS_Channel")
 		{
-			string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
+			string manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
 
 			if (externalEncoder && manifestDirectoryPath != "")
 				removeFromIncrontab(ingestionJobKey, encodingJobKey, manifestDirectoryPath);

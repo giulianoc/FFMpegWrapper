@@ -419,7 +419,7 @@ void FFMpegWrapper::liveRecorder(
 			{
 				if (JSONUtils::isPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
-					string picturePathName = JSONUtils::asString(frameToBeDetectedRoot, "picturePathName", "");
+					string picturePathName = JSONUtils::as<string>(frameToBeDetectedRoot, "picturePathName", "");
 
 					auto& pictureInput = ffMpegEngine.addInput(picturePathName);
 					pictureInput.addArgs("-r 1 -loop 1");
@@ -620,21 +620,21 @@ void FFMpegWrapper::liveRecorder(
 
 				if (JSONUtils::isPresent(frameToBeDetectedRoot, "picturePathName"))
 				{
-					bool videoFrameToBeCropped = JSONUtils::asBool(frameToBeDetectedRoot, "videoFrameToBeCropped", false);
+					bool videoFrameToBeCropped = JSONUtils::as<bool>(frameToBeDetectedRoot, "videoFrameToBeCropped", false);
 
 					// ffmpegArgumentList.emplace_back("-filter_complex");
 
-					int amount = JSONUtils::asInt32(frameToBeDetectedRoot, "amount", 99);
-					int threshold = JSONUtils::asInt32(frameToBeDetectedRoot, "threshold", 32);
+					int amount = JSONUtils::as<int32_t>(frameToBeDetectedRoot, "amount", 99);
+					int threshold = JSONUtils::as<int32_t>(frameToBeDetectedRoot, "threshold", 32);
 
 					string filter;
 
 					if (videoFrameToBeCropped)
 					{
-						int width = JSONUtils::asInt32(frameToBeDetectedRoot, "width", -1);
-						int height = JSONUtils::asInt32(frameToBeDetectedRoot, "height", -1);
-						int videoCrop_X = JSONUtils::asInt32(frameToBeDetectedRoot, "videoCrop_X", -1);
-						int videoCrop_Y = JSONUtils::asInt32(frameToBeDetectedRoot, "videoCrop_Y", -1);
+						int width = JSONUtils::as<int32_t>(frameToBeDetectedRoot, "width", -1);
+						int height = JSONUtils::as<int32_t>(frameToBeDetectedRoot, "height", -1);
+						int videoCrop_X = JSONUtils::as<int32_t>(frameToBeDetectedRoot, "videoCrop_X", -1);
+						int videoCrop_Y = JSONUtils::as<int32_t>(frameToBeDetectedRoot, "videoCrop_Y", -1);
 
 						ffMpegEngine.addFilterComplex(std::format(
 							"[0:v]crop=w={}:h={}:x={}:y={}[CROPPED]",

@@ -16,34 +16,36 @@
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
 
+using namespace std;
+
 FFMpegWrapper::FFMpegWrapper(nlohmann::json configuration) : _currentApiName()
 {
-	_ffmpegPath = JSONUtils::asString(configuration["ffmpeg"], "path", ".");
+	_ffmpegPath = JSONUtils::as<string>(configuration["ffmpeg"], "path", ".");
 	LOG_DEBUG(
 		"Configuration item"
 		", ffmpeg->path: {}",
 		_ffmpegPath
 	);
-	_ffmpegTempDir = JSONUtils::asString(configuration["ffmpeg"], "tempDir", ".");
-	_ffmpegEndlessRecursivePlaylistDir = JSONUtils::asString(configuration["ffmpeg"], "endlessRecursivePlaylistDir", ".");
-	_ffmpegTtfFontDir = JSONUtils::asString(configuration["ffmpeg"], "ttfFontDir", ".");
+	_ffmpegTempDir = JSONUtils::as<string>(configuration["ffmpeg"], "tempDir", ".");
+	_ffmpegEndlessRecursivePlaylistDir = JSONUtils::as<string>(configuration["ffmpeg"], "endlessRecursivePlaylistDir", ".");
+	_ffmpegTtfFontDir = JSONUtils::as<string>(configuration["ffmpeg"], "ttfFontDir", ".");
 
-	_youTubeDlPath = JSONUtils::asString(configuration["youTubeDl"], "path", ".");
+	_youTubeDlPath = JSONUtils::as<string>(configuration["youTubeDl"], "path", ".");
 	LOG_DEBUG(
 		"Configuration item"
 		", youTubeDl->path: {}",
 		_youTubeDlPath
 	);
-	_pythonPathName = JSONUtils::asString(configuration["youTubeDl"], "pythonPathName", ".");
+	_pythonPathName = JSONUtils::as<string>(configuration["youTubeDl"], "pythonPathName", ".");
 	LOG_DEBUG(
 		"Configuration item"
 		", youTubeDl->pythonPathName: {}",
 		_pythonPathName
 	);
 
-	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::asInt32(configuration["storage"], "waitingNFSSync_maxMillisecondsToWait", 150000);
+	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::as<int32_t>(configuration["storage"], "waitingNFSSync_maxMillisecondsToWait", 150000);
 	_waitingNFSSync_milliSecondsWaitingBetweenChecks =
-		JSONUtils::asInt32(configuration["storage"], "waitingNFSSync_milliSecondsWaitingBetweenChecks", 100);
+		JSONUtils::as<int32_t>(configuration["storage"], "waitingNFSSync_milliSecondsWaitingBetweenChecks", 100);
 	/*
 	info(__FILEREF__ + "Configuration item"
 		+ ", storage->waitingNFSSync_sleepTimeInSeconds: "
@@ -51,7 +53,7 @@ FFMpegWrapper::FFMpegWrapper(nlohmann::json configuration) : _currentApiName()
 	);
 	*/
 
-	// _startCheckingFrameInfoInMinutes = JSONUtils::asInt32(configuration["ffmpeg"], "startCheckingFrameInfoInMinutes", 5);
+	// _startCheckingFrameInfoInMinutes = JSONUtils::as<int32_t>(configuration["ffmpeg"], "startCheckingFrameInfoInMinutes", 5);
 
 	_charsToBeReadFromFfmpegErrorOutput = 1024 * 3;
 

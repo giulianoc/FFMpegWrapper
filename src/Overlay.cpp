@@ -677,7 +677,7 @@ void FFMpegWrapper::overlayTextOnVideo(
 
 		{
 			/*
-			string text = JSONUtils::asString(drawTextDetailsRoot, "text", "");
+			string text = JSONUtils::as<string>(drawTextDetailsRoot, "text", "");
 
 			string textTemporaryFileName = getDrawTextTemporaryPathName(_currentIngestionJobKey, _currentEncodingJobKey);
 			{

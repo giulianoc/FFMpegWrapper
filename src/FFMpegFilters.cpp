@@ -6,6 +6,8 @@
 #include <fstream>
 #include <utility>
 
+using namespace std;
+
 FFMpegFilters::FFMpegFilters(std::string  ffmpegTempDir, std::string  ffmpegTtfFontDir, int64_t ingestionJobKey, int64_t encodingJobKey, int outputIndex)
 	: _ffmpegTempDir(std::move(ffmpegTempDir)), _ffmpegTtfFontDir(std::move(ffmpegTtfFontDir)), _ingestionJobKey(ingestionJobKey), _encodingJobKey(encodingJobKey),
 	  _outputIndex(outputIndex)
@@ -122,7 +124,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 
 		throw std::runtime_error(errorMessage);
 	}
-	// std::string type = JSONUtils::asString(filterRoot, "type");
+	// std::string type = JSONUtils::as<string>(filterRoot, "type");
 	auto type = JsonPath(&filterRoot)["type"].as<std::string>("");
 
 	switch (hash_case(type))
@@ -135,8 +137,8 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "aresample"_case:
 		{
-			int32_t async = JSONUtils::asInt32(filterRoot, "async", 1);
-			int32_t first_pts = JSONUtils::asInt32(filterRoot, "first_pts", 0);
+			auto async = JSONUtils::as<int32_t>(filterRoot, "async", 1);
+			int32_t first_pts = JSONUtils::as<int32_t>(filterRoot, "first_pts", 0);
 			filter = std::format("aresample=async={}:first_pts={}", async, first_pts);
 
 			break;
@@ -151,8 +153,8 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		{
 			// Viene eseguita la scansione dei fotogrammi con il valore di luminanza indicato da pixel_black_th
 			// lunghi almeno black_min_duration secondi
-			double black_min_duration = JSONUtils::asDouble(filterRoot, "black_min_duration", 2);
-			double pixel_black_th = JSONUtils::asDouble(filterRoot, "pixel_black_th", 0.0);
+			double black_min_duration = JSONUtils::as<double>(filterRoot, "black_min_duration", 2);
+			double pixel_black_th = JSONUtils::as<double>(filterRoot, "pixel_black_th", 0.0);
 
 			filter = std::format("blackdetect=d={}:pix_th={}", black_min_duration, pixel_black_th);
 
@@ -160,8 +162,8 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "blackframe"_case:
 		{
-			int amount = JSONUtils::asInt32(filterRoot, "amount", 98);
-			int threshold = JSONUtils::asInt32(filterRoot, "threshold", 32);
+			int amount = JSONUtils::as<int32_t>(filterRoot, "amount", 98);
+			int threshold = JSONUtils::as<int32_t>(filterRoot, "threshold", 32);
 
 			filter = std::format("blackframe=amount={}:threshold={}", amount, threshold);
 
@@ -171,16 +173,16 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		{
 			// x,y 0,0 indica il punto in basso a sinistra del video
 			// in_h e in_w indicano input width and height
-			std::string out_w = JSONUtils::asString(filterRoot, "out_w", "in_w");
-			std::string out_h = JSONUtils::asString(filterRoot, "out_h", "in_h");
+			std::string out_w = JSONUtils::as<string>(filterRoot, "out_w", "in_w");
+			std::string out_h = JSONUtils::as<string>(filterRoot, "out_h", "in_h");
 			// La posizione orizzontale, nel video di input, del bordo sinistro del video di output
-			std::string x = JSONUtils::asString(filterRoot, "x", "(in_w-out_w)/2");
+			std::string x = JSONUtils::as<string>(filterRoot, "x", "(in_w-out_w)/2");
 			// La posizione verticale, nel video in input, del bordo superiore del video in output
-			std::string y = JSONUtils::asString(filterRoot, "y", "(in_h-out_h)/2");
-			bool keep_aspect = JSONUtils::asBool(filterRoot, "keep_aspect", false);
+			std::string y = JSONUtils::as<string>(filterRoot, "y", "(in_h-out_h)/2");
+			bool keep_aspect = JSONUtils::as<bool>(filterRoot, "keep_aspect", false);
 			// Enable exact cropping. If enabled, subsampled videos will be cropped at exact width/height/x/y
 			// as specified and will not be rounded to nearest smaller value
-			bool exact = JSONUtils::asBool(filterRoot, "exact", false);
+			bool exact = JSONUtils::as<bool>(filterRoot, "exact", false);
 
 			// crop=w=100:h=100:x=12:y=34
 			filter = std::format("crop=out_w={}:out_h={}:x={}:y={}:keep_aspect={}:exact={}", out_w, out_h, x, y,
@@ -192,14 +194,14 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		{
 			// x,y 0,0 indica il punto in basso a sinistra del video
 			// in_h e in_w indicano input width and height
-			std::string x = JSONUtils::asString(filterRoot, "x", "0");
-			std::string y = JSONUtils::asString(filterRoot, "y", "0");
-			std::string width = JSONUtils::asString(filterRoot, "width", "300");
-			std::string height = JSONUtils::asString(filterRoot, "height", "300");
-			std::string fontColor = JSONUtils::asString(filterRoot, "fontColor", "red");
-			int percentageOpacity = JSONUtils::asInt32(filterRoot, "percentageOpacity", -1);
+			std::string x = JSONUtils::as<string>(filterRoot, "x", "0");
+			std::string y = JSONUtils::as<string>(filterRoot, "y", "0");
+			std::string width = JSONUtils::as<string>(filterRoot, "width", "300");
+			std::string height = JSONUtils::as<string>(filterRoot, "height", "300");
+			std::string fontColor = JSONUtils::as<string>(filterRoot, "fontColor", "red");
+			int percentageOpacity = JSONUtils::as<int32_t>(filterRoot, "percentageOpacity", -1);
 			// thickness: il valore speciale di "fill" riempie il box
-			std::string thickness = JSONUtils::asString(filterRoot, "thickness", "3");
+			std::string thickness = JSONUtils::as<string>(filterRoot, "thickness", "3");
 
 			std::string opacity;
 			if (percentageOpacity != -1)
@@ -219,22 +221,22 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "drawtext"_case:
 		{
-			std::string text = JSONUtils::asString(filterRoot, "text", "");
+			std::string text = JSONUtils::as<string>(filterRoot, "text", "");
 			// timecode: none, editorial, pts
-			std::string timecode = JSONUtils::asString(filterRoot, "timecode", "none");
-			int reloadAtFrameInterval = JSONUtils::asInt32(filterRoot, "reloadAtFrameInterval", -1);
-			std::string textPosition_X_InPixel = JSONUtils::asString(filterRoot, "textPosition_X_InPixel", "");
-			std::string textPosition_Y_InPixel = JSONUtils::asString(filterRoot, "textPosition_Y_InPixel", "");
-			std::string fontType = JSONUtils::asString(filterRoot, "fontType", "");
-			int fontSize = JSONUtils::asInt32(filterRoot, "fontSize", -1);
-			std::string fontColor = JSONUtils::asString(filterRoot, "fontColor", "");
-			int textPercentageOpacity = JSONUtils::asInt32(filterRoot, "textPercentageOpacity", -1);
-			int shadowX = JSONUtils::asInt32(filterRoot, "shadowX", 0);
-			int shadowY = JSONUtils::asInt32(filterRoot, "shadowY", 0);
-			bool boxEnable = JSONUtils::asBool(filterRoot, "boxEnable", false);
-			std::string boxColor = JSONUtils::asString(filterRoot, "boxColor", "");
-			int boxPercentageOpacity = JSONUtils::asInt32(filterRoot, "boxPercentageOpacity", -1);
-			int boxBorderW = JSONUtils::asInt32(filterRoot, "boxBorderW", 0);
+			std::string timecode = JSONUtils::as<string>(filterRoot, "timecode", "none");
+			int reloadAtFrameInterval = JSONUtils::as<int32_t>(filterRoot, "reloadAtFrameInterval", -1);
+			std::string textPosition_X_InPixel = JSONUtils::as<string>(filterRoot, "textPosition_X_InPixel", "");
+			std::string textPosition_Y_InPixel = JSONUtils::as<string>(filterRoot, "textPosition_Y_InPixel", "");
+			std::string fontType = JSONUtils::as<string>(filterRoot, "fontType", "");
+			int fontSize = JSONUtils::as<int32_t>(filterRoot, "fontSize", -1);
+			std::string fontColor = JSONUtils::as<string>(filterRoot, "fontColor", "");
+			int textPercentageOpacity = JSONUtils::as<int32_t>(filterRoot, "textPercentageOpacity", -1);
+			int shadowX = JSONUtils::as<int32_t>(filterRoot, "shadowX", 0);
+			int shadowY = JSONUtils::as<int32_t>(filterRoot, "shadowY", 0);
+			bool boxEnable = JSONUtils::as<bool>(filterRoot, "boxEnable", false);
+			std::string boxColor = JSONUtils::as<string>(filterRoot, "boxColor", "");
+			int boxPercentageOpacity = JSONUtils::as<int32_t>(filterRoot, "boxPercentageOpacity", -1);
+			int boxBorderW = JSONUtils::as<int32_t>(filterRoot, "boxBorderW", 0);
 
 			/* TIMECODE
 			1) editorialTimecode: è un’informazione “editoriale”, non tecnica per la riproduzione. Questo timecode NON è usato internamente
@@ -644,7 +646,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "fade"_case:
 		{
-			int duration = JSONUtils::asInt32(filterRoot, "duration", 4);
+			int duration = JSONUtils::as<int32_t>(filterRoot, "duration", 4);
 
 			if (inputDurationInSeconds && *inputDurationInSeconds >= duration)
 			{
@@ -668,8 +670,8 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "fps"_case:
 		{
-			int framesNumber = JSONUtils::asInt32(filterRoot, "framesNumber", 25);
-			int periodInSeconds = JSONUtils::asInt32(filterRoot, "periodInSeconds", 1);
+			int framesNumber = JSONUtils::as<int32_t>(filterRoot, "framesNumber", 25);
+			int periodInSeconds = JSONUtils::as<int32_t>(filterRoot, "periodInSeconds", 1);
 
 			filter = std::format("fps={}/{}", framesNumber, periodInSeconds);
 
@@ -677,8 +679,8 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "freezedetect"_case:
 		{
-			int noiseInDb = JSONUtils::asInt32(filterRoot, "noiseInDb", -60);
-			int duration = JSONUtils::asInt32(filterRoot, "duration", 2);
+			int noiseInDb = JSONUtils::as<int32_t>(filterRoot, "noiseInDb", -60);
+			int duration = JSONUtils::as<int32_t>(filterRoot, "duration", 2);
 
 			filter = std::format("freezedetect=noise={}dB:duration={}", noiseInDb, duration);
 
@@ -686,8 +688,8 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "imageoverlay"_case:
 		{
-			std::string imagePosition_X_InPixel = JSONUtils::asString(filterRoot, "imagePosition_X_InPixel", "0");
-			std::string imagePosition_Y_InPixel = JSONUtils::asString(filterRoot, "imagePosition_Y_InPixel", "0");
+			std::string imagePosition_X_InPixel = JSONUtils::as<string>(filterRoot, "imagePosition_X_InPixel", "0");
+			std::string imagePosition_Y_InPixel = JSONUtils::as<string>(filterRoot, "imagePosition_Y_InPixel", "0");
 
 			std::string ffmpegImagePosition_X_InPixel;
 			if (imagePosition_X_InPixel == "left")
@@ -733,17 +735,17 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		case "select"_case:
 		{
 			// select frames to pass in output
-			std::string frameType = JSONUtils::asString(filterRoot, "frameType", "i-frame");
+			std::string frameType = JSONUtils::as<string>(filterRoot, "frameType", "i-frame");
 
 			// es: vfr
-			std::string fpsMode = JSONUtils::asString(filterRoot, "fpsMode", "");
+			std::string fpsMode = JSONUtils::as<string>(filterRoot, "fpsMode", "");
 
 			if (frameType == "i-frame")
 				filter = "select='eq(pict_type,PICT_TYPE_I)'";
 			else if (frameType == "scene")
 			{
 				// double between 0 and 1. 0.5: 50% of changes
-				double changePercentage = JSONUtils::asDouble(filterRoot, "changePercentage", 0.5);
+				double changePercentage = JSONUtils::as<double>(filterRoot, "changePercentage", 0.5);
 
 				filter = std::format("select='eq(scene,{})'", changePercentage);
 			}
@@ -768,7 +770,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "silencedetect"_case:
 		{
-			double noise = JSONUtils::asDouble(filterRoot, "noise", 0.0001);
+			double noise = JSONUtils::as<double>(filterRoot, "noise", 0.0001);
 
 			filter = std::format("silencedetect=noise={}", noise);
 
@@ -776,7 +778,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "volume"_case:
 		{
-			double factor = JSONUtils::asDouble(filterRoot, "factor", 5.0);
+			double factor = JSONUtils::as<double>(filterRoot, "factor", 5.0);
 
 			filter = std::format("volume={}", factor);
 

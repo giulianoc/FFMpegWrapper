@@ -231,7 +231,7 @@ void FFMpegWrapper::liveGrid(
 		for (int inputChannelIndex = 0; inputChannelIndex < inputChannelsNumber; inputChannelIndex++)
 		{
 			json inputChannelRoot = inputChannelsRoot[inputChannelIndex];
-			string inputChannelURL = JSONUtils::asString(inputChannelRoot, "inputChannelURL", "");
+			string inputChannelURL = JSONUtils::as<string>(inputChannelRoot, "inputChannelURL", "");
 
 			FFMpegEngine::Input mainInput = ffMpegEngine.addInput(inputChannelURL);
 			if (!userAgent.empty())
@@ -605,7 +605,7 @@ void FFMpegWrapper::liveGrid(
 
 		json outputRoot = outputsRoot[0];
 
-		string outputType = JSONUtils::asString(outputRoot, "outputType", "");
+		string outputType = JSONUtils::as<string>(outputRoot, "outputType", "");
 
 		// We will create:
 		//  - one m3u8 for each track (video and audio)
@@ -625,8 +625,8 @@ void FFMpegWrapper::liveGrid(
 
 			*/
 
-			string manifestDirectoryPath = JSONUtils::asString(outputRoot, "manifestDirectoryPath", "");
-			string manifestFileName = JSONUtils::asString(outputRoot, "manifestFileName", "");
+			string manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
+			string manifestFileName = JSONUtils::as<string>(outputRoot, "manifestFileName", "");
 			{
 				for (int inputChannelIndex = 0; inputChannelIndex < inputChannelsNumber; inputChannelIndex++)
 				{
@@ -684,7 +684,7 @@ void FFMpegWrapper::liveGrid(
 					string audioTrackDirectoryName = to_string(inputChannelIndex) + "_audio";
 
 					json inputChannelRoot = inputChannelsRoot[inputChannelIndex];
-					string inputChannelName = JSONUtils::asString(inputChannelRoot, "inputConfigurationLabel", "");
+					string inputChannelName = JSONUtils::as<string>(inputChannelRoot, "inputConfigurationLabel", "");
 
 					string audioManifestLine = "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",LANGUAGE=\"" + inputChannelName + "\",NAME=\"" +
 											   inputChannelName + "\",AUTOSELECT=YES, DEFAULT=YES,URI=\"" + audioTrackDirectoryName + "/" +
