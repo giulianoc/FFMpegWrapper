@@ -19,7 +19,9 @@
 using namespace std;
 using json = nlohmann::json;
 
-void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, string directoryToBeMonitored)
+void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey,
+	string incrontabScriptPathName, // /opt/mms/MMS/scripts/incrontab.sh
+	string directoryToBeMonitored)
 {
 	try
 	{
@@ -106,9 +108,8 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 			}
 
 			string configuration = std::format(
-				"{} IN_MODIFY,IN_CLOSE_WRITE,IN_CREATE,IN_DELETE,IN_MOVED_FROM,IN_MOVED_TO,IN_MOVE_SELF "
-				"/opt/catramms/CatraMMS/scripts/incrontab.sh $% $@ $#",
-				directoryToBeMonitored
+				"{} IN_MODIFY,IN_CLOSE_WRITE,IN_CREATE,IN_DELETE,IN_MOVED_FROM,IN_MOVED_TO,IN_MOVE_SELF {} $% $@ $#",
+				directoryToBeMonitored, incrontabScriptPathName
 			);
 
 			LOG_INFO(

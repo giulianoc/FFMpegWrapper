@@ -13,6 +13,7 @@
 #include "FFMpegWrapper.h"
 #include "Datetime.h"
 #include "JSONUtils.h"
+#include "JsonPath.h"
 #include "StringUtils.h"
 #include "spdlog/spdlog.h"
 
@@ -29,6 +30,8 @@ FFMpegWrapper::FFMpegWrapper(nlohmann::json configuration) : _currentApiName()
 	_ffmpegTempDir = JSONUtils::as<string>(configuration["ffmpeg"], "tempDir", ".");
 	_ffmpegEndlessRecursivePlaylistDir = JSONUtils::as<string>(configuration["ffmpeg"], "endlessRecursivePlaylistDir", ".");
 	_ffmpegTtfFontDir = JSONUtils::as<string>(configuration["ffmpeg"], "ttfFontDir", ".");
+
+	_incrontabScriptPathName = JsonPath(&configuration)["mms"]["incrontabScriptPathName"].as<string>("");
 
 	_youTubeDlPath = JSONUtils::as<string>(configuration["youTubeDl"], "path", ".");
 	LOG_DEBUG(

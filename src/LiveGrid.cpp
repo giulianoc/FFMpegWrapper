@@ -176,18 +176,18 @@ void FFMpegWrapper::liveGrid(
 				 [0r][1r]               vstack=inputs=2:shortest=1              [0r+1r]
 				 " -map "[0r+1r]" -codec:v libx264 -b:v 800k -preset veryfast -hls_time 10 -hls_list_size 4 -hls_delete_threshold 1 -hls_flags
 		delete_segments -hls_start_number_source datetime -start_number 10 -hls_segment_filename
-		/var/catramms/storage/MMSRepository-free/1/test/low/test_%04d.ts -f hls /var/catramms/storage/MMSRepository-free/1/test/low/test.m3u8 \
+		/var/mms/storage/MMSRepository-free/1/test/low/test_%04d.ts -f hls /var/mms/storage/MMSRepository-free/1/test/low/test.m3u8 \
 				-map 0:a -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 4 -hls_delete_threshold 1 -hls_flags delete_segments
-		-hls_start_number_source datetime -start_number 10 -hls_segment_filename /var/catramms/storage/MMSRepository-free/1/test/tv1/test_%04d.ts -f
-		hls /var/catramms/storage/MMSRepository-free/1/test/tv1/test.m3u8 \
+		-hls_start_number_source datetime -start_number 10 -hls_segment_filename /var/mms/storage/MMSRepository-free/1/test/tv1/test_%04d.ts -f
+		hls /var/mms/storage/MMSRepository-free/1/test/tv1/test.m3u8 \
 				-map 1:a -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 4 -hls_delete_threshold 1 -hls_flags delete_segments
-		-hls_start_number_source datetime -start_number 10 -hls_segment_filename /var/catramms/storage/MMSRepository-free/1/test/tv2/test_%04d.ts -f
-		hls /var/catramms/storage/MMSRepository-free/1/test/tv2/test.m3u8 \
+		-hls_start_number_source datetime -start_number 10 -hls_segment_filename /var/mms/storage/MMSRepository-free/1/test/tv2/test_%04d.ts -f
+		hls /var/mms/storage/MMSRepository-free/1/test/tv2/test.m3u8 \
 				-map 2:a -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 4 -hls_delete_threshold 1 -hls_flags delete_segments
-		-hls_start_number_source datetime -start_number 10 -hls_segment_filename /var/catramms/storage/MMSRepository-free/1/test/tv3/test_%04d.ts -f
-		hls /var/catramms/storage/MMSRepository-free/1/test/tv3/test.m3u8 \ -map 3:a -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 4
+		-hls_start_number_source datetime -start_number 10 -hls_segment_filename /var/mms/storage/MMSRepository-free/1/test/tv3/test_%04d.ts -f
+		hls /var/mms/storage/MMSRepository-free/1/test/tv3/test.m3u8 \ -map 3:a -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 4
 		-hls_delete_threshold 1 -hls_flags delete_segments -hls_start_number_source datetime -start_number 10 -hls_segment_filename
-		/var/catramms/storage/MMSRepository-free/1/test/tv4/test_%04d.ts -f hls /var/catramms/storage/MMSRepository-free/1/test/tv4/test.m3u8
+		/var/mms/storage/MMSRepository-free/1/test/tv4/test_%04d.ts -f hls /var/mms/storage/MMSRepository-free/1/test/tv4/test.m3u8
 
 		In case of output SRT:
 			ffmpeg \

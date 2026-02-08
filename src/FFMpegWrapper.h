@@ -495,6 +495,7 @@ class FFMpegWrapper
 	std::string _ffmpegPath;
 	std::string _ffmpegEndlessRecursivePlaylistDir;
 	std::string _ffmpegTtfFontDir;
+	std::string _incrontabScriptPathName;
 	int _charsToBeReadFromFfmpegErrorOutput;
 	bool _twoPasses;
 	std::string _outputFfmpegPathFileName;
@@ -555,7 +556,8 @@ class FFMpegWrapper
 	// long getFrameByOutputLog(std::string ffmpegEncodingStatus);
 	// long getSizeByOutputLog(std::string ffmpegEncodingStatus);
 
-	void addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, std::string directoryToBeMonitored);
+	void addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey,
+		std::string incrontabShScriptPathName, std::string directoryToBeMonitored);
 
 	void removeFromIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, std::string directoryToBeMonitored);
 

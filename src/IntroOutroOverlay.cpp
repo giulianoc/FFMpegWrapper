@@ -666,8 +666,8 @@ void FFMpegWrapper::introOverlay(
 		}
 
 		/*
-		ffmpeg -y -i /var/catramms/storage/MMSRepository/MMS_0000/14/000/000/001/3450777_source.mov
-		   -i /var/catramms/storage/MMSRepository/MMS_0000/14/000/001/234/4251052_28.mts
+		ffmpeg -y -i /var/mms/storage/MMSRepository/MMS_0000/14/000/000/001/3450777_source.mov
+		   -i /var/mms/storage/MMSRepository/MMS_0000/14/000/001/234/4251052_28.mts
 		   -filter_complex
 			  [0:a]volume=enable='between(t,8,12)':volume=0[intro_overlay_muted];
 			  [1:v]tpad=start_duration=8:start_mode=add:color=white[main_video_moved];
@@ -676,7 +676,7 @@ void FFMpegWrapper::introOverlay(
 			  [main_audio_moved][intro_overlay_muted]amix=inputs=2[final_audio]
 			  -map [final_video] -map [final_audio]
 			  -pix_fmt yuv420p -codec:v libx264 -profile:v main -b:v 2500k -preset medium -level 4.0 -crf 22 -r 25 -threads 0 -acodec aac -b:a 160k
-		-ac 2 /var/catramms/storage/IngestionRepository/users/14/4251053_introOutroOverlay.mts
+		-ac 2 /var/mms/storage/IngestionRepository/users/14/4251053_introOutroOverlay.mts
 		*/
 		string ffmpegFilterComplex = "-filter_complex ";
 		{
@@ -1137,8 +1137,8 @@ void FFMpegWrapper::outroOverlay(
 
 		/*
 		ffmpeg -y
-			-i /var/catramms/storage/MMSRepository/MMS_0000/14/000/001/234/4251052_28.mts
-			-i /var/catramms/storage/MMSRepository/MMS_0000/14/000/000/035/3770083_source.mov
+			-i /var/mms/storage/MMSRepository/MMS_0000/14/000/001/234/4251052_28.mts
+			-i /var/mms/storage/MMSRepository/MMS_0000/14/000/000/035/3770083_source.mov
 			-filter_complex
 				[1:a]volume=enable='between(t,0,2)':volume=0,adelay=delays=906s:all=1[outro_audio_overlayMuted_and_moved];
 				[1:v]tpad=start_duration=906:start_mode=add:color=white[outro_video_moved];
@@ -1146,7 +1146,7 @@ void FFMpegWrapper::outroOverlay(
 				[0:v][outro_video_moved]overlay=enable='gte(t,906)'[final_video]
 				-map [final_video] -map [final_audio]
 				-pix_fmt yuv420p -codec:v libx264 -profile:v main -b:v 2500k -preset medium -level 4.0 -crf 22 -r 25 -threads 0 -acodec aac -b:a 160k
-		-ac 2 /var/catramms/storage/IngestionRepository/users/14/4251053_introOutroOverlay.mts
+		-ac 2 /var/mms/storage/IngestionRepository/users/14/4251053_introOutroOverlay.mts
 		*/
 		string ffmpegFilterComplex = "-filter_complex ";
 		{

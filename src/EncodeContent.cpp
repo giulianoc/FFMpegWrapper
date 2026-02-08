@@ -165,7 +165,7 @@ void FFMpegWrapper::encodeContent(
 			/*
 			 * The command will be like this:
 
-			ffmpeg -y -i /var/catramms/storage/MMSRepository/MMS_0000/ws2/000/228/001/1247989_source.mp4
+			ffmpeg -y -i /var/mms/storage/MMSRepository/MMS_0000/ws2/000/228/001/1247989_source.mp4
 
 				-map 0:1 -acodec aac -b:a 92k -ac 2 -hls_time 10 -hls_list_size 0 -hls_segment_filename /home/mms/tmp/ita/1247992_384637_%04d.ts -f
 			hls /home/mms/tmp/ita/1247992_384637.m3u8

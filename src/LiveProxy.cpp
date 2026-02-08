@@ -2973,7 +2973,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			}
 
 			if (externalEncoder && manifestDirectoryPath != "")
-				addToIncrontab(ingestionJobKey, encodingJobKey, manifestDirectoryPath);
+				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath);
 
 			// if (outputType == "HLS")
 			{
@@ -3733,7 +3733,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			}
 
 			if (externalEncoder && !manifestDirectoryPath.empty())
-				addToIncrontab(ingestionJobKey, encodingJobKey, manifestDirectoryPath);
+				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath);
 
 			// if (outputType == "HLS")
 			{
