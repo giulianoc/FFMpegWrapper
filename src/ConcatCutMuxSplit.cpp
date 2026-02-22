@@ -304,10 +304,9 @@ void FFMpegWrapper::splitVideoInChunks(
 
 	if (!fs::exists(sourcePhysicalPath))
 	{
-		string errorMessage = string("Source asset path name not existing") + ", ingestionJobKey: " +
-							  to_string(ingestionJobKey)
-							  // + ", encodingJobKey: " + to_string(encodingJobKey)
-							  + ", sourcePhysicalPath: " + sourcePhysicalPath;
+		string errorMessage = std::format("Source asset path name not existing"
+			", ingestionJobKey: {}"
+			", sourcePhysicalPath: {}", ingestionJobKey, sourcePhysicalPath);
 		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
@@ -333,23 +332,19 @@ void FFMpegWrapper::splitVideoInChunks(
 		}
 	}
 
-	{
-		tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(chrono::system_clock::to_time_t(chrono::system_clock::now()));
-
-		_outputFfmpegPathFileName = std::format(
-			"{}/{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "splitVideoInChunks", _currentIngestionJobKey,
-			tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min,
-			tmUtcTimestamp.tm_sec
-		);
-	}
+	_outputFfmpegPathFileName = std::format(
+		"{}/{}_{}_{}.log", _ffmpegTempDir, "splitVideoInChunks", _currentIngestionJobKey,
+		Datetime::nowLocalTime("%Y-%m-%d-%H-%M-%S")
+	);
 
 	string outputPathFileName;
 	{
-		size_t beginOfFileFormatIndex = sourcePhysicalPath.find_last_of(".");
+		size_t beginOfFileFormatIndex = sourcePhysicalPath.find_last_of('.');
 		if (beginOfFileFormatIndex == string::npos)
 		{
-			string errorMessage = string("sourcePhysicalPath is not well formed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-								  ", sourcePhysicalPath: " + sourcePhysicalPath;
+			string errorMessage = std::format("sourcePhysicalPath is not well formed"
+				", ingestionJobKey: {}"
+				", sourcePhysicalPath: {}", ingestionJobKey, sourcePhysicalPath);
 			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
@@ -358,7 +353,7 @@ void FFMpegWrapper::splitVideoInChunks(
 		outputPathFileName = chunksDirectory;
 		if (chunksDirectory.back() != '/')
 			outputPathFileName += "/";
-		outputPathFileName += (chunkBaseFileName + "_%04d" + sourcePhysicalPath.substr(beginOfFileFormatIndex));
+		outputPathFileName += std::format("{}_%04d{}", chunkBaseFileName, sourcePhysicalPath.substr(beginOfFileFormatIndex));
 	}
 
 	// This operation is very quick
@@ -366,9 +361,10 @@ void FFMpegWrapper::splitVideoInChunks(
 	//		will start with near-zero timestamps.
 	//		Rather than splitting based on a particular time, it splits on the nearest keyframe
 	//		following the requested time, so each new segment always starts with a keyframe.
-	string ffmpegExecuteCommand = _ffmpegPath + "/ffmpeg " + "-i " + sourcePhysicalPath + " " + "-c copy -map 0 -segment_time " +
-								  secondsToTime(ingestionJobKey, chunksDurationInSeconds) + " " + "-f segment -reset_timestamps 1 " +
-								  outputPathFileName + " " + "> " + _outputFfmpegPathFileName + " " + "2>&1";
+	string ffmpegExecuteCommand = std::format(
+		"{}/ffmpeg -i {} -c copy -map 0 -segment_time {} -f segment -reset_timestamps 1 {} > {} 2>&1",
+		_ffmpegPath, sourcePhysicalPath, secondsToTime(ingestionJobKey, chunksDurationInSeconds),
+		outputPathFileName, _outputFfmpegPathFileName);
 
 	try
 	{
@@ -384,8 +380,10 @@ void FFMpegWrapper::splitVideoInChunks(
 		int executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
 		if (executeCommandStatus != 0)
 		{
-			string errorMessage = string("splitVideoInChunks: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-								  ", executeCommandStatus: " + to_string(executeCommandStatus) + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand;
+			string errorMessage = std::format("splitVideoInChunks: ffmpeg command failed"
+				", ingestionJobKey: {}"
+				", executeCommandStatus: {}"
+				", ffmpegExecuteCommand: {}", ingestionJobKey, executeCommandStatus, ffmpegExecuteCommand);
 			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
@@ -403,12 +401,13 @@ void FFMpegWrapper::splitVideoInChunks(
 			ingestionJobKey, ffmpegExecuteCommand, chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
-	catch (runtime_error &e)
+	catch (exception &e)
 	{
 		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
-		string errorMessage = string("ffmpeg: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand +
-							  ", e.what(): " + e.what();
+		string errorMessage = std::format("ffmpeg: ffmpeg command failed"
+			", ingestionJobKey: {}"
+			", ffmpegExecuteCommand: {}"
+			", exception: {}", ingestionJobKey, ffmpegExecuteCommand, e.what());
 		LOG_ERROR(errorMessage);
 
 		LOG_INFO(
@@ -418,7 +417,7 @@ void FFMpegWrapper::splitVideoInChunks(
 		);
 		fs::remove_all(_outputFfmpegPathFileName);
 
-		throw e;
+		throw;
 	}
 
 	LOG_INFO(
@@ -439,7 +438,6 @@ void FFMpegWrapper::cutWithoutEncoding(
 	int framesNumber, string cutMediaPathName
 )
 {
-
 	_currentApiName = APIName::CutWithoutEncoding;
 
 	setStatus(ingestionJobKey
@@ -586,6 +584,19 @@ void FFMpegWrapper::cutWithoutEncoding(
 			}
 			else
 				startTimeToBeUsed = startTime;
+			if (startTimeToBeUsed.empty())
+			{
+				string errorMessage = std::format("start time is not initialized"
+					", ingestionJobKey: {}"
+					", cutType: {}"
+					", sourcePhysicalPath: {}"
+					", startTime: {}", ingestionJobKey, cutType, sourcePhysicalPath, startTime);
+				LOG_ERROR(errorMessage);
+
+				// to hide the ffmpeg staff
+				errorMessage = "cut: command failed";
+				throw runtime_error(errorMessage);
+			}
 		}
 
 		string endTimeToBeUsed;
@@ -604,8 +615,19 @@ void FFMpegWrapper::cutWithoutEncoding(
 				endTimeToBeUsed = to_string(timeToSeconds(ingestionJobKey, endTime).first - timeToSeconds(ingestionJobKey, startTime).first);
 			}
 			else
-			{
 				endTimeToBeUsed = endTime;
+			if (endTimeToBeUsed.empty())
+			{
+				string errorMessage = std::format("end time is not initialized"
+					", ingestionJobKey: {}"
+					", cutType: {}"
+					", sourcePhysicalPath: {}"
+					", endTime: {}", ingestionJobKey, cutType, sourcePhysicalPath, endTime);
+				LOG_ERROR(errorMessage);
+
+				// to hide the ffmpeg staff
+				errorMessage = "cut: command failed";
+				throw runtime_error(errorMessage);
 			}
 		}
 
