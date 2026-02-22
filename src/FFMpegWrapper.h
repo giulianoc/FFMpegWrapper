@@ -254,7 +254,7 @@ class FFMpegWrapper
 		int64_t videoDurationInMilliSeconds, ProcessUtility::ProcessId &processId, std::shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
-	void concat(int64_t ingestionJobKey, bool isVideo, std::vector<std::string> &sourcePhysicalPaths, std::string concatenatedMediaPathName);
+	void concat(int64_t ingestionJobKey, bool isVideo, std::vector<std::string> &sourcePhysicalPaths, const std::string &concatenatedMediaPathName);
 
 	void splitVideoInChunks(
 		int64_t ingestionJobKey, std::string sourcePhysicalPath, long chunksDurationInSeconds, std::string chunksDirectory, std::string chunkBaseFileName

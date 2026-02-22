@@ -31,7 +31,7 @@ void FFMpegWrapper::muxAllFiles(int64_t ingestionJobKey, vector<string> sourcesP
 		toString(_currentApiName), ingestionJobKey, destinationPathName
 	);
 
-	for (string sourcePathName : sourcesPathName)
+	for (const string& sourcePathName : sourcesPathName)
 	{
 		// milli secs to wait in case of nfs delay
 		bool exists = false;
@@ -50,8 +50,9 @@ void FFMpegWrapper::muxAllFiles(int64_t ingestionJobKey, vector<string> sourcesP
 		}
 		if (!exists)
 		{
-			string errorMessage = string("Source asset path name not existing") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-								  ", sourcePathName: " + sourcePathName;
+			string errorMessage = std::format("Source asset path name not existing"
+				", ingestionJobKey: {}"
+				", sourcePathName: {}", ingestionJobKey, sourcePathName);
 			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
@@ -59,7 +60,7 @@ void FFMpegWrapper::muxAllFiles(int64_t ingestionJobKey, vector<string> sourcesP
 	}
 
 	string ffmpegExecuteCommand = _ffmpegPath + "/ffmpeg ";
-	for (string sourcePathName : sourcesPathName)
+	for (const string& sourcePathName : sourcesPathName)
 		ffmpegExecuteCommand += "-i " + sourcePathName + " ";
 	ffmpegExecuteCommand += "-c copy ";
 	for (int sourceIndex = 0; sourceIndex < sourcesPathName.size(); sourceIndex++)
@@ -80,12 +81,16 @@ void FFMpegWrapper::muxAllFiles(int64_t ingestionJobKey, vector<string> sourcesP
 		int executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
 		if (executeCommandStatus != 0)
 		{
-			string errorMessage = string(toString(_currentApiName)) + ": ffmpeg command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-								  ", executeCommandStatus: " + to_string(executeCommandStatus) + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand;
+			string errorMessage = std::format("{}: ffmpeg command failed"
+				", ingestionJobKey: {}"
+				", executeCommandStatus: {}"
+				", ffmpegExecuteCommand: {}",
+				toString(_currentApiName), ingestionJobKey, executeCommandStatus, ffmpegExecuteCommand);
 			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = string(toString(_currentApiName)) + ": command failed" + ", ingestionJobKey: " + to_string(ingestionJobKey);
+			errorMessage = std::format("{}: command failed"
+				", ingestionJobKey: {}", toString(_currentApiName), ingestionJobKey);
 			throw runtime_error(errorMessage);
 		}
 
@@ -100,19 +105,22 @@ void FFMpegWrapper::muxAllFiles(int64_t ingestionJobKey, vector<string> sourcesP
 			chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
-	catch (runtime_error &e)
+	catch (exception &e)
 	{
-		string errorMessage = string("ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand + ", e.what(): " + e.what();
+		string errorMessage = std::format("ffmpeg command failed"
+			", ingestionJobKey: {}"
+			", ffmpegExecuteCommand: {}"
+			", exception: {}", ingestionJobKey, ffmpegExecuteCommand, e.what());
 		LOG_ERROR(errorMessage);
 
 		// to hide the ffmpeg staff
-		errorMessage = string("command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) + ", e.what(): " + e.what();
-		throw e;
+		// errorMessage = string("command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) + ", e.what(): " + e.what();
+		throw;
 	}
 }
 
-void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string> &sourcePhysicalPaths, string concatenatedMediaPathName)
+void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string> &sourcePhysicalPaths,
+	const string& concatenatedMediaPathName)
 {
 	_currentApiName = APIName::Concat;
 
@@ -125,10 +133,10 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 			  */
 	);
 
-	string concatenationListPathName = _ffmpegTempDir + "/" + to_string(ingestionJobKey) + ".concatList.txt";
+	string concatenationListPathName = std::format("{}/{}.concatList.txt", _ffmpegTempDir, ingestionJobKey);
 
 	ofstream concatListFile(concatenationListPathName.c_str(), ofstream::trunc);
-	for (string sourcePhysicalPath : sourcePhysicalPaths)
+	for (const string& sourcePhysicalPath : sourcePhysicalPaths)
 	{
 		LOG_INFO(
 			"ffmpeg: adding physical path"
@@ -139,10 +147,9 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 
 		if (!fs::exists(sourcePhysicalPath))
 		{
-			string errorMessage = string("Source asset path name not existing") + ", ingestionJobKey: " +
-								  to_string(ingestionJobKey)
-								  // + ", encodingJobKey: " + to_string(encodingJobKey)
-								  + ", sourcePhysicalPath: " + sourcePhysicalPath;
+			string errorMessage = std::format("Source asset path name not existing"
+				", ingestionJobKey: {}"
+				", sourcePhysicalPath: {}", ingestionJobKey, sourcePhysicalPath);
 			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
@@ -152,15 +159,8 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 	}
 	concatListFile.close();
 
-	{
-		tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(chrono::system_clock::to_time_t(chrono::system_clock::now()));
-
-		_outputFfmpegPathFileName = std::format(
-			"{}/{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "concat", _currentIngestionJobKey,
-			tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min,
-			tmUtcTimestamp.tm_sec
-		);
-	}
+	_outputFfmpegPathFileName = std::format("{}/{}_{}_{}.log", _ffmpegTempDir, "concat", _currentIngestionJobKey,
+		Datetime::nowLocalTime("%Y-%m-%d-%H-%M-%S"));
 
 	// Then you can stream copy or re-encode your files
 	// The -safe 0 above is not required if the paths are relative
@@ -170,28 +170,24 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 	string ffmpegExecuteCommand;
 	if (isVideo)
 	{
-		ffmpegExecuteCommand = _ffmpegPath + "/ffmpeg " + "-f concat -safe 0 -i " + concatenationListPathName + " ";
+		ffmpegExecuteCommand = std::format("{}/ffmpeg -f concat -safe 0 -i {} ", _ffmpegPath, concatenationListPathName);
 		bool allVideoAudioTracks = true;
 		if (allVideoAudioTracks)
 			ffmpegExecuteCommand += "-map 0:v -c:v copy -map 0:a -c:a copy ";
 		else
 			ffmpegExecuteCommand += "-c copy ";
-		ffmpegExecuteCommand += (concatenatedMediaPathName + " " + "> " + _outputFfmpegPathFileName + " " + "2>&1");
+		ffmpegExecuteCommand += std::format("{} > {} 2>&1", concatenatedMediaPathName, _outputFfmpegPathFileName);
 	}
 	else
 	{
-		ffmpegExecuteCommand = _ffmpegPath + "/ffmpeg " + "-f concat -safe 0 -i " + concatenationListPathName + " ";
-		bool allVideoAudioTracks = true;
-		if (allVideoAudioTracks)
+		ffmpegExecuteCommand = std::format("{}/ffmpeg -f concat -safe 0 -i {} ", _ffmpegPath, concatenationListPathName);
+		bool allAudioTracks = true;
+		if (allAudioTracks)
 			ffmpegExecuteCommand += "-map 0:a -c:a copy ";
 		else
 			ffmpegExecuteCommand += "-c copy ";
-		ffmpegExecuteCommand += (concatenatedMediaPathName + " " + "> " + _outputFfmpegPathFileName + " " + "2>&1");
+		ffmpegExecuteCommand += std::format("{} > {} 2>&1", concatenatedMediaPathName, _outputFfmpegPathFileName);
 	}
-
-#ifdef __APPLE__
-	ffmpegExecuteCommand.insert(0, string("export DYLD_LIBRARY_PATH=") + getenv("DYLD_LIBRARY_PATH") + "; ");
-#endif
 
 	try
 	{
@@ -216,13 +212,16 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 
 				inputBuffer = input.str();
 			}
-			string errorMessage = string("concat: ffmpeg command failed") + ", executeCommandStatus: " + to_string(executeCommandStatus) +
-								  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand + ", inputBuffer: " + inputBuffer;
+			string errorMessage = std::format("concat: ffmpeg command failed"
+				", executeCommandStatus: {}"
+				", ffmpegExecuteCommand: {}"
+				", inputBuffer: {}", executeCommandStatus, ffmpegExecuteCommand, inputBuffer);
 
 			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
-			errorMessage = string("concat: command failed") + ", inputBuffer: " + inputBuffer;
+			errorMessage = std::format("concat: command failed"
+				", inputBuffer: {}", inputBuffer);
 			throw runtime_error(errorMessage);
 		}
 
@@ -236,13 +235,12 @@ void FFMpegWrapper::concat(int64_t ingestionJobKey, bool isVideo, vector<string>
 			ingestionJobKey, ffmpegExecuteCommand, chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
-	catch (runtime_error &e)
+	catch (exception &e)
 	{
 		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
 		// 2020-07-20: log of ffmpegExecuteCommand commented because already added into the catched exception
-		string errorMessage = string("ffmpeg: ffmpeg command failed")
-							  // + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand
-							  + ", e.what(): " + e.what();
+		string errorMessage = std::format("ffmpeg: ffmpeg command failed"
+			", exception: ", e.what());
 		LOG_ERROR(errorMessage);
 
 		LOG_INFO(
@@ -471,10 +469,9 @@ void FFMpegWrapper::cutWithoutEncoding(
 
 	if (!fs::exists(sourcePhysicalPath))
 	{
-		string errorMessage = string("Source asset path name not existing") + ", ingestionJobKey: " +
-							  to_string(ingestionJobKey)
-							  // + ", encodingJobKey: " + to_string(encodingJobKey)
-							  + ", sourcePhysicalPath: " + sourcePhysicalPath;
+		string errorMessage = std::format("Source asset path name not existing"
+			", ingestionJobKey: {}"
+			", sourcePhysicalPath: {}", ingestionJobKey, sourcePhysicalPath);
 		LOG_ERROR(errorMessage);
 
 		throw runtime_error(errorMessage);
@@ -482,11 +479,12 @@ void FFMpegWrapper::cutWithoutEncoding(
 
 	// if dest directory does not exist, just create it
 	{
-		size_t endOfDirectoryIndex = cutMediaPathName.find_last_of("/");
+		size_t endOfDirectoryIndex = cutMediaPathName.find_last_of('/');
 		if (endOfDirectoryIndex == string::npos)
 		{
-			string errorMessage = string("cutMediaPathName is not well formed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-								  ", cutMediaPathName: " + cutMediaPathName;
+			string errorMessage = std::format("cutMediaPathName is not well formed"
+				", ingestionJobKey: {}"
+				", cutMediaPathName: {}", ingestionJobKey, cutMediaPathName);
 			LOG_ERROR(errorMessage);
 
 			throw runtime_error(errorMessage);
@@ -511,15 +509,10 @@ void FFMpegWrapper::cutWithoutEncoding(
 		}
 	}
 
-	{
-		tm tmUtcTimestamp = Datetime::utcSecondsToLocalTime(chrono::system_clock::to_time_t(chrono::system_clock::now()));
-
-		_outputFfmpegPathFileName = std::format(
-			"{}/{}_{}_{:0>4}-{:0>2}-{:0>2}-{:0>2}-{:0>2}-{:0>2}.log", _ffmpegTempDir, "cutWithoutEncoding", _currentIngestionJobKey,
-			tmUtcTimestamp.tm_year + 1900, tmUtcTimestamp.tm_mon + 1, tmUtcTimestamp.tm_mday, tmUtcTimestamp.tm_hour, tmUtcTimestamp.tm_min,
-			tmUtcTimestamp.tm_sec
-		);
-	}
+	_outputFfmpegPathFileName = std::format(
+		"{}/{}_{}_{}.log", _ffmpegTempDir, "cutWithoutEncoding", _currentIngestionJobKey,
+		Datetime::nowLocalTime("%Y-%m-%d-%H-%M-%S")
+	);
 
 	/*
 		-ss: When used as an output option (before an output url), decodes but discards input
@@ -588,7 +581,7 @@ void FFMpegWrapper::cutWithoutEncoding(
 				startTimeToBeUsed = getNearestKeyFrameTime(
 					ingestionJobKey, sourcePhysicalPath, startKeyFrameSeekingInterval, timeToSeconds(ingestionJobKey, startTime).first
 				);
-				if (startTimeToBeUsed == "")
+				if (startTimeToBeUsed.empty())
 					startTimeToBeUsed = startTime;
 			}
 			else
@@ -602,7 +595,7 @@ void FFMpegWrapper::cutWithoutEncoding(
 				endTimeToBeUsed = getNearestKeyFrameTime(
 					ingestionJobKey, sourcePhysicalPath, endKeyFrameSeekingInterval, timeToSeconds(ingestionJobKey, endTime).first
 				);
-				if (endTimeToBeUsed == "")
+				if (endTimeToBeUsed.empty())
 					endTimeToBeUsed = endTime;
 			}
 			else if (cutType == "KeyFrameSeeking") // input seeking
@@ -616,7 +609,7 @@ void FFMpegWrapper::cutWithoutEncoding(
 			}
 		}
 
-		ffmpegExecuteCommand = _ffmpegPath + "/ffmpeg ";
+		ffmpegExecuteCommand = std::format("{}/ffmpeg ", _ffmpegPath);
 
 		{
 			if (cutType == "KeyFrameSeeking") // input seeking
@@ -657,14 +650,11 @@ void FFMpegWrapper::cutWithoutEncoding(
 		// + "-af \"aresample=async=1:min_hard_comp=0.100000:first_pts=0\" "
 		// -map 0:v and -map 0:a is to get all video-audio tracks
 		ffmpegExecuteCommand = std::format(
-			"{}/ffmpeg -ss {} -i {} -to {} -map 0:a -c:a copy {} > {} 2>&1", _ffmpegPath, startTime, sourcePhysicalPath, endTime, cutMediaPathName,
+			"{}/ffmpeg -ss {} -i {} -to {} -map 0:a -c:a copy {} > {} 2>&1",
+			_ffmpegPath, startTime, sourcePhysicalPath, endTime, cutMediaPathName,
 			_outputFfmpegPathFileName
 		);
 	}
-
-#ifdef __APPLE__
-	ffmpegExecuteCommand.insert(0, string("export DYLD_LIBRARY_PATH=") + getenv("DYLD_LIBRARY_PATH") + "; ");
-#endif
 
 	try
 	{
@@ -680,8 +670,10 @@ void FFMpegWrapper::cutWithoutEncoding(
 		int executeCommandStatus = ProcessUtility::execute(ffmpegExecuteCommand);
 		if (executeCommandStatus != 0)
 		{
-			string errorMessage = string("cut: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-								  ", executeCommandStatus: " + to_string(executeCommandStatus) + ", ffmpegExecuteCommand: " + ffmpegExecuteCommand;
+			string errorMessage = std::format("cut: ffmpeg command failed"
+				", ingestionJobKey: {}"
+				", executeCommandStatus: {}"
+				", ffmpegExecuteCommand: {}", ingestionJobKey, executeCommandStatus, ffmpegExecuteCommand);
 			LOG_ERROR(errorMessage);
 
 			// to hide the ffmpeg staff
@@ -699,22 +691,27 @@ void FFMpegWrapper::cutWithoutEncoding(
 			ingestionJobKey, ffmpegExecuteCommand, chrono::duration_cast<chrono::seconds>(endFfmpegCommand - startFfmpegCommand).count()
 		);
 	}
-	catch (runtime_error &e)
+	catch (exception &e)
 	{
 		// string lastPartOfFfmpegOutputFile = getLastPartOfFile(_outputFfmpegPathFileName, _charsToBeReadFromFfmpegErrorOutput);
-		string errorMessage = string("ffmpeg: ffmpeg command failed") + ", ingestionJobKey: " + to_string(ingestionJobKey) +
-							  ", ffmpegExecuteCommand: " + ffmpegExecuteCommand +
-							  ", e.what(): " + e.what();
+		string errorMessage = std::format("ffmpeg: ffmpeg command failed"
+			", ingestionJobKey: {}"
+			", ffmpegExecuteCommand: {}"
+			", exception: ", ingestionJobKey, ffmpegExecuteCommand, e.what());
 		LOG_ERROR(errorMessage);
 
+		/*
+		 * in caso di errore lasciamo il log file in modo che lo possiamo analizzare per capire il motivo dell'errore
+		 * Il file di log viene comunque rimosso dal crontab.sh (commandIndex 5)
 		LOG_INFO(
 			"Remove"
 			", _outputFfmpegPathFileName: {}",
 			_outputFfmpegPathFileName
 		);
 		fs::remove_all(_outputFfmpegPathFileName);
+		*/
 
-		throw e;
+		throw;
 	}
 
 	LOG_INFO(
