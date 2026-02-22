@@ -738,7 +738,7 @@ void FFMpegWrapper::liveRecorder(
 					);
 					LOG_ERROR(errorMessage);
 					ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
-						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), "Restarted"));
+						Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S.", true), "Restarted"));
 
 					// in case of IP_PUSH the monitor thread, in case the client does not
 					// reconnect istantaneously, kills the process.
@@ -888,7 +888,7 @@ void FFMpegWrapper::liveRecorder(
 				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), e.what()
 			);
 			ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
-				Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true), "Killed"));
+				Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S.", true), "Killed"));
 		}
 		else
 		{
@@ -902,7 +902,7 @@ void FFMpegWrapper::liveRecorder(
 				ingestionJobKey, encodingJobKey, _outputFfmpegPathFileName, ffMpegEngine.toSingleLine(), e.what()
 			);
 			ffmpegCallbackData->pushErrorMessage(std::format("{} {}",
-				Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S", true),
+				Datetime::nowLocalTime("%Y-%m-%d %H:%M:%S.", true),
 				std::format("Failed: {}", e.what())));
 		}
 		LOG_ERROR(errorMessage);
