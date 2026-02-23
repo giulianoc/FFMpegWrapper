@@ -398,9 +398,10 @@ void FFMpegWrapper::liveProxy(
 				", currentInputIndex: {}"
 				", currentNumberOfRepeatingSameInput: {}"
 				", _outputFfmpegPathFileName: {}"
-				", ffmpegArgumentList: {}",
+				", ffmpegArgumentList: {}"
+				", killTypeReceived: {}",
 				ingestionJobKey, encodingJobKey, currentInputIndex, currentNumberOfRepeatingSameInput, _outputFfmpegPathFileName,
-				ffMpegEngine.toSingleLine()
+				ffMpegEngine.toSingleLine(), static_cast<int>(killTypeReceived)
 			);
 
 			startFfmpegCommand = chrono::system_clock::now();
