@@ -19,36 +19,36 @@
 
 using namespace std;
 
-FFMpegWrapper::FFMpegWrapper(nlohmann::json configuration) : _currentApiName()
+FFMpegWrapper::FFMpegWrapper(nlohmann::json configurationRoot) : _currentApiName()
 {
-	_ffmpegPath = JSONUtils::as<string>(configuration["ffmpeg"], "path", ".");
+	_ffmpegPath = JSONUtils::as<string>(configurationRoot["ffmpeg"], "path", ".");
 	LOG_DEBUG(
 		"Configuration item"
 		", ffmpeg->path: {}",
 		_ffmpegPath
 	);
-	_ffmpegTempDir = JSONUtils::as<string>(configuration["ffmpeg"], "tempDir", ".");
-	_ffmpegEndlessRecursivePlaylistDir = JSONUtils::as<string>(configuration["ffmpeg"], "endlessRecursivePlaylistDir", ".");
-	_ffmpegTtfFontDir = JSONUtils::as<string>(configuration["ffmpeg"], "ttfFontDir", ".");
+	_ffmpegTempDir = JSONUtils::as<string>(configurationRoot["ffmpeg"], "tempDir", ".");
+	_ffmpegEndlessRecursivePlaylistDir = JSONUtils::as<string>(configurationRoot["ffmpeg"], "endlessRecursivePlaylistDir", ".");
+	_ffmpegTtfFontDir = JSONUtils::as<string>(configurationRoot["ffmpeg"], "ttfFontDir", ".");
 
-	_incrontabScriptPathName = JsonPath(&configuration)["mms"]["incrontabScriptPathName"].as<string>("");
+	_incrontabScriptPathName = JsonPath(&configurationRoot)["mms"]["incrontabScriptPathName"].as<string>("");
 
-	_youTubeDlPath = JSONUtils::as<string>(configuration["youTubeDl"], "path", ".");
+	_youTubeDlPath = JSONUtils::as<string>(configurationRoot["youTubeDl"], "path", ".");
 	LOG_DEBUG(
 		"Configuration item"
 		", youTubeDl->path: {}",
 		_youTubeDlPath
 	);
-	_pythonPathName = JSONUtils::as<string>(configuration["youTubeDl"], "pythonPathName", ".");
+	_pythonPathName = JSONUtils::as<string>(configurationRoot["youTubeDl"], "pythonPathName", ".");
 	LOG_DEBUG(
 		"Configuration item"
 		", youTubeDl->pythonPathName: {}",
 		_pythonPathName
 	);
 
-	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::as<int32_t>(configuration["storage"], "waitingNFSSync_maxMillisecondsToWait", 150000);
+	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::as<int32_t>(configurationRoot["storage"], "waitingNFSSync_maxMillisecondsToWait", 150000);
 	_waitingNFSSync_milliSecondsWaitingBetweenChecks =
-		JSONUtils::as<int32_t>(configuration["storage"], "waitingNFSSync_milliSecondsWaitingBetweenChecks", 100);
+		JSONUtils::as<int32_t>(configurationRoot["storage"], "waitingNFSSync_milliSecondsWaitingBetweenChecks", 100);
 	/*
 	info(__FILEREF__ + "Configuration item"
 		+ ", storage->waitingNFSSync_sleepTimeInSeconds: "

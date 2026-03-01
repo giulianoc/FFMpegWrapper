@@ -122,7 +122,7 @@ class FFMpegWrapper
 
 	std::string _ffmpegTempDir;
 
-	explicit FFMpegWrapper(nlohmann::json configuration);
+	explicit FFMpegWrapper(nlohmann::json configurationRoot);
 
 	~FFMpegWrapper();
 
