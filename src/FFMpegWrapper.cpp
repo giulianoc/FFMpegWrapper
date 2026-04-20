@@ -45,7 +45,8 @@ FFMpegWrapper::FFMpegWrapper(nlohmann::json configurationRoot) : _currentApiName
 		_pythonPathName
 	);
 
-	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::as<int32_t>(configurationRoot["storage"], "waitingNFSSync_maxMillisecondsToWait", 150000);
+	_waitingNFSSync_maxMillisecondsToWait = JSONUtils::as<int32_t>(configurationRoot["storage"],
+		"waitingNFSSync_maxMillisecondsToWait", 150000);
 	_waitingNFSSync_milliSecondsWaitingBetweenChecks =
 		JSONUtils::as<int32_t>(configurationRoot["storage"], "waitingNFSSync_milliSecondsWaitingBetweenChecks", 100);
 	/*
