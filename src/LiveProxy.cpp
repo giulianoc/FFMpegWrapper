@@ -1023,7 +1023,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			throw runtime_error(errorMessage);
 		}
-		string streamSourceType = JSONUtils::as<string>(streamInputRoot, field, "");
+		auto streamSourceType = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		int maxWidth = -1;
 		field = "maxWidth";
@@ -1034,10 +1034,10 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		url = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		field = "useVideoTrackFromPhysicalPathName";
-		string useVideoTrackFromPhysicalPathName = JSONUtils::as<string>(streamInputRoot, field, "");
+		auto useVideoTrackFromPhysicalPathName = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		field = "useVideoTrackFromPhysicalDeliveryURL";
-		string useVideoTrackFromPhysicalDeliveryURL = JSONUtils::as<string>(streamInputRoot, field, "");
+		auto useVideoTrackFromPhysicalDeliveryURL = JSONUtils::as<string>(streamInputRoot, field, "");
 
 		string userAgent;
 		field = "userAgent";
@@ -1054,9 +1054,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		field = "captureVideoInputFormat";
 		captureLive_videoInputFormat = JSONUtils::as<string>(streamInputRoot, field, "");
 
-		int captureLive_frameRate = -1;
-		field = "captureFrameRate";
-		captureLive_frameRate = JSONUtils::as<int32_t>(streamInputRoot, field, -1);
+		int captureLive_frameRate = JSONUtils::as<int32_t>(streamInputRoot, "captureFrameRate", -1);
 
 		int captureLive_width = -1;
 		field = "captureWidth";
@@ -1476,37 +1474,17 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			{
 				// video
 				{
-					// -f v4l2 -framerate 25 -video_size 640x480 -i /dev/video0
-					// ffmpegInputArgumentList.push_back("-f");
-					// ffmpegInputArgumentList.push_back("v4l2");
-					//
-					// ffmpegInputArgumentList.push_back("-thread_queue_size");
-					// ffmpegInputArgumentList.push_back("4096");
 					mainInput.addArgs("-f v4l2 -thread_queue_size 4096");
 
 					if (!captureLive_videoInputFormat.empty())
-					{
-						// ffmpegInputArgumentList.push_back("-input_format");
-						// ffmpegInputArgumentList.push_back(captureLive_videoInputFormat);
 						mainInput.addArgs(std::format("-input_format {}", captureLive_videoInputFormat));
-					}
 
 					if (captureLive_frameRate != -1)
-					{
-						// ffmpegInputArgumentList.push_back("-framerate");
-						// ffmpegInputArgumentList.push_back(to_string(captureLive_frameRate));
 						mainInput.addArgs(std::format("-framerate {}", captureLive_frameRate));
-					}
 
 					if (captureLive_width != -1 && captureLive_height != -1)
-					{
-						// ffmpegInputArgumentList.push_back("-video_size");
-						// ffmpegInputArgumentList.push_back(to_string(captureLive_width) + "x" + to_string(captureLive_height));
 						mainInput.addArgs(std::format("-video_size {}x{}", captureLive_width, captureLive_height));
-					}
 
-					// ffmpegInputArgumentList.push_back("-i");
-					// ffmpegInputArgumentList.push_back(string("/dev/video") + to_string(captureLive_videoDeviceNumber));
 					mainInput.setSource(std::format("/dev/video{}", captureLive_videoDeviceNumber));
 				}
 
@@ -1514,25 +1492,14 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				{
 					auto& audioInput = ffMpegEngine.addInput();
 
-					// ffmpegInputArgumentList.push_back("-f");
-					// ffmpegInputArgumentList.push_back("alsa");
-					//
-					// ffmpegInputArgumentList.push_back("-thread_queue_size");
-					// ffmpegInputArgumentList.push_back("2048");
 					audioInput.addArgs("-f alsa -thread_queue_size 2048");
 
 					if (inputDurationInSeconds)
 						audioInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
 
 					if (captureLive_channelsNumber != -1)
-					{
-						// ffmpegInputArgumentList.push_back("-ac");
-						// ffmpegInputArgumentList.push_back(to_string(captureLive_channelsNumber));
 						audioInput.addArgs(std::format("-ac {}", captureLive_channelsNumber));
-					}
 
-					// ffmpegInputArgumentList.push_back("-i");
-					// ffmpegInputArgumentList.push_back(string("hw:") + to_string(captureLive_audioDeviceNumber));
 					audioInput.setSource(std::format("hw:{}", captureLive_audioDeviceNumber));
 				}
 			}

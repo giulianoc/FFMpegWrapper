@@ -353,37 +353,18 @@ void FFMpegWrapper::liveRecorder(
 		{
 			// video
 			{
-				// -f v4l2 -framerate 25 -video_size 640x480 -i /dev/video0
 				mainInput.addArgs("-f v4l2 -thread_queue_size 4096");
-				// ffmpegArgumentList.emplace_back("-f");
-				// ffmpegArgumentList.emplace_back("v4l2");
-				// ffmpegArgumentList.emplace_back("-thread_queue_size");
-				// ffmpegArgumentList.emplace_back("4096");
 
 				if (!captureLive_videoInputFormat.empty())
-				{
 					mainInput.addArgs(std::format("-input_format {}", captureLive_videoInputFormat));
-					// ffmpegArgumentList.emplace_back("-input_format");
-					// ffmpegArgumentList.push_back(captureLive_videoInputFormat);
-				}
 
 				if (captureLive_frameRate != -1)
-				{
 					mainInput.addArgs(std::format("-framerate {}", captureLive_frameRate));
-					// ffmpegArgumentList.emplace_back("-framerate");
-					// ffmpegArgumentList.push_back(to_string(captureLive_frameRate));
-				}
 
 				if (captureLive_width != -1 && captureLive_height != -1)
-				{
 					mainInput.addArgs(std::format("-video_size {}x{}", captureLive_width, captureLive_height));
-					// ffmpegArgumentList.emplace_back("-video_size");
-					// ffmpegArgumentList.push_back(to_string(captureLive_width) + "x" + to_string(captureLive_height));
-				}
 
 				mainInput.setSource(std::format("/dev/video{}", captureLive_videoDeviceNumber));
-				// ffmpegArgumentList.emplace_back("-i");
-				// ffmpegArgumentList.push_back(string("/dev/video") + to_string(captureLive_videoDeviceNumber));
 			}
 
 			// audio
