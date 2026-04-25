@@ -230,9 +230,8 @@ void FFMpegWrapper::liveProxy(
 	int currentInputIndex = -1;
 	int previousInputIndex = -1;
 	json currentInputRoot;
-	while ((currentInputIndex =
-				getNextLiveProxyInput(ingestionJobKey, encodingJobKey, inputsRoot, inputsRootMutex, currentInputIndex, timedInput, &currentInputRoot)
-		   ) != -1)
+	while ((currentInputIndex = getNextLiveProxyInput(ingestionJobKey, encodingJobKey, inputsRoot, inputsRootMutex, currentInputIndex,
+		timedInput, &currentInputRoot)) != -1)
 	{
 		FFMpegEngine ffMpegEngine;
 		optional<string> inputSelectedVideoMap;
@@ -857,10 +856,10 @@ int FFMpegWrapper::getNextLiveProxyInput(
 			json inputRoot = (*inputsRoot)[inputIndex];
 
 			string field = "utcScheduleStart";
-			int64_t utcProxyPeriodStart = JSONUtils::as<int64_t>(inputRoot, field, -1);
+			auto utcProxyPeriodStart = JSONUtils::as<int64_t>(inputRoot, field, -1);
 
 			field = "utcScheduleEnd";
-			int64_t utcProxyPeriodEnd = JSONUtils::as<int64_t>(inputRoot, field, -1);
+			auto utcProxyPeriodEnd = JSONUtils::as<int64_t>(inputRoot, field, -1);
 
 			LOG_INFO(
 				"getNextLiveProxyInput"
