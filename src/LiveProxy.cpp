@@ -2068,8 +2068,10 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 								progressData._killType = &killTypeReceived;
 
 								CurlWrapper::downloadFile(
-									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData, 500,
-									std::format(", ingestionJobKey: {}", ingestionJobKey), 960, 1 /* maxRetryNumber */
+									sourcePhysicalReference, destBinaryPathName, progressDownloadCallback, &progressData,
+									500, std::format(", ingestionJobKey: {}", ingestionJobKey),
+									3600L, // 1h di timeout!!!
+									1 /* maxRetryNumber */
 								);
 							}
 							catch (exception &e)
