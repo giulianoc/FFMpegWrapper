@@ -1657,24 +1657,24 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			auto& mainInput = ffMpegEngine.addInput();
 
-			// ffmpegInputArgumentList.push_back("-re");
-			mainInput.addArg("-re");
+			// -re con sorgenti “live” (gdigrab/dshow) spesso non aiuta e può peggiorare la regolarità
+			// -re serve soprattutto per “simulare realtime” quando leggi da file. Con gdigrab/dshow sei già realtime:
+			// usare -re può introdurre pacing strano.
+			if (!(
+				inputFormat == "gdigrab" || inputFormat == "dshow" // windows
+				|| inputFormat == "x11grab" // linux
+				|| inputFormat == "avfoundation" // mac
+				))
+				mainInput.addArg("-re");
 
 			if (inputDurationInSeconds)
 				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
 
 			{
 				if (!otherInputOptions.empty())
-					// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
 					mainInput.addArgs(otherInputOptions);
 				if (!inputFormat.empty())
-				{
-					// ffmpegInputArgumentList.push_back("-f");
-					// ffmpegInputArgumentList.push_back(inputFormat);
 					mainInput.addArgs(std::format("-f {}", inputFormat));
-				}
-				// ffmpegInputArgumentList.push_back("-i");
-				// ffmpegInputArgumentList.push_back(url);
 				mainInput.setSource(url);
 			}
 
