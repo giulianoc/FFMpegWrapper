@@ -1613,9 +1613,9 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 		field = "directURLInput";
 		json directURLInputRoot = inputRoot[field];
 
-		string otherInputOptions = JSONUtils::as<string>(directURLInputRoot, "otherInputOptions");
-		string inputFormat = JSONUtils::as<string>(directURLInputRoot, "inputFormat", "");
-		string url = JSONUtils::as<string>(directURLInputRoot, "url", "");
+		auto otherInputOptions = JSONUtils::as<string>(directURLInputRoot, "otherInputOptions");
+		auto inputFormat = JSONUtils::as<string>(directURLInputRoot, "inputFormat", "");
+		auto url = JSONUtils::as<string>(directURLInputRoot, "url", "");
 
 		LOG_INFO(
 			"liveProxy, url"
