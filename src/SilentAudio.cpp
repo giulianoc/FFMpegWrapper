@@ -118,9 +118,9 @@ void FFMpegWrapper::silentAudio(
 					ffMpegEngine.addGlobalArg("-y");
 
 					// input options
-					FFMpegEngine::Input input_1 = ffMpegEngine.addInput("anullsrc");
+					FFMpegEngine::Input& input_1 = ffMpegEngine.addInput("anullsrc");
 					input_1.addArgs("-f lavfi");
-					FFMpegEngine::Input input_2 = ffMpegEngine.addInput(videoAssetPathName);
+					FFMpegEngine::Input& input_2 = ffMpegEngine.addInput(videoAssetPathName);
 
 					// ffmpegArgumentList.push_back("-f");
 					// ffmpegArgumentList.push_back("lavfi");
@@ -129,7 +129,7 @@ void FFMpegWrapper::silentAudio(
 					// ffmpegArgumentList.push_back("-i");
 					// ffmpegArgumentList.push_back(videoAssetPathName);
 
-					FFMpegEngine::Output mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
+					FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
 					// output options
 					// ffmpegArgumentList.push_back("-map");
 					// ffmpegArgumentList.push_back("0:a");
@@ -179,7 +179,7 @@ void FFMpegWrapper::silentAudio(
 					ffMpegEngine.addInput(videoAssetPathName);
 
 					// output options
-					FFMpegEngine::Output mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
+					FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
 					// ffmpegArgumentList.push_back("-af");
 					// ffmpegArgumentList.push_back("adelay=" + to_string(seconds) + "s:all=true");
 					mainOutput.addArgs(std::format("-af adelay={}s:all=true", seconds));

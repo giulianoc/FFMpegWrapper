@@ -2404,7 +2404,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				{
 					for (const auto& audioTrack : _audioTracksRoot)
 					{
-						FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
+						FFMpegEngine::Output& audioOutput = ffMpegEngine.addOutput();
 
 						// ffmpegArgumentList.push_back("-map");
 						// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
@@ -2447,7 +2447,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					}
 				}
 
-				FFMpegEngine::Output videoOutput = ffMpegEngine.addOutput();
+				FFMpegEngine::Output& videoOutput = ffMpegEngine.addOutput();
 				if (_videoTracksRoot != nullptr)
 				{
 					nlohmann::json videoTrack = _videoTracksRoot[0];
@@ -2500,7 +2500,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				{
 					for (const auto& audioTrack : _audioTracksRoot)
 					{
-						FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
+						FFMpegEngine::Output& audioOutput = ffMpegEngine.addOutput();
 						// ffmpegArgumentList.push_back("-map");
 						// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
 						audioOutput.map(std::format("0:{}", JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
@@ -2542,7 +2542,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 					}
 				}
 
-				FFMpegEngine::Output videoOutput = ffMpegEngine.addOutput();
+				FFMpegEngine::Output& videoOutput = ffMpegEngine.addOutput();
 
 				if (_videoTracksRoot != nullptr)
 				{
@@ -2614,7 +2614,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 			{
 				for (const auto& audioTrack : _audioTracksRoot)
 				{
-					FFMpegEngine::Output audioOutput = ffMpegEngine.addOutput();
+					FFMpegEngine::Output& audioOutput = ffMpegEngine.addOutput();
 
 					// ffmpegArgumentList.push_back("-map");
 					// ffmpegArgumentList.push_back(std::string("0:") + std::to_string(JSONUtils::as<int32_t>(audioTrack, "trackIndex")));
@@ -2656,7 +2656,7 @@ void FFMpegEncodingParameters::applyEncoding_audioGroup(
 				}
 			}
 
-			FFMpegEngine::Output videoOutput = ffMpegEngine.addOutput();
+			FFMpegEngine::Output& videoOutput = ffMpegEngine.addOutput();
 
 			if (_videoTracksRoot != nullptr)
 			{

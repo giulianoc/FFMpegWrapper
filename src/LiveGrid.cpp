@@ -232,7 +232,7 @@ void FFMpegWrapper::liveGrid(
 			json inputChannelRoot = inputChannelsRoot[inputChannelIndex];
 			string inputChannelURL = JSONUtils::as<string>(inputChannelRoot, "inputChannelURL", "");
 
-			FFMpegEngine::Input mainInput = ffMpegEngine.addInput(inputChannelURL);
+			FFMpegEngine::Input& mainInput = ffMpegEngine.addInput(inputChannelURL);
 			if (!userAgent.empty())
 			{
 				// ffmpegArgumentList.push_back("-user_agent");

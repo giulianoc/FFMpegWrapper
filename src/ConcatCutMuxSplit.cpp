@@ -830,7 +830,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 
 		FFMpegEngine ffMpegEngine;
 
-		FFMpegEngine::Output mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
+		FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput(stagingEncodedAssetPathName);
 
 		// vector<string> ffmpegEncodingProfileArgumentList;
 		{
