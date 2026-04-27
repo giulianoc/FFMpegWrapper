@@ -942,7 +942,7 @@ void FFMpegWrapper::cutFrameAccurateWithEncoding(
 				// ffmpegEncodingProfileArgumentList.push_back("0");
 				mainOutput.addArgs("-threads 0");
 				// FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegEncodingProfileArgumentList);
-				mainOutput.withVideoCodec(ffmpegAudioCodec);
+				mainOutput.withVideoCodec(ffmpegVideoCodec);
 				// FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegEncodingProfileArgumentList);
 				mainOutput.addArgs(ffmpegAudioBitRateParameter);
 				// FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegEncodingProfileArgumentList);

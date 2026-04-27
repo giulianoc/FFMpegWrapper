@@ -302,7 +302,7 @@ void FFMpegWrapper::slideShow(
 			// ffmpegEncodingProfileArgumentList.push_back("0");
 			mainOutput.addArgs("-threads 0");
 			// FFMpegEncodingParameters::addToArguments(ffmpegAudioCodecParameter, ffmpegEncodingProfileArgumentList);
-			mainOutput.withVideoCodec(ffmpegAudioCodec);
+			mainOutput.withAudioCodec(ffmpegAudioCodec);
 			// FFMpegEncodingParameters::addToArguments(ffmpegAudioBitRateParameter, ffmpegEncodingProfileArgumentList);
 			mainOutput.addArgs(ffmpegAudioBitRateParameter);
 			// FFMpegEncodingParameters::addToArguments(ffmpegAudioOtherParameters, ffmpegEncodingProfileArgumentList);
@@ -413,7 +413,7 @@ void FFMpegWrapper::slideShow(
 		mainOutput.addArgs("-shortest");
 	// ffmpegArgumentList.push_back(encodedStagingAssetPathName);
 
-	constexpr bool removeOutputFiles = false;
+	constexpr bool removeOutputFiles = true;
 	try
 	{
 		chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
