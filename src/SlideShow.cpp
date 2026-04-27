@@ -191,7 +191,7 @@ void FFMpegWrapper::slideShow(
 
 	FFMpegEngine ffMpegEngine;
 
-	FFMpegEngine::Output mainOutput = ffMpegEngine.addOutput(encodedStagingAssetPathName);
+	FFMpegEngine::Output& mainOutput = ffMpegEngine.addOutput(encodedStagingAssetPathName);
 
 	// vector<string> ffmpegEncodingProfileArgumentList;
 	if (encodingProfileDetailsRoot != nullptr)
@@ -360,7 +360,7 @@ void FFMpegWrapper::slideShow(
 
 	// ffmpegArgumentList.push_back("ffmpeg");
 	{
-		FFMpegEngine::Input input = ffMpegEngine.addInput(slideshowListImagesPathName);
+		FFMpegEngine::Input& input = ffMpegEngine.addInput(slideshowListImagesPathName);
 		// ffmpegArgumentList.push_back("-f");
 		// ffmpegArgumentList.push_back("concat");
 		// ffmpegArgumentList.push_back("-safe");
@@ -377,7 +377,7 @@ void FFMpegWrapper::slideShow(
 	}
 	else if (audiosSourcePhysicalPaths.size() > 1)
 	{
-		FFMpegEngine::Input input = ffMpegEngine.addInput(slideshowListAudiosPathName);
+		FFMpegEngine::Input& input = ffMpegEngine.addInput(slideshowListAudiosPathName);
 		// ffmpegArgumentList.push_back("-f");
 		// ffmpegArgumentList.push_back("concat");
 		// ffmpegArgumentList.push_back("-safe");
