@@ -41,7 +41,7 @@ void FFMpegWrapper::slideShow(
 
 	// CAPIRE COME MAI LA PERCENTUALE E' SEMPRE ZERO. Eliminare videoDurationInSeconds se non serve
 	int64_t videoDurationInSeconds;
-	if (audiosSourcePhysicalPaths.size() > 0)
+	if (!audiosSourcePhysicalPaths.empty())
 	{
 		if (durationOfEachSlideInSeconds * imagesSourcePhysicalPaths.size() < shortestAudioDurationInSeconds)
 			videoDurationInSeconds = durationOfEachSlideInSeconds * imagesSourcePhysicalPaths.size();
@@ -408,11 +408,12 @@ void FFMpegWrapper::slideShow(
 	// yuv420p: the only option for broad compatibility
 	// ffmpegArgumentList.push_back("yuv420p");
 	mainOutput.addArgs("-pix_fmt yuv420p");
-	if (audiosSourcePhysicalPaths.size() > 0)
+	if (!audiosSourcePhysicalPaths.empty())
 		// ffmpegArgumentList.push_back("-shortest");
 		mainOutput.addArgs("-shortest");
 	// ffmpegArgumentList.push_back(encodedStagingAssetPathName);
 
+	bool removeOutputFiles = false;
 	try
 	{
 		chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
@@ -494,14 +495,17 @@ void FFMpegWrapper::slideShow(
 			);
 		LOG_ERROR(errorMessage);
 
-		LOG_INFO(
-			"Remove"
-			", _outputFfmpegPathFileName: {}",
-			_outputFfmpegPathFileName
-		);
-		fs::remove_all(_outputFfmpegPathFileName);
+		if (removeOutputFiles)
+		{
+			LOG_INFO(
+				"Remove"
+				", _outputFfmpegPathFileName: {}",
+				_outputFfmpegPathFileName
+			);
+			fs::remove_all(_outputFfmpegPathFileName);
+		}
 
-		if (fs::exists(slideshowListImagesPathName.c_str()))
+		if (removeOutputFiles && fs::exists(slideshowListImagesPathName.c_str()))
 		{
 			LOG_INFO(
 				"Remove"
@@ -510,7 +514,7 @@ void FFMpegWrapper::slideShow(
 			);
 			fs::remove_all(slideshowListImagesPathName);
 		}
-		if (fs::exists(slideshowListAudiosPathName.c_str()))
+		if (removeOutputFiles && fs::exists(slideshowListAudiosPathName.c_str()))
 		{
 			LOG_INFO(
 				"Remove"
@@ -522,18 +526,20 @@ void FFMpegWrapper::slideShow(
 
 		if (iReturnedStatus == 9) // 9 means: SIGKILL
 			throw FFMpegEncodingKilledByUser();
-		else
-			throw e;
+		throw;
 	}
 
-	LOG_INFO(
-		"Remove"
-		", _outputFfmpegPathFileName: {}",
-		_outputFfmpegPathFileName
-	);
-	fs::remove_all(_outputFfmpegPathFileName);
+	if (removeOutputFiles)
+	{
+		LOG_INFO(
+			"Remove"
+			", _outputFfmpegPathFileName: {}",
+			_outputFfmpegPathFileName
+		);
+		fs::remove_all(_outputFfmpegPathFileName);
+	}
 
-	if (fs::exists(slideshowListImagesPathName.c_str()))
+	if (removeOutputFiles && fs::exists(slideshowListImagesPathName.c_str()))
 	{
 		LOG_INFO(
 			"Remove"
@@ -542,7 +548,7 @@ void FFMpegWrapper::slideShow(
 		);
 		fs::remove_all(slideshowListImagesPathName);
 	}
-	if (fs::exists(slideshowListAudiosPathName.c_str()))
+	if (removeOutputFiles && fs::exists(slideshowListAudiosPathName.c_str()))
 	{
 		LOG_INFO(
 			"Remove"
