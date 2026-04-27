@@ -413,7 +413,7 @@ void FFMpegWrapper::slideShow(
 		mainOutput.addArgs("-shortest");
 	// ffmpegArgumentList.push_back(encodedStagingAssetPathName);
 
-	constexpr bool removeOutputFiles = true;
+	constexpr bool removeOutputFiles = false;
 	try
 	{
 		chrono::system_clock::time_point startFfmpegCommand = chrono::system_clock::now();
