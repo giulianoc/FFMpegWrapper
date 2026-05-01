@@ -282,8 +282,8 @@ std::pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, st
 {
 	try
 	{
-		std::string localTime = StringUtils::trimTabToo(time);
-		if (localTime == "")
+		std::string localTime = StringUtils::trim(time);
+		if (localTime.empty())
 			return std::make_pair(0.0, 0);
 
 		if (isNumber(ingestionJobKey, localTime))
@@ -303,7 +303,7 @@ std::pair<double, long> FFMpegWrapper::timeToSeconds(int64_t ingestionJobKey, st
 		int decimals = 0; // centesimi di secondo
 
 		bool hoursPresent = std::count_if(localTime.begin(), localTime.end(), [](char c) { return c == ':'; }) == 2;
-		bool decimalPresent = localTime.find(".") != std::string::npos;
+		bool decimalPresent = localTime.find('.') != std::string::npos;
 
 		std::stringstream ss(isNegative ? localTime.substr(1) : localTime);
 

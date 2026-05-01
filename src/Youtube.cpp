@@ -365,7 +365,7 @@ format code  extension  resolution note
 				buffer << urlFile.rdbuf();
 
 				streamingYouTubeURL = buffer.str();
-				streamingYouTubeURL = StringUtils::trimNewLineToo(streamingYouTubeURL);
+				streamingYouTubeURL = StringUtils::trim(streamingYouTubeURL);
 
 				LOG_INFO(
 					"retrieveStreamingYouTubeURL: Executed youTube command"

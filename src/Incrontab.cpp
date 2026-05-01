@@ -61,7 +61,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 				string configuration;
 				while (getline(ifConfigurationFile, configuration))
 				{
-					string trimmedConfiguration = StringUtils::trimNewLineAndTabToo(configuration);
+					string trimmedConfiguration = StringUtils::trim(configuration);
 
 					if (configuration.size() >= directoryToBeMonitored.size() &&
 						0 == configuration.compare(0, directoryToBeMonitored.size(), directoryToBeMonitored))
@@ -198,7 +198,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 			string configuration;
 			while (getline(ifConfigurationFile, configuration))
 			{
-				string trimmedConfiguration = StringUtils::trimNewLineAndTabToo(configuration);
+				string trimmedConfiguration = StringUtils::trim(configuration);
 
 				if (configuration.size() >= directoryToBeMonitored.size() &&
 					0 == configuration.compare(0, directoryToBeMonitored.size(), directoryToBeMonitored))
