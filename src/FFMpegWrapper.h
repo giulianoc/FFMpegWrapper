@@ -537,8 +537,8 @@ class FFMpegWrapper
 	);
 
 	void outputsRootToFfmpeg(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, std::string otherOutputOptionsBecauseOfMaxWidth,
-		nlohmann::json inputDrawTextDetailsRoot,
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const std::string& otherOutputOptionsBecauseOfMaxWidth,
+		const nlohmann::json& inputDrawTextDetailsRoot,
 		long streamingDurationInSeconds, nlohmann::json outputsRoot, std::vector<std::string> &ffmpegOutputArgumentList
 	);
 	void outputsRootToFfmpeg(

@@ -2212,7 +2212,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			throw runtime_error(errorMessage);
 		}
-		int64_t videoDurationInMilliSeconds = JSONUtils::as<int64_t>(countdownInputRoot, field, -1);
+		auto videoDurationInMilliSeconds = JSONUtils::as<int64_t>(countdownInputRoot, field, -1);
 
 		if (!externalEncoder && !fs::exists(mmsSourceVideoAssetPathName))
 		{
@@ -2406,8 +2406,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 // il metodo outputsRootToFfmpeg_clean pulisce eventuali directory/files creati da outputsRootToFfmpeg
 void FFMpegWrapper::outputsRootToFfmpeg(
-	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, string otherOutputOptionsBecauseOfMaxWidth, json inputFiltersRoot,
-	long streamingDurationInSeconds, json outputsRoot,
+	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const string& otherOutputOptionsBecauseOfMaxWidth,
+	const json& inputFiltersRoot, long streamingDurationInSeconds, json outputsRoot,
 
 	/*
 	// vengono usati i due vector seguenti nel caso abbiamo una lista di maps (video and audio)
@@ -2937,28 +2937,28 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				);
 			}
 
-			if (externalEncoder && manifestDirectoryPath != "")
+			if (externalEncoder && !manifestDirectoryPath.empty())
 				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath);
 
 			// if (outputType == "HLS")
 			{
-				ffmpegOutputArgumentList.push_back("-hls_flags");
-				ffmpegOutputArgumentList.push_back("append_list");
-				ffmpegOutputArgumentList.push_back("-hls_time");
+				ffmpegOutputArgumentList.emplace_back("-hls_flags");
+				ffmpegOutputArgumentList.emplace_back("append_list");
+				ffmpegOutputArgumentList.emplace_back("-hls_time");
 				ffmpegOutputArgumentList.push_back(to_string(segmentDurationInSeconds));
-				ffmpegOutputArgumentList.push_back("-hls_list_size");
+				ffmpegOutputArgumentList.emplace_back("-hls_list_size");
 				ffmpegOutputArgumentList.push_back(to_string(playlistEntriesNumber));
 
 				// Segment files removed from the playlist are deleted after a period of time
 				// equal to the duration of the segment plus the duration of the playlist
-				ffmpegOutputArgumentList.push_back("-hls_flags");
-				ffmpegOutputArgumentList.push_back("delete_segments");
+				ffmpegOutputArgumentList.emplace_back("-hls_flags");
+				ffmpegOutputArgumentList.emplace_back("delete_segments");
 
 				// Set the number of unreferenced segments to keep on disk
 				// before 'hls_flags delete_segments' deletes them. Increase this to allow continue clients
 				// to download segments which were recently referenced in the playlist.
 				// Default value is 1, meaning segments older than hls_list_size+1 will be deleted.
-				ffmpegOutputArgumentList.push_back("-hls_delete_threshold");
+				ffmpegOutputArgumentList.emplace_back("-hls_delete_threshold");
 				ffmpegOutputArgumentList.push_back(to_string(1));
 
 				// Start the playlist sequence number (#EXT-X-MEDIA-SEQUENCE) based on the current
@@ -3933,12 +3933,12 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 		// if (outputType == "HLS" || outputType == "DASH")
 		if (outputType == "HLS_Channel")
 		{
-			string manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
+			auto manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
 
-			if (externalEncoder && manifestDirectoryPath != "")
+			if (externalEncoder && !manifestDirectoryPath.empty())
 				removeFromIncrontab(ingestionJobKey, encodingJobKey, manifestDirectoryPath);
 
-			if (manifestDirectoryPath != "")
+			if (!manifestDirectoryPath.empty())
 			{
 				if (fs::exists(manifestDirectoryPath))
 				{

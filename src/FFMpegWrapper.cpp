@@ -76,7 +76,7 @@ FFMpegWrapper::FFMpegWrapper(nlohmann::json configurationRoot) : _currentApiName
 	_incrontabBinary = "/usr/bin/incrontab";
 }
 
-FFMpegWrapper::~FFMpegWrapper() {}
+FFMpegWrapper::~FFMpegWrapper() = default;
 
 bool FFMpegWrapper::ffmpegExecutableExist()
 {

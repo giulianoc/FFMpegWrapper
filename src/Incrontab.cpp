@@ -61,6 +61,8 @@ struct IncrontabFileLock
 			throw runtime_error(errorMessage);
 		}
 
+		const auto start = std::chrono::system_clock::now();
+		// Qui avviene la serializzazione
 		if (flock(fd, LOCK_EX) != 0)
 		{
 			string errorMessage = std::format("IncrontabFileLock: flock (LOCK_EX) failed, lockPathName: {}", lockPathName);
@@ -69,6 +71,10 @@ struct IncrontabFileLock
 			fd = -1;
 			throw runtime_error(errorMessage);
 		}
+		LOG_INFO("IncrontabFileLock: flock (LOCK_EX) acquired"
+			", lockPathName: {}"
+			", elapsed: {}",
+			lockPathName, chrono::duration_cast<chrono::milliseconds>(std::chrono::system_clock::now() - start).count());
 	}
 
 	~IncrontabFileLock()
