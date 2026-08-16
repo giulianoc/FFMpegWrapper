@@ -17,6 +17,7 @@
 #include <fstream>
 #include <sys/file.h>
 #include <unistd.h>
+#include <set>
 
 using namespace std;
 using json = nlohmann::json;
@@ -103,7 +104,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 			"Received addToIncrontab"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
-			", incrontabScriptPathName: {}",
+			", incrontabScriptPathName: {}"
 			", directoryToBeMonitored: {}"
 			", cdnDeliveryServersToBeSynched: {}",
 			ingestionJobKey, encodingJobKey, incrontabScriptPathName, directoryToBeMonitored, cdnDeliveryServersToBeSynched
@@ -285,6 +286,7 @@ void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, i
 				throw runtime_error(errorMessage);
 			}
 
+			set<string> directories;	// per sanare le righe duplicate
 			string configuration;
 			while (getline(ifConfigurationFile, configuration))
 			{
@@ -320,6 +322,22 @@ void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, i
 					continue;
 				}
 
+				// insert() restituisce una pair, e .second indica se l'inserimento è avvenuto
+				if (!directories.insert(configurationDirectory).second)
+				{
+					// directory già presente
+					LOG_INFO(
+						"removeFromIncrontabAndSanityCheck (clean up): removing incontab configuration, directory already monitored"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", configuration: {}",
+						ingestionJobKey, encodingJobKey, configuration
+					);
+
+					continue;
+				}
+				// directory inserita per la prima volta
+
 				if (configurationDirectory == directoryToBeMonitored)
 				{
 					LOG_INFO(
@@ -331,9 +349,11 @@ void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, i
 					);
 
 					foundMonitoryDirectory = true;
+
+					continue;
 				}
-				else
-					vConfiguration.push_back(trimmedConfiguration);
+
+				vConfiguration.push_back(trimmedConfiguration);
 			}
 		}
 

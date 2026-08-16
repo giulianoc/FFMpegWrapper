@@ -2944,8 +2944,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			// if (externalEncoder && !manifestDirectoryPath.empty())
 			if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
-				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath,
-					cdnDeliveryServersToBeSynched);
+				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath, cdnDeliveryServersToBeSynched);
 
 			// if (outputType == "HLS")
 			{
@@ -4055,8 +4054,7 @@ string FFMpegWrapper::getCdnDeliveryServersToBeSynched(const bool externalEncode
 	auto mmsCDNInternalDeliveryServersToBeSynched = StringUtils::trim(
 		JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>());
 	if (externalEncoder && !mmsCDNInternalDeliveryServersToBeSynched.empty())
-		cdnDeliveryServersToBeSynched = std::format("{} {}", cdnDeliveryServersToBeSynched,
-			mmsCDNInternalDeliveryServersToBeSynched);
+		cdnDeliveryServersToBeSynched += std::format(" {}", mmsCDNInternalDeliveryServersToBeSynched);
 
 	return cdnDeliveryServersToBeSynched;
 }
