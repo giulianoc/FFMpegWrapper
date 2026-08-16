@@ -111,7 +111,8 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 
 		// serve il lock lungo tutta la sezione critica (lettura/scrittura del file + esecuzione di incrontab),
 		// per questo il path del lock è fisso e non dipende da directoryToBeMonitored
-		IncrontabFileLock incrontabFileLock(_incrontabConfigurationDirectory + "/" + _incrontabConfigurationFileName);
+		IncrontabFileLock incrontabFileLock(
+			std::format("{}/{}", _incrontabConfigurationDirectory, _incrontabConfigurationFileName));
 
 		if (!fs::exists(_incrontabConfigurationDirectory))
 		{
@@ -193,9 +194,8 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 				- $%: Eventi/maschera incron che hanno causato l'esecuzione (i.e.: IN_MOVED_TO)
 			 */
 			string configuration = std::format(
-				R"(
-				{} IN_MODIFY,IN_CLOSE_WRITE,IN_CREATE,IN_DELETE,IN_MOVED_FROM,IN_MOVED_TO,IN_MOVE_SELF {} $% $@ $# "{}",
-				)", directoryToBeMonitored, incrontabScriptPathName, cdnDeliveryServersToBeSynched
+				"{} IN_MODIFY,IN_CLOSE_WRITE,IN_CREATE,IN_DELETE,IN_MOVED_FROM,IN_MOVED_TO,IN_MOVE_SELF {} $% $@ $# \"{}\"",
+				directoryToBeMonitored, incrontabScriptPathName, cdnDeliveryServersToBeSynched
 			);
 
 			LOG_INFO(
@@ -250,19 +250,20 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 	}
 }
 
-void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, const string& directoryToBeMonitored)
+void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, int64_t encodingJobKey, const string& directoryToBeMonitored)
 {
 	try
 	{
 		LOG_INFO(
-			"Received removeFromIncrontab"
+			"Received removeFromIncrontabAndSanityCheck"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
 			", directoryToBeMonitored: {}",
 			ingestionJobKey, encodingJobKey, directoryToBeMonitored
 		);
 
-		string incrontabConfigurationPathName = _incrontabConfigurationDirectory + "/" + _incrontabConfigurationFileName;
+		string incrontabConfigurationPathName = std::format("{}/{}",
+			_incrontabConfigurationDirectory, _incrontabConfigurationFileName);
 
 		IncrontabFileLock incrontabFileLock(incrontabConfigurationPathName);
 
@@ -273,7 +274,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 			if (!ifConfigurationFile)
 			{
 				string errorMessage = std::format(
-					"removeFromIncrontab: open incontab configuration file failed"
+					"removeFromIncrontabAndSanityCheck: open incontab configuration file failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
 					", incrontabConfigurationPathName: {}",
@@ -289,10 +290,40 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 			{
 				string trimmedConfiguration = StringUtils::trim(configuration);
 
-				if (configuration.starts_with(directoryToBeMonitored))
+				auto pos = trimmedConfiguration.find(' ');
+				if (pos == string::npos)
+				{
+					LOG_ERROR(
+						"removeFromIncrontabAndSanityCheck (clean up): wrong incrontab configuration"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", configuration: {}",
+						ingestionJobKey, encodingJobKey, configuration
+					);
+
+					continue;
+				}
+
+				std::string configurationDirectory = trimmedConfiguration.substr(0, pos);
+
+				// restituisce false sia se la directory non esiste sia se il path esiste ma non è una directory
+				if (!filesystem::is_directory(configurationDirectory))
+				{
+					LOG_ERROR(
+						"removeFromIncrontabAndSanityCheck (clean up): wrong incrontab configuration, directory does not exist"
+						", ingestionJobKey: {}"
+						", encodingJobKey: {}"
+						", configurationDirectory: {}",
+						ingestionJobKey, encodingJobKey, configurationDirectory
+					);
+
+					continue;
+				}
+
+				if (configurationDirectory == directoryToBeMonitored)
 				{
 					LOG_INFO(
-						"removeFromIncrontab: removing incontab configuration"
+						"removeFromIncrontabAndSanityCheck: removing incontab configuration"
 						", ingestionJobKey: {}"
 						", encodingJobKey: {}"
 						", configuration: {}",
@@ -309,7 +340,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 		if (!foundMonitoryDirectory)
 		{
 			string errorMessage = std::format(
-				"removeFromIncrontab: monitoring directory is not found into the incontab configuration file"
+				"removeFromIncrontabAndSanityCheck: monitoring directory is not found into the incrontab configuration file"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
 				", incrontabConfigurationPathName: {}",
@@ -317,13 +348,14 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 			);
 			LOG_WARN(errorMessage);
 		}
-		else
+
+		// in ogni caso riscrivo la configurazione
 		{
 			ofstream ofConfigurationFile(incrontabConfigurationPathName, ofstream::trunc);
 			if (!ofConfigurationFile)
 			{
 				string errorMessage = std::format(
-					"removeFromIncrontab: open incontab configuration file failed"
+					"removeFromIncrontabAndSanityCheck: open incontab configuration file failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
 					", incrontabConfigurationPathName: {}",
@@ -343,7 +375,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 			string incrontabExecuteCommand = std::format("{} {}", _incrontabBinary, incrontabConfigurationPathName);
 
 			LOG_INFO(
-				"removeFromIncrontab: Executing incontab command"
+				"removeFromIncrontabAndSanityCheck: Executing incontab command"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
 				", incrontabExecuteCommand: {}",
@@ -354,7 +386,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 			if (executeCommandStatus != 0)
 			{
 				string errorMessage = std::format(
-					"removeFromIncrontab: incrontab command failed"
+					"removeFromIncrontabAndSanityCheck: incrontab command failed"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
 					", executeCommandStatus: {}"
@@ -370,7 +402,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 	catch (...)
 	{
 		string errorMessage = std::format(
-			"removeFromIncrontab failed"
+			"removeFromIncrontabAndSanityCheck failed"
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}",
 			ingestionJobKey, encodingJobKey

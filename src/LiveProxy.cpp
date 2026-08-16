@@ -2940,16 +2940,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				);
 			}
 
-			auto cdnDeliveryServersToBeSynched = StringUtils::trim(
-				JsonPath(&outputRoot)["mmsCDNExternalDeliveryServersToBeSynched"].as<string>());
-			auto mmsCDNInternalDeliveryServersToBeSynched = StringUtils::trim(
-				JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>());
-			if (externalEncoder && !mmsCDNInternalDeliveryServersToBeSynched.empty())
-				cdnDeliveryServersToBeSynched = std::format("{} {}", cdnDeliveryServersToBeSynched,
-					mmsCDNInternalDeliveryServersToBeSynched);
-			// TODO
-			// if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
-			if (externalEncoder && !manifestDirectoryPath.empty())
+			auto cdnDeliveryServersToBeSynched = getCdnDeliveryServersToBeSynched(externalEncoder, outputRoot);
+
+			// if (externalEncoder && !manifestDirectoryPath.empty())
+			if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
 				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath,
 					cdnDeliveryServersToBeSynched);
 
@@ -3711,16 +3705,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				);
 			}
 
-			auto cdnDeliveryServersToBeSynched = StringUtils::trim(
-				JsonPath(&outputRoot)["mmsCDNExternalDeliveryServersToBeSynched"].as<string>());
-			auto mmsCDNInternalDeliveryServersToBeSynched = StringUtils::trim(
-				JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>());
-			if (externalEncoder && !mmsCDNInternalDeliveryServersToBeSynched.empty())
-				cdnDeliveryServersToBeSynched = std::format("{} {}", cdnDeliveryServersToBeSynched,
-					mmsCDNInternalDeliveryServersToBeSynched);
-			// TODO
-			// if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
-			if (externalEncoder && !manifestDirectoryPath.empty())
+			auto cdnDeliveryServersToBeSynched = getCdnDeliveryServersToBeSynched(externalEncoder, outputRoot);
+
+			// if (externalEncoder && !manifestDirectoryPath.empty())
+			if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
 				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath, cdnDeliveryServersToBeSynched);
 
 			// if (outputType == "HLS")
@@ -3958,8 +3946,11 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 		{
 			auto manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
 
-			if (externalEncoder && !manifestDirectoryPath.empty())
-				removeFromIncrontab(ingestionJobKey, encodingJobKey, manifestDirectoryPath);
+			auto cdnDeliveryServersToBeSynched = getCdnDeliveryServersToBeSynched(externalEncoder, outputRoot);
+
+			// if (externalEncoder && !manifestDirectoryPath.empty())
+			if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
+				removeFromIncrontabAndSanityCheck(ingestionJobKey, encodingJobKey, manifestDirectoryPath);
 
 			if (!manifestDirectoryPath.empty())
 			{
@@ -4055,4 +4046,17 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 			}
 		}
 	}
+}
+
+string FFMpegWrapper::getCdnDeliveryServersToBeSynched(const bool externalEncoder, const json& outputRoot)
+{
+	auto cdnDeliveryServersToBeSynched = StringUtils::trim(
+		JsonPath(&outputRoot)["mmsCDNExternalDeliveryServersToBeSynched"].as<string>());
+	auto mmsCDNInternalDeliveryServersToBeSynched = StringUtils::trim(
+		JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>());
+	if (externalEncoder && !mmsCDNInternalDeliveryServersToBeSynched.empty())
+		cdnDeliveryServersToBeSynched = std::format("{} {}", cdnDeliveryServersToBeSynched,
+			mmsCDNInternalDeliveryServersToBeSynched);
+
+	return cdnDeliveryServersToBeSynched;
 }

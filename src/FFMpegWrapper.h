@@ -12,13 +12,14 @@
 
 #pragma once
 
+#include
 #include "FFMpegEngine.h"
 #include "ProcessUtility.h"
+#include "nlohmann/json.hpp"
+#include "spdlog/spdlog.h"
 #include <chrono>
 #include <cstdint>
 #include <string>
-#include "nlohmann/json.hpp"
-#include "spdlog/spdlog.h"
 
 #ifndef __FILEREF__
 #ifdef __APPLE__
@@ -548,6 +549,7 @@ class FFMpegWrapper
 		std::optional<std::string> &inputSelectedAudioMap, std::optional<int32_t> &inputDurationInSeconds
 	);
 	void outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, nlohmann::json outputsRoot, bool externalEncoder);
+	static std::string getCdnDeliveryServersToBeSynched(bool externalEncoder, const nlohmann::json &outputRoot);
 
 	// std::string getLastPartOfFile(std::string pathFileName, int lastCharsToBeRead);
 
@@ -559,7 +561,7 @@ class FFMpegWrapper
 		const std::string &cdnDeliveryServersToBeSynched
 	);
 
-	void removeFromIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, const std::string &directoryToBeMonitored);
+	void removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, int64_t encodingJobKey, const std::string &directoryToBeMonitored);
 
 	// int progressDownloadCallback(
 	// 	int64_t ingestionJobKey, std::chrono::system_clock::time_point &lastTimeProgressUpdate, double &lastPercentageUpdated, double dltotal,
