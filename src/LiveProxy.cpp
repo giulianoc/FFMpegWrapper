@@ -2942,9 +2942,11 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			auto cdnDeliveryServersToBeSynched = StringUtils::trim(
 				JsonPath(&outputRoot)["mmsCDNExternalDeliveryServersToBeSynched"].as<string>());
-			if (externalEncoder)
+			auto mmsCDNInternalDeliveryServersToBeSynched = StringUtils::trim(
+				JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>());
+			if (externalEncoder && !mmsCDNInternalDeliveryServersToBeSynched.empty())
 				cdnDeliveryServersToBeSynched = std::format("{} {}", cdnDeliveryServersToBeSynched,
-					StringUtils::trim(JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>()));
+					mmsCDNInternalDeliveryServersToBeSynched);
 			// TODO
 			// if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
 			if (externalEncoder && !manifestDirectoryPath.empty())
@@ -3711,9 +3713,11 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			auto cdnDeliveryServersToBeSynched = StringUtils::trim(
 				JsonPath(&outputRoot)["mmsCDNExternalDeliveryServersToBeSynched"].as<string>());
-			if (externalEncoder)
+			auto mmsCDNInternalDeliveryServersToBeSynched = StringUtils::trim(
+				JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>());
+			if (externalEncoder && !mmsCDNInternalDeliveryServersToBeSynched.empty())
 				cdnDeliveryServersToBeSynched = std::format("{} {}", cdnDeliveryServersToBeSynched,
-					StringUtils::trim(JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>()));
+					mmsCDNInternalDeliveryServersToBeSynched);
 			// TODO
 			// if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
 			if (externalEncoder && !manifestDirectoryPath.empty())
