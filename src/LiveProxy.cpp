@@ -15,6 +15,7 @@
 #include "FFMpegFilters.h"
 #include "FFMpegWrapper.h"
 #include "JSONUtils.h"
+#include "JsonPath.h"
 #include "ProcessUtility.h"
 #include "spdlog/fmt/bundled/format.h"
 #include "spdlog/spdlog.h"
@@ -26,7 +27,8 @@ using json = nlohmann::json;
 
 void FFMpegWrapper::liveProxy(
 	int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, mutex *inputsRootMutex,
-	json *inputsRoot, const json& outputsRoot, optional<chrono::system_clock::time_point>& proxyStart,
+	json *inputsRoot, const json& outputsRoot,
+	optional<chrono::system_clock::time_point>& proxyStart,
 	const shared_ptr<FFMpegEngine::CallbackData>& ffmpegCallbackData,
 	long& numberOfRestartBecauseOfFailure, // IN/OUT
 	// killTypeReceived è stato aggiunto per gestire il seguente scenario:
@@ -2480,10 +2482,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 		json outputRoot = outputsRoot[outputIndex];
 
-		string outputType = JSONUtils::as<string>(outputRoot, "outputType", "");
+		auto outputType = JSONUtils::as<string>(outputRoot, "outputType", "");
 
-		string inputVideoMap = JSONUtils::as<string>(outputRoot, "inputVideoMap", "");
-		string inputAudioMap = JSONUtils::as<string>(outputRoot, "inputAudioMap", "");
+		auto inputVideoMap = JSONUtils::as<string>(outputRoot, "inputVideoMap", "");
+		auto inputAudioMap = JSONUtils::as<string>(outputRoot, "inputAudioMap", "");
 
 		// 2024-05-17: inputFiltersRoot se presente si aggiunge al filtersRoot dell'output,
 		// 	Scenario di un Broadcast (Live Channel).
@@ -2514,9 +2516,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
 		*/
 
-		string otherOutputOptions = JSONUtils::as<string>(outputRoot, "otherOutputOptions", "");
+		auto otherOutputOptions = JSONUtils::as<string>(outputRoot, "otherOutputOptions", "");
 
-		string encodingProfileContentType = JSONUtils::as<string>(outputRoot, "encodingProfileContentType", "Video");
+		auto encodingProfileContentType = JSONUtils::as<string>(outputRoot, "encodingProfileContentType", "Video");
 		bool isVideo = encodingProfileContentType == "Video" ? true : false;
 
 		string httpStreamingFileFormat;
@@ -2649,17 +2651,17 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		bool threadsParameterToBeAdded = false;
 
 		// video (parametri di encoding)
-		if (inputVideoMap != "" && inputVideoMap != "default")
+		if (!inputVideoMap.empty() && inputVideoMap != "default")
 		{
-			ffmpegOutputArgumentList.push_back("-map");
+			ffmpegOutputArgumentList.emplace_back("-map");
 			if (inputVideoMap == "all video tracks")
-				ffmpegOutputArgumentList.push_back("0:v");
+				ffmpegOutputArgumentList.emplace_back("0:v");
 			else if (inputVideoMap == "first video track")
-				ffmpegOutputArgumentList.push_back("0:v:0");
+				ffmpegOutputArgumentList.emplace_back("0:v:0");
 			else if (inputVideoMap == "second video track")
-				ffmpegOutputArgumentList.push_back("0:v:1");
+				ffmpegOutputArgumentList.emplace_back("0:v:1");
 			else if (inputVideoMap == "third video track")
-				ffmpegOutputArgumentList.push_back("0:v:2");
+				ffmpegOutputArgumentList.emplace_back("0:v:2");
 			else
 				ffmpegOutputArgumentList.push_back(inputVideoMap);
 		}
@@ -2683,52 +2685,52 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				// only the last one), in case we have ffmpegDrawTextFilter,
 				// we will append it here
 
-				if (videoFilters != "")
+				if (!videoFilters.empty())
 				{
-					ffmpegOutputArgumentList.push_back("-filter:v");
+					ffmpegOutputArgumentList.emplace_back("-filter:v");
 					ffmpegOutputArgumentList.push_back(videoFilters);
 				}
 
-				if (complexFilters != "")
+				if (!complexFilters.empty())
 				{
-					ffmpegOutputArgumentList.push_back("-filter_complex");
+					ffmpegOutputArgumentList.emplace_back("-filter_complex");
 					ffmpegOutputArgumentList.push_back(complexFilters);
 				}
 			}
 		}
 		else
 		{
-			if (videoFilters != "")
+			if (!videoFilters.empty())
 			{
 				threadsParameterToBeAdded = true;
 
-				ffmpegOutputArgumentList.push_back("-filter:v");
+				ffmpegOutputArgumentList.emplace_back("-filter:v");
 				ffmpegOutputArgumentList.push_back(videoFilters);
 			}
 			else if (otherOutputOptions.find("-filter:v") == string::npos)
 			{
 				// it is not possible to have -c:v copy and -filter:v toghether
-				ffmpegOutputArgumentList.push_back("-c:v");
-				ffmpegOutputArgumentList.push_back("copy");
+				ffmpegOutputArgumentList.emplace_back("-c:v");
+				ffmpegOutputArgumentList.emplace_back("copy");
 			}
 
-			if (complexFilters != "")
+			if (!complexFilters.empty())
 			{
-				ffmpegOutputArgumentList.push_back("-filter_complex");
+				ffmpegOutputArgumentList.emplace_back("-filter_complex");
 				ffmpegOutputArgumentList.push_back(complexFilters);
 			}
 		}
 
 		// audio (parametri di encoding)
-		if (inputAudioMap != "" && inputAudioMap != "default")
+		if (!inputAudioMap.empty() && inputAudioMap != "default")
 		{
-			ffmpegOutputArgumentList.push_back("-map");
+			ffmpegOutputArgumentList.emplace_back("-map");
 			if (inputAudioMap == "all audio tracks")
-				ffmpegOutputArgumentList.push_back("0:a");
+				ffmpegOutputArgumentList.emplace_back("0:a");
 			else if (inputAudioMap == "first audio track")
-				ffmpegOutputArgumentList.push_back("0:a:0");
+				ffmpegOutputArgumentList.emplace_back("0:a:0");
 			else if (inputAudioMap == "second audio track")
-				ffmpegOutputArgumentList.push_back("0:a:1");
+				ffmpegOutputArgumentList.emplace_back("0:a:1");
 			else if (inputAudioMap == "third audio track")
 				ffmpegOutputArgumentList.push_back("0:a:2");
 			else
@@ -2745,40 +2747,40 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				FFMpegEncodingParameters::addToArguments(ffmpegAudioChannelsParameter, ffmpegOutputArgumentList);
 				FFMpegEncodingParameters::addToArguments(ffmpegAudioSampleRateParameter, ffmpegOutputArgumentList);
 
-				if (audioFilters != "")
+				if (!audioFilters.empty())
 				{
-					ffmpegOutputArgumentList.push_back("-filter:a");
+					ffmpegOutputArgumentList.emplace_back("-filter:a");
 					ffmpegOutputArgumentList.push_back(audioFilters);
 				}
 			}
 		}
 		else
 		{
-			if (audioFilters != "")
+			if (!audioFilters.empty())
 			{
 				threadsParameterToBeAdded = true;
 
-				ffmpegOutputArgumentList.push_back("-filter:a");
+				ffmpegOutputArgumentList.emplace_back("-filter:a");
 				ffmpegOutputArgumentList.push_back(audioFilters);
 			}
 			else if (otherOutputOptions.find("-filter:a") == string::npos)
 			{
 				// it is not possible to have -c:a copy and -filter:a toghether
-				ffmpegOutputArgumentList.push_back("-c:a");
-				ffmpegOutputArgumentList.push_back("copy");
+				ffmpegOutputArgumentList.emplace_back("-c:a");
+				ffmpegOutputArgumentList.emplace_back("copy");
 			}
 		}
 
 		if (threadsParameterToBeAdded)
 		{
-			ffmpegOutputArgumentList.push_back("-threads");
-			ffmpegOutputArgumentList.push_back("0");
+			ffmpegOutputArgumentList.emplace_back("-threads");
+			ffmpegOutputArgumentList.emplace_back("0");
 		}
 
 		// output file
 		if (outputType == "RTMP_Channel")
 		{
-			string rtmpUrl = JSONUtils::as<string>(outputRoot, "rtmpUrl", "");
+			auto rtmpUrl = JSONUtils::as<string>(outputRoot, "rtmpUrl", "");
 			if (rtmpUrl.empty())
 			{
 				string errorMessage = std::format(
@@ -2795,8 +2797,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			// otherOutputOptions
 			{
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
-					FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
+				if (otherOutputOptions.find("-map") == string::npos && !otherOutputOptionsBecauseOfMaxWidth.empty())
+					FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth,
+						ffmpegOutputArgumentList);
 				else
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
 			}
@@ -2843,10 +2846,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 				if (aacFilterToBeAdded)
 				*/
-				if (rtmpUrl != "")
+				if (!rtmpUrl.empty())
 				{
-					ffmpegOutputArgumentList.push_back("-bsf:a");
-					ffmpegOutputArgumentList.push_back("aac_adtstoasc");
+					ffmpegOutputArgumentList.emplace_back("-bsf:a");
+					ffmpegOutputArgumentList.emplace_back("aac_adtstoasc");
 				}
 			}
 
@@ -2855,16 +2858,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			// ffmpegArgumentList.push_back("copy");
 
 			// right now it is fixed flv, it means cdnURL will be like "rtmp://...."
-			ffmpegOutputArgumentList.push_back("-f");
+			ffmpegOutputArgumentList.emplace_back("-f");
 			{
-				ffmpegOutputArgumentList.push_back("flv");
+				ffmpegOutputArgumentList.emplace_back("flv");
 				ffmpegOutputArgumentList.push_back(rtmpUrl);
 			}
 		}
 		else if (outputType == "SRT_Channel")
 		{
-			string srtUrl = JSONUtils::as<string>(outputRoot, "srtUrl", "");
-			if (srtUrl == "")
+			auto srtUrl = JSONUtils::as<string>(outputRoot, "srtUrl", "");
+			if (srtUrl.empty())
 			{
 				string errorMessage = std::format(
 					"srtUrl cannot be empty"
@@ -2886,18 +2889,18 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
 			}
 
-			ffmpegOutputArgumentList.push_back("-f");
-			ffmpegOutputArgumentList.push_back("mpegts");
+			ffmpegOutputArgumentList.emplace_back("-f");
+			ffmpegOutputArgumentList.emplace_back("mpegts");
 			ffmpegOutputArgumentList.push_back(srtUrl);
 		}
 		else if (outputType == "HLS_Channel")
 		{
-			string manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
-			string manifestFileName = JSONUtils::as<string>(outputRoot, "manifestFileName", "");
+			auto manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
+			auto manifestFileName = JSONUtils::as<string>(outputRoot, "manifestFileName", "");
 			int segmentDurationInSeconds = JSONUtils::as<int32_t>(outputRoot, "segmentDurationInSeconds", 10);
 			int playlistEntriesNumber = JSONUtils::as<int32_t>(outputRoot, "playlistEntriesNumber", 5);
 
-			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
+			string manifestFilePathName = std::format("{}/{}", manifestDirectoryPath, manifestFileName);
 
 			LOG_INFO(
 				"Checking manifestDirectoryPath directory"
@@ -2937,8 +2940,16 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				);
 			}
 
+			auto cdnDeliveryServersToBeSynched = StringUtils::trim(
+				JsonPath(&outputRoot)["mmsCDNExternalDeliveryServersToBeSynched"].as<string>());
+			if (externalEncoder)
+				cdnDeliveryServersToBeSynched = std::format("{} {}", cdnDeliveryServersToBeSynched,
+					StringUtils::trim(JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>()));
+			// TODO
+			// if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
 			if (externalEncoder && !manifestDirectoryPath.empty())
-				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath);
+				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath,
+					cdnDeliveryServersToBeSynched);
 
 			// if (outputType == "HLS")
 			{
@@ -3001,14 +3012,15 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			// EXT-X-PROGRAM-DATE-TIME è importante per avere i campi utcEndTimeInMilliSecs e utcStartTimeInMilliSecs
 			// inizializzati correttamente nello userData del media item virtual VOD generato
 			{
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
-					FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
+				if (otherOutputOptions.find("-map") == string::npos && !otherOutputOptionsBecauseOfMaxWidth.empty())
+					FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth,
+						ffmpegOutputArgumentList);
 				else
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
 			}
 
-			ffmpegOutputArgumentList.push_back("-f");
-			ffmpegOutputArgumentList.push_back("hls");
+			ffmpegOutputArgumentList.emplace_back("-f");
+			ffmpegOutputArgumentList.emplace_back("hls");
 			ffmpegOutputArgumentList.push_back(manifestFilePathName);
 		}
 		else if (outputType == "UDP_Stream")
@@ -3697,8 +3709,15 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				);
 			}
 
+			auto cdnDeliveryServersToBeSynched = StringUtils::trim(
+				JsonPath(&outputRoot)["mmsCDNExternalDeliveryServersToBeSynched"].as<string>());
+			if (externalEncoder)
+				cdnDeliveryServersToBeSynched = std::format("{} {}", cdnDeliveryServersToBeSynched,
+					StringUtils::trim(JsonPath(&outputRoot)["mmsCDNInternalDeliveryServersToBeSynched"].as<string>()));
+			// TODO
+			// if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
 			if (externalEncoder && !manifestDirectoryPath.empty())
-				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath);
+				addToIncrontab(ingestionJobKey, encodingJobKey, _incrontabScriptPathName, manifestDirectoryPath, cdnDeliveryServersToBeSynched);
 
 			// if (outputType == "HLS")
 			{

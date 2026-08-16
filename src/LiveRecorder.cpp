@@ -587,8 +587,8 @@ void FFMpegWrapper::liveRecorder(
 		outputsRootToFfmpeg(
 			ingestionJobKey, encodingJobKey, externalEncoder,
 			nullptr, // inputDrawTextDetailsRoot,
-			outputsRoot, ffMpegEngine, inputSelectedVideoMap,
-			inputSelectedAudioMap, inputDurationInSeconds
+			outputsRoot, ffMpegEngine,
+			inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds
 		);
 
 		// 2. add: -filter_complex "[0:v][1:v]blend=difference:shortest=1,blackframe=99:32[f]" -map "[f]" -f null -

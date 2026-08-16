@@ -292,19 +292,19 @@ class FFMpegWrapper
 		// IP_PULL, TV, IP_PUSH, CaptureLive
 		std::string liveURL, int pushListenTimeout, int captureLive_videoDeviceNumber, const std::string &captureLive_videoInputFormat,
 		int captureLive_frameRate, int captureLive_width, int captureLive_height, int captureLive_audioDeviceNumber, int captureLive_channelsNumber,
-		bool utcTimeOverlay, const std::string_view &userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd, int segmentDurationInSeconds,
-		const std::string &outputFileFormat, const std::string& otherOutputOptions, const std::string &segmenterType,
+		bool utcTimeOverlay, const std::string_view &userAgent, time_t utcRecordingPeriodStart, time_t utcRecordingPeriodEnd,
+		int segmentDurationInSeconds, const std::string &outputFileFormat, const std::string &otherOutputOptions, const std::string &segmenterType,
 		// streamSegmenter or hlsSegmenter
-		const nlohmann::json &outputsRoot, nlohmann::json framesToBeDetectedRoot, std::shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData,
-		ProcessUtility::ProcessId &processId, std::optional<std::chrono::system_clock::time_point>& recordingStart,
-		long *numberOfRestartBecauseOfFailure
+		const nlohmann::json &outputsRoot, nlohmann::json framesToBeDetectedRoot,
+		std::shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData, ProcessUtility::ProcessId &processId,
+		std::optional<std::chrono::system_clock::time_point> &recordingStart, long *numberOfRestartBecauseOfFailure
 	);
 
 	void liveProxy(
 		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, long maxStreamingDurationInMinutes, std::mutex *inputsRootMutex,
-		nlohmann::json *inputsRoot, const nlohmann::json &outputsRoot, std::optional<std::chrono::system_clock::time_point> &proxyStart,
-		const std::shared_ptr<FFMpegEngine::CallbackData> &ffmpegCallbackData, long& numberOfRestartBecauseOfFailure,
-		const KillType& killTypeReceived, ProcessUtility::ProcessId &processId, bool keepOutputLog = true
+		nlohmann::json *inputsRoot, const nlohmann::json &outputsRoot,
+		std::optional<std::chrono::system_clock::time_point> &proxyStart, const std::shared_ptr<FFMpegEngine::CallbackData> &ffmpegCallbackData,
+		long &numberOfRestartBecauseOfFailure, const KillType &killTypeReceived, ProcessUtility::ProcessId &processId, bool keepOutputLog = true
 	);
 
 	void liveGrid(
@@ -317,7 +317,8 @@ class FFMpegWrapper
 
 		nlohmann::json outputsRoot,
 
-		ProcessUtility::ProcessId &processId, std::shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
+		ProcessUtility::ProcessId &processId,
+		std::shared_ptr<FFMpegEngine::CallbackData> ffmpegCallbackData
 	);
 
 	void changeFileFormat(
@@ -537,16 +538,14 @@ class FFMpegWrapper
 	);
 
 	void outputsRootToFfmpeg(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const std::string& otherOutputOptionsBecauseOfMaxWidth,
-		const nlohmann::json& inputDrawTextDetailsRoot,
-		long streamingDurationInSeconds, nlohmann::json outputsRoot, std::vector<std::string> &ffmpegOutputArgumentList
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const std::string &otherOutputOptionsBecauseOfMaxWidth,
+		const nlohmann::json &inputFiltersRoot, long streamingDurationInSeconds, nlohmann::json outputsRoot,
+		std::vector<std::string> &ffmpegOutputArgumentList
 	);
 	void outputsRootToFfmpeg(
-		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder,
-		const nlohmann::json& inputDrawTextDetailsRoot,
-		nlohmann::json outputsRoot, FFMpegEngine& ffMpegEngine,
-		std::optional<std::string> &inputSelectedVideoMap, std::optional<std::string> &inputSelectedAudioMap,
-		std::optional<int32_t> &inputDurationInSeconds
+		int64_t ingestionJobKey, int64_t encodingJobKey, bool externalEncoder, const nlohmann::json &inputFiltersRoot, nlohmann::json outputsRoot,
+		FFMpegEngine &ffMpegEngine, std::optional<std::string> &inputSelectedVideoMap,
+		std::optional<std::string> &inputSelectedAudioMap, std::optional<int32_t> &inputDurationInSeconds
 	);
 	void outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, nlohmann::json outputsRoot, bool externalEncoder);
 
@@ -555,10 +554,12 @@ class FFMpegWrapper
 	// long getFrameByOutputLog(std::string ffmpegEncodingStatus);
 	// long getSizeByOutputLog(std::string ffmpegEncodingStatus);
 
-	void addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey,
-		std::string incrontabShScriptPathName, std::string directoryToBeMonitored);
+	void addToIncrontab(
+		int64_t ingestionJobKey, int64_t encodingJobKey, const std::string &incrontabScriptPathName, const std::string &directoryToBeMonitored,
+		const std::string &cdnDeliveryServersToBeSynched
+	);
 
-	void removeFromIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, std::string directoryToBeMonitored);
+	void removeFromIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, const std::string &directoryToBeMonitored);
 
 	// int progressDownloadCallback(
 	// 	int64_t ingestionJobKey, std::chrono::system_clock::time_point &lastTimeProgressUpdate, double &lastPercentageUpdated, double dltotal,

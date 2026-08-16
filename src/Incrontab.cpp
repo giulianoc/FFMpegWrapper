@@ -92,8 +92,9 @@ struct IncrontabFileLock
 } // namespace
 
 void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey,
-	string incrontabScriptPathName, // /opt/mms/MMS/scripts/incrontab.sh
-	string directoryToBeMonitored // /var/mms/storage/MMSRepository/MMSLive/6/7228
+	const string& incrontabScriptPathName, // /opt/mms/MMS/scripts/incrontab.sh
+	const string& directoryToBeMonitored, // /var/mms/storage/MMSRepository/MMSLive/6/7228
+	const string& cdnDeliveryServersToBeSynched // i.e.: 116.202.53.105 195.160.222.54 68.233.32.34 68.233.45.31 68.233.32.52
 )
 {
 	try
@@ -103,8 +104,9 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 			", ingestionJobKey: {}"
 			", encodingJobKey: {}"
 			", incrontabScriptPathName: {}",
-			", directoryToBeMonitored: {}",
-			ingestionJobKey, encodingJobKey, incrontabScriptPathName, directoryToBeMonitored
+			", directoryToBeMonitored: {}"
+			", cdnDeliveryServersToBeSynched: {}",
+			ingestionJobKey, encodingJobKey, incrontabScriptPathName, directoryToBeMonitored, cdnDeliveryServersToBeSynched
 		);
 
 		// serve il lock lungo tutta la sezione critica (lettura/scrittura del file + esecuzione di incrontab),
@@ -130,7 +132,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 			);
 		}
 
-		string incrontabConfigurationPathName = _incrontabConfigurationDirectory + "/" + _incrontabConfigurationFileName;
+		string incrontabConfigurationPathName = std::format("{}/{}", _incrontabConfigurationDirectory, _incrontabConfigurationFileName);
 
 		bool directoryAlreadyMonitored = false;
 		{
@@ -142,8 +144,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 				{
 					string trimmedConfiguration = StringUtils::trim(configuration);
 
-					if (configuration.size() >= directoryToBeMonitored.size() &&
-						0 == configuration.compare(0, directoryToBeMonitored.size(), directoryToBeMonitored))
+					if (configuration.starts_with(directoryToBeMonitored))
 					{
 						directoryAlreadyMonitored = true;
 
@@ -185,9 +186,16 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 				throw runtime_error(errorMessage);
 			}
 
+			/*
+			 * Lo script incrontabScriptPathName (/opt/mms/MMS/scripts/incrontab.sh) viene chiamato con le seguenti variabili:
+				- $@: Path della directory/file monitorato (i.e.: /var/mms/storage/MMSRepository/MMSLive/6/5288)
+				- $#: Nome del file che ha generato l'evento (i.e: 5288.m3u8)
+				- $%: Eventi/maschera incron che hanno causato l'esecuzione (i.e.: IN_MOVED_TO)
+			 */
 			string configuration = std::format(
-				"{} IN_MODIFY,IN_CLOSE_WRITE,IN_CREATE,IN_DELETE,IN_MOVED_FROM,IN_MOVED_TO,IN_MOVE_SELF {} $% $@ $#",
-				directoryToBeMonitored, incrontabScriptPathName
+				R"(
+				{} IN_MODIFY,IN_CLOSE_WRITE,IN_CREATE,IN_DELETE,IN_MOVED_FROM,IN_MOVED_TO,IN_MOVE_SELF {} $% $@ $# "{}",
+				)", directoryToBeMonitored, incrontabScriptPathName, cdnDeliveryServersToBeSynched
 			);
 
 			LOG_INFO(
@@ -242,7 +250,7 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 	}
 }
 
-void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, string directoryToBeMonitored)
+void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey, const string& directoryToBeMonitored)
 {
 	try
 	{
@@ -281,8 +289,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 			{
 				string trimmedConfiguration = StringUtils::trim(configuration);
 
-				if (configuration.size() >= directoryToBeMonitored.size() &&
-					0 == configuration.compare(0, directoryToBeMonitored.size(), directoryToBeMonitored))
+				if (configuration.starts_with(directoryToBeMonitored))
 				{
 					LOG_INFO(
 						"removeFromIncrontab: removing incontab configuration"
@@ -295,9 +302,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 					foundMonitoryDirectory = true;
 				}
 				else
-				{
 					vConfiguration.push_back(trimmedConfiguration);
-				}
 			}
 		}
 
@@ -329,7 +334,7 @@ void FFMpegWrapper::removeFromIncrontab(int64_t ingestionJobKey, int64_t encodin
 				throw runtime_error(errorMessage);
 			}
 
-			for (string configuration : vConfiguration)
+			for (const string& configuration : vConfiguration)
 				ofConfigurationFile << configuration << endl;
 			ofConfigurationFile.close();
 		}

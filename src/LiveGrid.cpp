@@ -92,7 +92,8 @@ void FFMpegWrapper::liveGrid(
 			outputsRootToFfmpeg(
 				ingestionJobKey, encodingJobKey, externalEncoder,
 				nullptr, // inputDrawTextDetailsRoot,
-				outputsRoot, ffMpegEngine, inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds
+				outputsRoot,
+				ffMpegEngine, inputSelectedVideoMap, inputSelectedAudioMap, inputDurationInSeconds
 			);
 
 			{
