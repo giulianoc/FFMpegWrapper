@@ -1401,9 +1401,13 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			}
 			else if (streamSourceType == "IP_PULL")
 			{
-				// this is a streaming
-				// ffmpegInputArgumentList.push_back("-i");
-				// ffmpegInputArgumentList.push_back(url);
+				auto httpProxy = JsonPath(&streamInputRoot)["httpProxy"].as<string>();
+				if (!httpProxy.empty())
+				{
+					mainInput.addArg("-http_proxy");
+					mainInput.addArg(httpProxy); // i.e.: http://1.2.3.4:3128
+				}
+
 				mainInput.setSource(url);
 
 				if (!useVideoTrackFromPhysicalPathName.empty() && !externalEncoder)
@@ -2732,7 +2736,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			else if (inputAudioMap == "second audio track")
 				ffmpegOutputArgumentList.emplace_back("0:a:1");
 			else if (inputAudioMap == "third audio track")
-				ffmpegOutputArgumentList.push_back("0:a:2");
+				ffmpegOutputArgumentList.emplace_back("0:a:2");
 			else
 				ffmpegOutputArgumentList.push_back(inputAudioMap);
 		}
@@ -2883,7 +2887,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			// otherOutputOptions
 			{
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				if (otherOutputOptions.find("-map") == string::npos && !otherOutputOptionsBecauseOfMaxWidth.empty())
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
 				else
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
@@ -3022,7 +3026,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		{
 			string udpUrl = JSONUtils::as<string>(outputRoot, "udpUrl", "");
 
-			if (udpUrl == "")
+			if (udpUrl.empty())
 			{
 				string errorMessage = std::format(
 					"udpUrl cannot be empty"
@@ -3038,14 +3042,14 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 			// otherOutputOptions
 			{
-				if (otherOutputOptions.find("-map") == string::npos && otherOutputOptionsBecauseOfMaxWidth != "")
+				if (otherOutputOptions.find("-map") == string::npos && !otherOutputOptionsBecauseOfMaxWidth.empty())
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions + otherOutputOptionsBecauseOfMaxWidth, ffmpegOutputArgumentList);
 				else
 					FFMpegEncodingParameters::addToArguments(otherOutputOptions, ffmpegOutputArgumentList);
 			}
 
-			ffmpegOutputArgumentList.push_back("-f");
-			ffmpegOutputArgumentList.push_back("mpegts");
+			ffmpegOutputArgumentList.emplace_back("-f");
+			ffmpegOutputArgumentList.emplace_back("mpegts");
 			ffmpegOutputArgumentList.push_back(udpUrl);
 		}
 		else if (outputType == "NONE")
@@ -3065,27 +3069,27 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			string complexFilters;
 			tie(videoFilters, audioFilters, complexFilters) = allFilters;
 
-			if (videoFilters != "")
+			if (!videoFilters.empty())
 			{
-				ffmpegOutputArgumentList.push_back("-filter:v");
+				ffmpegOutputArgumentList.emplace_back("-filter:v");
 				ffmpegOutputArgumentList.push_back(videoFilters);
 			}
 
-			if (audioFilters != "")
+			if (!audioFilters.empty())
 			{
-				ffmpegOutputArgumentList.push_back("-filter:a");
+				ffmpegOutputArgumentList.emplace_back("-filter:a");
 				ffmpegOutputArgumentList.push_back(audioFilters);
 			}
 
-			if (complexFilters != "")
+			if (!complexFilters.empty())
 			{
-				ffmpegOutputArgumentList.push_back("-filter_complex");
+				ffmpegOutputArgumentList.emplace_back("-filter_complex");
 				ffmpegOutputArgumentList.push_back(complexFilters);
 			}
 
-			ffmpegOutputArgumentList.push_back("-f");
-			ffmpegOutputArgumentList.push_back("null");
-			ffmpegOutputArgumentList.push_back("-");
+			ffmpegOutputArgumentList.emplace_back("-f");
+			ffmpegOutputArgumentList.emplace_back("null");
+			ffmpegOutputArgumentList.emplace_back("-");
 		}
 		else
 		{
