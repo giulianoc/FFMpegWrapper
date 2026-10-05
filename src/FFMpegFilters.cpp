@@ -277,11 +277,7 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 				// - è presente reloadAtFrameInterval
 				// - sono presenti caratteri speciali che possono creare problemi nell'espressione drawtext
 				if (reloadAtFrameInterval > 0 ||
-					text.find('\'')  != std::string::npos ||
-					text.find('%')   != std::string::npos ||
-					text.find('\\')  != std::string::npos ||
-					text.find('\n')  != std::string::npos ||
-					text.find('\r')  != std::string::npos)
+					text.find_first_of("'%:\\\r\n") != std::string::npos)
 					textFilePathName = getDrawTextTemporaryPathName(_ffmpegTempDir, _ingestionJobKey, _encodingJobKey, _outputIndex);
 
 				// in case of file, there is no need of escape
