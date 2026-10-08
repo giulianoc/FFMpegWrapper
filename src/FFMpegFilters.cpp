@@ -221,22 +221,23 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 		}
 		case "drawtext"_case:
 		{
-			std::string text = JSONUtils::as<string>(filterRoot, "text", "");
+			auto text = JsonPath(&filterRoot)["text"].as<string>("");
 			// timecode: none, editorial, pts
-			std::string timecode = JSONUtils::as<string>(filterRoot, "timecode", "none");
-			int reloadAtFrameInterval = JSONUtils::as<int32_t>(filterRoot, "reloadAtFrameInterval", -1);
-			std::string textPosition_X_InPixel = JSONUtils::as<string>(filterRoot, "textPosition_X_InPixel", "");
-			std::string textPosition_Y_InPixel = JSONUtils::as<string>(filterRoot, "textPosition_Y_InPixel", "");
-			std::string fontType = JSONUtils::as<string>(filterRoot, "fontType", "");
-			int fontSize = JSONUtils::as<int32_t>(filterRoot, "fontSize", -1);
-			std::string fontColor = JSONUtils::as<string>(filterRoot, "fontColor", "");
-			int textPercentageOpacity = JSONUtils::as<int32_t>(filterRoot, "textPercentageOpacity", -1);
-			int shadowX = JSONUtils::as<int32_t>(filterRoot, "shadowX", 0);
-			int shadowY = JSONUtils::as<int32_t>(filterRoot, "shadowY", 0);
-			bool boxEnable = JSONUtils::as<bool>(filterRoot, "boxEnable", false);
-			std::string boxColor = JSONUtils::as<string>(filterRoot, "boxColor", "");
-			int boxPercentageOpacity = JSONUtils::as<int32_t>(filterRoot, "boxPercentageOpacity", -1);
-			int boxBorderW = JSONUtils::as<int32_t>(filterRoot, "boxBorderW", 0);
+			auto timecode = JsonPath(&filterRoot)["timecode"].as<string>("none");
+			auto reloadAtFrameInterval = JsonPath(&filterRoot)["reloadAtFrameInterval"].as<int32_t>(-1);
+
+			auto textPosition_X_InPixel = JsonPath(&filterRoot)["textPosition_X_InPixel"].as<string>("");
+			auto textPosition_Y_InPixel = JsonPath(&filterRoot)["textPosition_Y_InPixel"].as<string>("");
+			auto fontType = JsonPath(&filterRoot)["fontType"].as<string>("");
+			auto fontSize = JsonPath(&filterRoot)["fontSize"].as<int32_t>(-1);
+			auto fontColor = JsonPath(&filterRoot)["fontColor"].as<string>("");
+			auto textPercentageOpacity = JsonPath(&filterRoot)["textPercentageOpacity"].as<int32_t>(-1);
+			auto shadowX = JsonPath(&filterRoot)["shadowX"].as<int32_t>(0);
+			auto shadowY = JsonPath(&filterRoot)["shadowY"].as<int32_t>(0);
+			auto boxEnable = JsonPath(&filterRoot)["boxEnable"].as<bool>(false);
+			auto boxColor = JsonPath(&filterRoot)["boxColor"].as<string>("");
+			auto boxPercentageOpacity = JsonPath(&filterRoot)["boxPercentageOpacity"].as<int32_t>(-1);
+			auto boxBorderW = JsonPath(&filterRoot)["boxBorderW"].as<int32_t>(0);
 
 			/* TIMECODE
 			1) editorialTimecode: è un’informazione “editoriale”, non tecnica per la riproduzione. Questo timecode NON è usato internamente
@@ -280,12 +281,13 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 					text.find_first_of("'%:\\\r\n") != std::string::npos)
 					textFilePathName = getDrawTextTemporaryPathName(_ffmpegTempDir, _ingestionJobKey, _encodingJobKey, _outputIndex);
 
-				// in case of file, there is no need of escape
 				std::string escape = textFilePathName.empty() ? "\\" : "";
 
-				// text = regex_replace(text, regex(":"), escape + ":");
+				// 2026-10-08: se il testo contiene %% allora bisogna fare l'escape di % con \%
+				// per evitare che ffmpeg interpreti % come carattere speciale
+				text = StringUtils::replaceAll(text, "%%", std::format("{}%{}%", escape, escape));
+
 				text = StringUtils::replaceAll(text, ":", std::format("{}:", escape));
-				// text = regex_replace(text, regex("'"), escape + "'");
 				text = StringUtils::replaceAll(text, "'", std::format("{}'", escape));
 
 				if (inputDurationInSeconds)
@@ -302,48 +304,24 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 					//
 
 					{
-						// text = regex_replace(
-						// 	text, regex("days_counter"), "%{eif" + escape + ":trunc((countDownDurationInSecs-t)/86400)" + escape + ":d" + escape + ":2}"
-						// );
 						text = StringUtils::replaceAll(text, "days_counter",
 							"%{eif" + escape + ":trunc((countDownDurationInSecs-t)/86400)" + escape + ":d" + escape + ":2}"
 						);
-						// text = regex_replace(
-						// 	text, regex("hours_counter"),
-						// 	"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
-						// );
 						text = StringUtils::replaceAll(text, "hours_counter",
 							"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
 						);
-						// text = regex_replace(
-						// 	text, regex("hours_counter"),
-						// 	"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
-						// );
 						text = StringUtils::replaceAll(text, "hours_counter",
 							"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/3600),24))" + escape + ":d" + escape + ":2}"
 						);
-						// text = regex_replace(
-						// 	text, regex("mins_counter"),
-						// 	"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/60),60))" + escape + ":d" + escape + ":2}"
-						// );
 						text = StringUtils::replaceAll(text, "mins_counter",
 							"%{eif" + escape + ":trunc(mod(((countDownDurationInSecs-t)/60),60))" + escape + ":d" + escape + ":2}"
 						);
-						// text = regex_replace(
-						// 	text, regex("secs_counter"),
-						// 	"%{eif" + escape + ":trunc(mod(countDownDurationInSecs-t" + escape + ",60))" + escape + ":d" + escape + ":2}"
-						// );
 						text = StringUtils::replaceAll(text, "secs_counter",
 							"%{eif" + escape + ":trunc(mod(countDownDurationInSecs-t" + escape + ",60))" + escape + ":d" + escape + ":2}"
 						);
-						// text = regex_replace(
-						// 	text, regex("cents_counter"),
-						// 	"%{eif" + escape + ":(mod(countDownDurationInSecs-t" + escape + ",1)*pow(10,2))" + escape + ":d" + escape + ":2}"
-						// );
 						text = StringUtils::replaceAll(text, "cents_counter",
 							"%{eif" + escape + ":(mod(countDownDurationInSecs-t" + escape + ",1)*pow(10,2))" + escape + ":d" + escape + ":2}"
 						);
-						// text = regex_replace(text, regex("countDownDurationInSecs"), to_string(streamingDurationInSeconds));
 						text = StringUtils::replaceAll(text, "countDownDurationInSecs", std::format("{}", *inputDurationInSeconds));
 					}
 				}
@@ -351,13 +329,13 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 				if (timecode == "editorialTimecode" && text.find(std::format("%{{metadata{}:timecode}}", escape)) == std::string::npos)
 				{
 					if (!text.empty())
-						text += " ";
+						text += ' ';
 					text += std::format("%{{metadata{}:timecode}}", escape);
 				}
 				else if (timecode == "ptsTimecode" && text.find(std::format("%{{pts{}:", escape)) == std::string::npos)
 				{
 					if (!text.empty())
-						text += " ";
+						text += ' ';
 					// text += "time: %{localtime:%Y-%m-%d %H.%M.%S}";
 					// text += "time: %{pts:localtime}";
 
