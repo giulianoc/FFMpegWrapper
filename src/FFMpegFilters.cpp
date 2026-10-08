@@ -277,15 +277,21 @@ std::string FFMpegFilters::getFilter(const nlohmann::json& filterRoot, std::opti
 				// Serve un file se:
 				// - è presente reloadAtFrameInterval
 				// - sono presenti caratteri speciali che possono creare problemi nell'espressione drawtext
-				if (reloadAtFrameInterval > 0 ||
-					text.find_first_of("'%:\\\r\n") != std::string::npos)
+				if (reloadAtFrameInterval > 0 || text.find_first_of("'%:\\\r\n") != std::string::npos)
 					textFilePathName = getDrawTextTemporaryPathName(_ffmpegTempDir, _ingestionJobKey, _encodingJobKey, _outputIndex);
 
-				std::string escape = textFilePathName.empty() ? "\\" : "";
-
-				// 2026-10-08: se il testo contiene %% allora bisogna fare l'escape di % con \%
-				// per evitare che ffmpeg interpreti % come carattere speciale
-				text = StringUtils::replaceAll(text, "%%", std::format("{}%{}%", escape, escape));
+				// 2026-10-08: in caso di file, non c'è bisogno di escape tranne se si usa % come letterale,
+				// in tal caso bisogna fare l'escape con \%
+				std::string escape;
+				if (textFilePathName.empty())
+					escape = "\\";
+				else
+				{
+					// 2026-10-08: in caso di file, non c'è bisogno di escape tranne se si usa % come letterale.
+					// Ad esempio ho trovato un caso particolare con %% e l'ho gestito con un replace di % con \%
+					// per evitare che ffmpeg interpreti % come carattere speciale e dia errore.
+					text = StringUtils::replaceAll(text, "%%", "\\%\\%");
+				}
 
 				text = StringUtils::replaceAll(text, ":", std::format("{}:", escape));
 				text = StringUtils::replaceAll(text, "'", std::format("{}'", escape));
