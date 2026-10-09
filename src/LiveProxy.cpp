@@ -9,10 +9,10 @@
  *
  * Created on February 18, 2018, 1:27 AM
  */
+#include "../../FFMpegEngine/src/FFMpegFilters.h"
 #include "CurlWrapper.h"
 #include "Datetime.h"
 #include "FFMpegEncodingParameters.h"
-#include "FFMpegFilters.h"
 #include "FFMpegWrapper.h"
 #include "JSONUtils.h"
 #include "JsonPath.h"
@@ -3183,10 +3183,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 		json outputRoot = outputsRoot[outputIndex];
 
-		string outputType = JSONUtils::as<string>(outputRoot, "outputType", "");
+		auto outputType = JsonPath(&outputRoot)["outputType"].as<string>();
 
-		string inputVideoMap = JSONUtils::as<string>(outputRoot, "inputVideoMap", "");
-		string inputAudioMap = JSONUtils::as<string>(outputRoot, "inputAudioMap", "");
+		auto inputVideoMap = JsonPath(&outputRoot)["inputVideoMap"].as<string>();
+		auto inputAudioMap = JsonPath(&outputRoot)["inputAudioMap"].as<string>();
 
 		// 2024-05-17: inputFiltersRoot se presente si aggiunge al filtersRoot dell'output,
 		// 	Scenario di un Broadcast (Live Channel).
@@ -3210,16 +3210,11 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			JSONUtils::toString(filtersRoot)
 		);
 
-		json encodingProfileDetailsRoot = JSONUtils::as<json>(outputRoot, "encodingProfileDetails", json(nullptr));
-		/*
-		json encodingProfileDetailsRoot = nullptr;
-		if (JSONUtils::isPresent(outputRoot, "encodingProfileDetails"))
-			encodingProfileDetailsRoot = outputRoot["encodingProfileDetails"];
-		*/
+		auto encodingProfileDetailsRoot = JsonPath(&outputRoot)["encodingProfileDetails"].as<json>();
 
-		string otherOutputOptions = JSONUtils::as<string>(outputRoot, "otherOutputOptions", "");
+		auto otherOutputOptions = JsonPath(&outputRoot)["otherOutputOptions"].as<string>();
 
-		string encodingProfileContentType = JSONUtils::as<string>(outputRoot, "encodingProfileContentType", "Video");
+		auto encodingProfileContentType = JsonPath(&outputRoot)["encodingProfileContentType"].as<string>("Video");
 		bool isVideo = encodingProfileContentType == "Video" ? true : false;
 
 		string httpStreamingFileFormat;
@@ -3320,7 +3315,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				);
 				LOG_ERROR(errorMessage);
 
-				throw e;
+				throw;
 			}
 		}
 
@@ -3522,7 +3517,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		// output file
 		if (outputType == "RTMP_Channel")
 		{
-			string rtmpUrl = JSONUtils::as<string>(outputRoot, "rtmpUrl", "");
+			auto rtmpUrl = JsonPath(&outputRoot)["rtmpUrl"].as<string>();
 			if (rtmpUrl.empty())
 			{
 				string errorMessage = std::format(
@@ -3621,10 +3616,10 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "SRT_Channel")
 		{
-			string srtUrl = JSONUtils::as<string>(outputRoot, "srtUrl", "");
+			auto srtUrl = JsonPath(&outputRoot)["srtUrl"].as<string>();
 			if (srtUrl.empty())
 			{
-				string errorMessage = std::format(
+				auto errorMessage = std::format(
 					"srtUrl cannot be empty"
 					", ingestionJobKey: {}"
 					", encodingJobKey: {}"
@@ -3663,12 +3658,12 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "HLS_Channel")
 		{
-			string manifestDirectoryPath = JSONUtils::as<string>(outputRoot, "manifestDirectoryPath", "");
-			string manifestFileName = JSONUtils::as<string>(outputRoot, "manifestFileName", "");
-			int segmentDurationInSeconds = JSONUtils::as<int32_t>(outputRoot, "segmentDurationInSeconds", 10);
-			int playlistEntriesNumber = JSONUtils::as<int32_t>(outputRoot, "playlistEntriesNumber", 5);
+			auto manifestDirectoryPath = JsonPath(&outputRoot)["manifestDirectoryPath"].as<string>();
+			auto manifestFileName = JsonPath(&outputRoot)["manifestFileName"].as<string>();
+			auto segmentDurationInSeconds = JsonPath(&outputRoot)["segmentDurationInSeconds"].as<int32_t>(10);
+			auto playlistEntriesNumber = JsonPath(&outputRoot)["playlistEntriesNumber"].as<int32_t>(5);
 
-			string manifestFilePathName = manifestDirectoryPath + "/" + manifestFileName;
+			auto manifestFilePathName = std::format("{}/{}", manifestDirectoryPath, manifestFileName);
 
 			LOG_INFO(
 				"Checking manifestDirectoryPath directory"
@@ -3805,8 +3800,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 		}
 		else if (outputType == "UDP_Stream")
 		{
-			string udpUrl = JSONUtils::as<string>(outputRoot, "udpUrl", "");
-
+			auto udpUrl = JSONUtils::as<string>(outputRoot, "udpUrl", "");
 			if (udpUrl.empty())
 			{
 				string errorMessage = std::format(
@@ -3867,12 +3861,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 				// 	output.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			}
 
-			tuple<string, string, string> allFilters = ffmpegFilters.addFilters(filtersRoot, "", "", -1);
-
-			string videoFilters;
-			string audioFilters;
-			string complexFilters;
-			tie(videoFilters, audioFilters, complexFilters) = allFilters;
+			auto[videoFilters, audioFilters, complexFilters] = ffmpegFilters.addFilters(filtersRoot, "", "", -1);
 
 			// if (videoFilters != "")
 			// {

@@ -18,7 +18,6 @@
 # allowed only after express negotiation of conditions with the authors.
 
 set(SOURCES
-    FFMpegFilters.cpp
     FFMpegEncodingParameters.cpp
     FFMpegWrapper.cpp
     Monitoring.cpp
@@ -40,7 +39,7 @@ set(SOURCES
     StreamingToFile.cpp
     Incrontab.cpp
     Youtube.cpp)
-set(HEADERS FFMpegFilters.h FFMpegEncodingParameters.h FFMpegWrapper.h)
+set(HEADERS FFMpegEncodingParameters.h FFMpegWrapper.h)
 
 find_program(LSB_RELEASE_EXEC lsb_release)
 execute_process(
