@@ -504,7 +504,8 @@ void FFMpegWrapper::liveProxy(
 
 			try
 			{
-				outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
+				// finalClean false: potrebbe seguire un altro input, la pulizia finale viene fatta all'uscita dal while
+				outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder, false);
 			}
 			catch (exception &e)
 			{
@@ -652,7 +653,11 @@ void FFMpegWrapper::liveProxy(
 
 			try
 			{
-				outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder);
+				// La pulizia finale (rimozione da incrontab e della directory) solo in caso di kill da parte dell'utente.
+				// Negli altri casi il LiveProxy viene rieseguito (qui sotto, oppure dall'engine dopo l'eccezione)
+				// e la directory deve restare monitorata da incrontab
+				outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder,
+					killTypeReceived == KillType::Kill);
 			}
 			catch (exception &ex)
 			{
@@ -731,7 +736,7 @@ void FFMpegWrapper::liveProxy(
 						);
 						throw e;
 					}
-					else
+					// else
 					{
 						LOG_INFO(
 							"Command is executed again, sleeping for"
@@ -830,6 +835,22 @@ void FFMpegWrapper::liveProxy(
 			);
 			fs::remove_all(_outputFfmpegPathFileName);
 		}
+	}
+
+	// tutti gli input sono terminati: pulizia finale (rimozione da incrontab e della directory)
+	try
+	{
+		outputsRootToFfmpeg_clean(ingestionJobKey, encodingJobKey, outputsRoot, externalEncoder, true);
+	}
+	catch (exception &e)
+	{
+		LOG_ERROR(
+			"outputsRootToFfmpeg_clean failed"
+			", ingestionJobKey: {}"
+			", encodingJobKey: {}"
+			", e.what(): {}",
+			ingestionJobKey, encodingJobKey, e.what()
+		);
 	}
 }
 
@@ -3924,7 +3945,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 	}
 }
 
-void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, json outputsRoot, bool externalEncoder)
+void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, json outputsRoot, bool externalEncoder,
+	bool finalClean)
 {
 
 	for (int outputIndex = 0; outputIndex < outputsRoot.size(); outputIndex++)
@@ -3941,7 +3963,15 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 			auto cdnDeliveryServersToBeSynched = getCdnDeliveryServersToBeSynched(externalEncoder, outputRoot);
 
 			// if (externalEncoder && !manifestDirectoryPath.empty())
-			if (!cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty())
+			bool monitoredByIncrontab = !cdnDeliveryServersToBeSynched.empty() && !manifestDirectoryPath.empty();
+
+			// Tra un restart e l'altro (finalClean false) non togliamo la directory da incrontab e non la rimuoviamo:
+			//	- ogni modifica della configurazione incrontab fa ricaricare la tabella ad incrond
+			//	- la rimozione della directory mentre incrond ricarica la tabella (in modo asincrono) fa fallire
+			//		la rimozione del watch inotify (EINVAL) e crashare incrond
+			// Un canale che si riavvia ogni pochi secondi faceva crashare incrond di continuo.
+			// La configurazione incrontab viene tolta solo con la pulizia finale.
+			if (monitoredByIncrontab && finalClean)
 				removeFromIncrontabAndSanityCheck(ingestionJobKey, encodingJobKey, manifestDirectoryPath);
 
 			if (!manifestDirectoryPath.empty())
@@ -3950,27 +3980,27 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 				{
 					try
 					{
-						LOG_INFO(
-							"removeDirectory"
-							", manifestDirectoryPath: {}",
-							manifestDirectoryPath
-						);
-						fs::remove_all(manifestDirectoryPath);
-					}
-					catch (runtime_error &e)
-					{
-						string errorMessage = std::format(
-							"remove directory failed"
-							", ingestionJobKey: {}"
-							", encodingJobKey: {}"
-							", outputIndex: {}"
-							", manifestDirectoryPath: {}"
-							", e.what(): {}",
-							ingestionJobKey, encodingJobKey, outputIndex, manifestDirectoryPath, e.what()
-						);
-						LOG_ERROR(errorMessage);
-
-						throw e;
+						if (monitoredByIncrontab && !finalClean)
+						{
+							// rimuoviamo solo il contenuto (segmenti e playlist del run precedente, -hls_flags append_list
+							// altrimenti farebbe l'append alla playlist precedente), la directory resta monitorata
+							LOG_INFO(
+								"removeDirectoryContent"
+								", manifestDirectoryPath: {}",
+								manifestDirectoryPath
+							);
+							for (const auto &entry : fs::directory_iterator(manifestDirectoryPath))
+								fs::remove_all(entry.path());
+						}
+						else
+						{
+							LOG_INFO(
+								"removeDirectory"
+								", manifestDirectoryPath: {}",
+								manifestDirectoryPath
+							);
+							fs::remove_all(manifestDirectoryPath);
+						}
 					}
 					catch (exception &e)
 					{
@@ -3985,7 +4015,7 @@ void FFMpegWrapper::outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t e
 						);
 						LOG_ERROR(errorMessage);
 
-						throw e;
+						throw;
 					}
 				}
 			}

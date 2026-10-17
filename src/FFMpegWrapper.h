@@ -547,7 +547,10 @@ class FFMpegWrapper
 		FFMpegEngine &ffMpegEngine, std::optional<std::string> &inputSelectedVideoMap,
 		std::optional<std::string> &inputSelectedAudioMap, std::optional<int32_t> &inputDurationInSeconds
 	);
-	void outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, nlohmann::json outputsRoot, bool externalEncoder);
+	// finalClean false: pulizia tra un restart e l'altro dello stesso LiveProxy, la directory HLS monitorata da incrontab
+	//	non viene rimossa (ne viene rimosso solo il contenuto) e la configurazione incrontab non viene modificata
+	void outputsRootToFfmpeg_clean(int64_t ingestionJobKey, int64_t encodingJobKey, nlohmann::json outputsRoot, bool externalEncoder,
+		bool finalClean = true);
 	static std::string getCdnDeliveryServersToBeSynched(bool externalEncoder, const nlohmann::json &outputRoot);
 
 	// std::string getLastPartOfFile(std::string pathFileName, int lastCharsToBeRead);

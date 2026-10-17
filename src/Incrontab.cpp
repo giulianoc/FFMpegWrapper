@@ -146,7 +146,8 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 				{
 					string trimmedConfiguration = StringUtils::trim(configuration);
 
-					if (configuration.starts_with(directoryToBeMonitored))
+					// lo spazio evita che, ad es., .../MMSLive/6/51 venga considerata uguale a .../MMSLive/6/5142
+					if (trimmedConfiguration.starts_with(directoryToBeMonitored + " "))
 					{
 						directoryAlreadyMonitored = true;
 
@@ -160,18 +161,21 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 
 		if (directoryAlreadyMonitored)
 		{
-			string errorMessage = std::format(
-				"addToIncrontab: directory is already into the incontab configuration file"
+			// La configurazione non cambia: non eseguiamo incrontab.
+			// Ogni esecuzione di incrontab fa ricaricare la tabella ad incrond ('table for user mms changed, reloading').
+			// Reload frequenti (es. canale che si riavvia ogni pochi secondi) fanno crashare incrond
+			// (Inotify::Remove -> EINVAL -> unhandled exception)
+			LOG_INFO(
+				"addToIncrontab: directory is already into the incontab configuration file, incrontab is not executed"
 				", ingestionJobKey: {}"
 				", encodingJobKey: {}"
 				", incrontabConfigurationPathName: {}",
 				ingestionJobKey, encodingJobKey, incrontabConfigurationPathName
 			);
-			LOG_WARN(errorMessage);
 
-			// throw runtime_error(errorMessage);
+			return;
 		}
-		else
+
 		{
 			ofstream ofConfigurationFile(incrontabConfigurationPathName, ofstream::app);
 			if (!ofConfigurationFile)
@@ -195,7 +199,8 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 				- $%: Eventi/maschera incron che hanno causato l'esecuzione (i.e.: IN_MOVED_TO)
 			 */
 			string configuration = std::format(
-				"{} IN_MODIFY,IN_CLOSE_WRITE,IN_CREATE,IN_DELETE,IN_MOVED_FROM,IN_MOVED_TO,IN_MOVE_SELF {} $% $@ $# \"{}\"",
+				// "{} IN_MODIFY,IN_CLOSE_WRITE,IN_CREATE,IN_DELETE,IN_MOVED_FROM,IN_MOVED_TO,IN_MOVE_SELF {} $% $@ $# \"{}\"",
+				"{} IN_MOVED_TO {} $% $@ $# \"{}\"",
 				directoryToBeMonitored, incrontabScriptPathName, cdnDeliveryServersToBeSynched
 			);
 
@@ -270,6 +275,7 @@ void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, i
 
 		bool foundMonitoryDirectory = false;
 		vector<string> vConfiguration;
+		vector<string> vOriginalConfiguration; // per capire se la configurazione è cambiata
 		{
 			ifstream ifConfigurationFile(incrontabConfigurationPathName);
 			if (!ifConfigurationFile)
@@ -291,6 +297,9 @@ void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, i
 			while (getline(ifConfigurationFile, configuration))
 			{
 				string trimmedConfiguration = StringUtils::trim(configuration);
+				if (trimmedConfiguration.empty())
+					continue;
+				vOriginalConfiguration.push_back(trimmedConfiguration);
 
 				auto pos = trimmedConfiguration.find(' ');
 				if (pos == string::npos)
@@ -369,7 +378,20 @@ void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, i
 			LOG_WARN(errorMessage);
 		}
 
-		// in ogni caso riscrivo la configurazione
+		// se la configurazione non è cambiata non la riscriviamo e non eseguiamo incrontab (evitiamo un reload di incrond)
+		if (vConfiguration == vOriginalConfiguration)
+		{
+			LOG_INFO(
+				"removeFromIncrontabAndSanityCheck: incrontab configuration not changed, incrontab is not executed"
+				", ingestionJobKey: {}"
+				", encodingJobKey: {}"
+				", incrontabConfigurationPathName: {}",
+				ingestionJobKey, encodingJobKey, incrontabConfigurationPathName
+			);
+
+			return;
+		}
+
 		{
 			ofstream ofConfigurationFile(incrontabConfigurationPathName, ofstream::trunc);
 			if (!ofConfigurationFile)
