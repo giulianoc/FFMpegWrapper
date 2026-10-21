@@ -18,13 +18,15 @@
 #ifdef _WIN32
 #else
 #include <sys/file.h>
-#endif
 #include <unistd.h>
+#endif
 #include <set>
 
 using namespace std;
 using json = nlohmann::json;
 
+#ifdef _WIN32
+#else
 namespace
 {
 // addToIncrontab/removeFromIncrontab possono essere chiamate da thread/processi diversi (un canale live per
@@ -94,6 +96,7 @@ struct IncrontabFileLock
 	IncrontabFileLock &operator=(const IncrontabFileLock &) = delete;
 };
 } // namespace
+#endif
 
 void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobKey,
 	const string& incrontabScriptPathName, // /opt/mms/MMS/scripts/incrontab.sh
@@ -101,6 +104,8 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 	const string& cdnDeliveryServersToBeSynched // i.e.: 116.202.53.105 195.160.222.54 68.233.32.34 68.233.45.31 68.233.32.52
 )
 {
+#ifdef _WIN32
+#else
 	try
 	{
 		LOG_INFO(
@@ -257,10 +262,13 @@ void FFMpegWrapper::addToIncrontab(int64_t ingestionJobKey, int64_t encodingJobK
 		);
 		LOG_ERROR(errorMessage);
 	}
+#endif
 }
 
 void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, int64_t encodingJobKey, const string& directoryToBeMonitored)
 {
+#ifdef _WIN32
+#else
 	try
 	{
 		LOG_INFO(
@@ -454,4 +462,5 @@ void FFMpegWrapper::removeFromIncrontabAndSanityCheck(int64_t ingestionJobKey, i
 		);
 		LOG_ERROR(errorMessage);
 	}
+#endif
 }
