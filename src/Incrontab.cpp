@@ -15,7 +15,10 @@
 #include "spdlog/spdlog.h"
 #include <fcntl.h>
 #include <fstream>
+#ifdef _WIN32
+#else
 #include <sys/file.h>
+#endif
 #include <unistd.h>
 #include <set>
 
