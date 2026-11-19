@@ -1338,13 +1338,14 @@ void FFMpegWrapper::getLiveStreamingInfo(
 
 	try
 	{
-		outputFfmpegPathFileName = _ffmpegTempDir + "/" + to_string(ingestionJobKey) + "_" + to_string(encodingJobKey) + ".liveStreamingInfo.log";
+		// outputFfmpegPathFileName = "_ffmpegTempDir + "/" + to_string(ingestionJobKey) + "_" + to_string(encodingJobKey) + ".liveStreamingInfo.log";
+		outputFfmpegPathFileName = std::format("{}/{}_{}.liveStreamingInfo.log", _ffmpegTempDir, ingestionJobKey, encodingJobKey);
 
 		int liveDurationInSeconds = 5;
 
 		// user agent is an HTTP header and can be used only in case of http request
 		bool userAgentToBeUsed = false;
-		if (userAgent != "")
+		if (!userAgent.empty())
 		{
 			string httpPrefix = "http"; // it includes also https
 			if (liveURL.size() >= httpPrefix.size() && liveURL.compare(0, httpPrefix.size(), httpPrefix) == 0)
