@@ -97,7 +97,7 @@ void FFMpegWrapper::liveProxy(
 	// );
 	bool timedInput = true;
 	{
-		lock_guard<mutex> locker(*inputsRootMutex);
+		lock_guard locker(*inputsRootMutex);
 
 		for (const auto& inputRoot : *inputsRoot)
 		{
@@ -132,12 +132,12 @@ void FFMpegWrapper::liveProxy(
 		int64_t utcFirstProxyPeriodStart = -1;
 		int64_t utcLastProxyPeriodEnd = -1;
 		{
-			lock_guard<mutex> locker(*inputsRootMutex);
+			lock_guard locker(*inputsRootMutex);
 
 			for (const auto& inputRoot : *inputsRoot)
 			{
 				string field = "utcScheduleStart";
-				int64_t utcProxyPeriodStart = JSONUtils::as<int64_t>(inputRoot, field, -1);
+				auto utcProxyPeriodStart = JSONUtils::as<int64_t>(inputRoot, field, -1);
 				if (utcFirstProxyPeriodStart == -1)
 					utcFirstProxyPeriodStart = utcProxyPeriodStart;
 
@@ -1339,9 +1339,14 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			if (inputDurationInSeconds)
 				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
 
-			// ffmpegInputArgumentList.push_back("-re");
-			mainInput.addArg("-re");
-			// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
+			// L'opzione -re impone a FFmpeg di leggere l'input alla velocità temporale naturale dello stream,
+			// è equivalente a -readrate 1
+			// Questa opzione è particolarmente utile quando si leggono file registrati e si vuole simulare una sorgente live.
+			// In questo caso, però, sto già leggendo uno stream live.
+			// La documentazione ufficiale di FFmpeg sconsiglia di utilizzare -re con sorgenti live effettive,
+			// perché può provocare perdita di pacchetti.
+			// mainInput.addArg("-re");
+
 			mainInput.addArgs(otherInputOptions);
 			if (streamSourceType == "IP_PUSH")
 			{
