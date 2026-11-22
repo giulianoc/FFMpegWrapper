@@ -1339,13 +1339,17 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			if (inputDurationInSeconds)
 				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
 
-			// L'opzione -re impone a FFmpeg di leggere l'input alla velocità temporale naturale dello stream,
+			// 2026-11-22: L'opzione -re impone a FFmpeg di leggere l'input alla velocità temporale naturale dello stream,
 			// è equivalente a -readrate 1
 			// Questa opzione è particolarmente utile quando si leggono file registrati e si vuole simulare una sorgente live.
 			// In questo caso, però, sto già leggendo uno stream live.
 			// La documentazione ufficiale di FFmpeg sconsiglia di utilizzare -re con sorgenti live effettive,
 			// perché può provocare perdita di pacchetti.
-			// mainInput.addArg("-re");
+			// 2026-11-23: senza -re FFmpeg scarica i segmenti a velocità elevatissima, successivamente raggiunge i segmenti
+			// non ancora disponibili ottenendo "HTTP error 404 Not Found" e continua a riprovare lo stesso segmento.
+			// Per questo motivo, ripristiniamo -re e aggiungiamo -readrate_catchup. Questo parametro controlla la velocità massima
+			// di recupero quando FFmpeg rimane indietro rispetto alla velocità di lettura impostata
+			mainInput.addArgs("-readrate 1 -readrate_catchup 1.05");
 
 			mainInput.addArgs(otherInputOptions);
 			if (streamSourceType == "IP_PUSH")
