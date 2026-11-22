@@ -1347,9 +1347,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			// perché può provocare perdita di pacchetti.
 			// 2026-11-23: senza -re FFmpeg scarica i segmenti a velocità elevatissima, successivamente raggiunge i segmenti
 			// non ancora disponibili ottenendo "HTTP error 404 Not Found" e continua a riprovare lo stesso segmento.
-			// Per questo motivo, ripristiniamo -re e aggiungiamo -readrate_catchup. Questo parametro controlla la velocità massima
-			// di recupero quando FFmpeg rimane indietro rispetto alla velocità di lettura impostata
-			mainInput.addArgs("-readrate 1 -readrate_catchup 1.05");
+			// Per questo motivo, ripristiniamo -readrate
+			mainInput.addArgs("-readrate 1");
 
 			mainInput.addArgs(otherInputOptions);
 			if (streamSourceType == "IP_PUSH")
@@ -1434,8 +1433,22 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				auto httpProxy = JsonPath(&streamInputRoot)["httpProxy"].as<string>();
 				if (!httpProxy.empty())
 				{
+					// -readrate_catchup controlla la velocità massima di recupero quando FFmpeg rimane indietro
+					// rispetto alla velocità di lettura impostata. Nel caso venga usato un proxy, serve maggiore velocità per recuperare
+					mainInput.addArgs("-readrate_catchup 1.8");
+
 					mainInput.addArg("-http_proxy");
 					mainInput.addArg(httpProxy); // i.e.: http://1.2.3.4:3128
+
+					// La prossima opzione abilita le connessioni persistenti HTTP (Keep-Alive), evitando,
+					// quando possibile, di aprire una nuova connessione per ogni richiesta.
+					mainInput.addArgs("-multiple_requests 1");
+				}
+				else
+				{
+					// -readrate_catchup controlla la velocità massima di recupero quando FFmpeg rimane indietro
+					// rispetto alla velocità di lettura impostata.
+					mainInput.addArgs("-readrate_catchup 1.05");
 				}
 
 				mainInput.setSource(url);
@@ -2983,7 +2996,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			// if (outputType == "HLS")
 			{
 				ffmpegOutputArgumentList.emplace_back("-hls_flags");
-				ffmpegOutputArgumentList.emplace_back("append_list");
+				// Segment files removed from the playlist are deleted after a period of time
+				// equal to the duration of the segment plus the duration of the playlist
+				ffmpegOutputArgumentList.emplace_back("append_list+delete_segments");
 				ffmpegOutputArgumentList.emplace_back("-hls_time");
 				ffmpegOutputArgumentList.push_back(to_string(segmentDurationInSeconds));
 				ffmpegOutputArgumentList.emplace_back("-hls_list_size");
@@ -2991,8 +3006,9 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 				// Segment files removed from the playlist are deleted after a period of time
 				// equal to the duration of the segment plus the duration of the playlist
-				ffmpegOutputArgumentList.emplace_back("-hls_flags");
-				ffmpegOutputArgumentList.emplace_back("delete_segments");
+				// Commentato perchè bisogna inserire un solo parametro hls_flags
+				// ffmpegOutputArgumentList.emplace_back("-hls_flags");
+				// ffmpegOutputArgumentList.emplace_back("delete_segments");
 
 				// Set the number of unreferenced segments to keep on disk
 				// before 'hls_flags delete_segments' deletes them. Increase this to allow continue clients
@@ -3743,7 +3759,7 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 			{
 				// ffmpegOutputArgumentList.push_back("-hls_flags");
 				// ffmpegOutputArgumentList.push_back("append_list");
-				output.addArgs("-hls_flags append_list");
+				output.addArgs("-hls_flags append_list+delete_segments");
 				// ffmpegOutputArgumentList.push_back("-hls_time");
 				// ffmpegOutputArgumentList.push_back(to_string(segmentDurationInSeconds));
 				output.addArgs(std::format("-hls_time {}", segmentDurationInSeconds));
@@ -3753,9 +3769,8 @@ void FFMpegWrapper::outputsRootToFfmpeg(
 
 				// Segment files removed from the playlist are deleted after a period of time
 				// equal to the duration of the segment plus the duration of the playlist
-				// ffmpegOutputArgumentList.push_back("-hls_flags");
-				// ffmpegOutputArgumentList.push_back("delete_segments");
-				output.addArgs("-hls_flags delete_segments");
+				// Commentato perchè bisogna inserire un solo parametro hls_flags
+				// output.addArgs("-hls_flags delete_segments");
 
 				// Set the number of unreferenced segments to keep on disk
 				// before 'hls_flags delete_segments' deletes them. Increase this to allow continue clients

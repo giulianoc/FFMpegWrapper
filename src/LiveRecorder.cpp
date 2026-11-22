@@ -514,12 +514,12 @@ void FFMpegWrapper::liveRecorder(
 			// to download segments which were recently referenced in the playlist.
 			// Default value is 1, meaning segments older than hls_list_size+1 will be deleted.
 			mainOutput.addArgs(std::format(
-				"-hls_flags append_list"
-				" -hls_time {} "
+				"-hls_flags append_list+delete_segments+program_date_time "
+				"-hls_time {} "
 				"-hls_list_size 10 "
-				"-hls_flags delete_segments "
+				// "-hls_flags delete_segments "
 				"-hls_delete_threshold 1 "
-				"-hls_flags program_date_time "
+				// "-hls_flags program_date_time "
 				"-hls_segment_filename {}/{} "
 				"-f hls",
 				segmentDurationInSeconds, segmentListPath, recordedFileNameTemplate));
