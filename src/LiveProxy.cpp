@@ -1711,7 +1711,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 				|| inputFormat == "x11grab" // linux
 				|| inputFormat == "avfoundation" // mac
 				))
-				mainInput.addArg("-re");
+				mainInput.addArgs("-readrate 1");
+				// mainInput.addArg("-re");
 
 			if (inputDurationInSeconds)
 				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
@@ -1907,8 +1908,8 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 
 			auto& mainInput = ffMpegEngine.addInput();
 
-			// ffmpegInputArgumentList.push_back("-re");
-			mainInput.addArg("-re");
+			// mainInput.addArg("-re");
+			mainInput.addArgs("-readrate 1");
 			// FFMpegEncodingParameters::addToArguments(otherInputOptions, ffmpegInputArgumentList);
 			mainInput.addArgs(otherInputOptions);
 
@@ -2334,7 +2335,7 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 			// ffmpegInputArgumentList.push_back("-i");
 			// ffmpegInputArgumentList.push_back(mmsSourceVideoAssetPathName);
 			auto& mainInput = ffMpegEngine.addInput();
-			mainInput.addArgs(std::format("-re -stream_loop {}", streamLoopNumber));
+			mainInput.addArgs(std::format("-readrate 1 -stream_loop {}", streamLoopNumber));
 			if (inputDurationInSeconds)
 				mainInput.addArgs(std::format("-t {}", *inputDurationInSeconds));
 			mainInput.setSource(mmsSourceVideoAssetPathName);

@@ -241,8 +241,7 @@ void FFMpegWrapper::liveGrid(
 				mainInput.addArg("-user_agent");
 				mainInput.addArg(userAgent);
 			}
-			// ffmpegArgumentList.push_back("-re");
-			mainInput.addArg("-re");
+			mainInput.addArgs("-readrate 1");
 
 			// ffmpegArgumentList.push_back("-i");
 			// ffmpegArgumentList.push_back(inputChannelURL);

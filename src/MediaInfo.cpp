@@ -1365,7 +1365,7 @@ void FFMpegWrapper::getLiveStreamingInfo(
 		}
 
 		ffmpegExecuteCommand = _ffmpegPath + "/ffmpeg " + "-nostdin " + (userAgentToBeUsed ? ("-user_agent \"" + userAgent + "\" ") : "") +
-							   "-re -i \"" + liveURL + "\" " + "-t " + to_string(liveDurationInSeconds) + " " + "-c:v copy " + "-c:a copy " +
+							   "-readrate 1 -i \"" + liveURL + "\" " + "-t " + to_string(liveDurationInSeconds) + " " + "-c:v copy " + "-c:a copy " +
 							   "-f null " + "/dev/null " + "> " + outputFfmpegPathFileName + " 2>&1";
 
 #ifdef __APPLE__
