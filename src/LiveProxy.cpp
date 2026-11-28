@@ -1424,6 +1424,10 @@ tuple<string, int, int64_t, json, optional<string>, optional<string>, optional<i
 					);
 				}
 
+				// -readrate_catchup controlla la velocità massima di recupero quando FFmpeg rimane indietro
+				// rispetto alla velocità di lettura impostata.
+				mainInput.addArgs("-readrate_catchup 1.05");
+
 				// ffmpegInputArgumentList.push_back("-i");
 				// ffmpegInputArgumentList.push_back(url);
 				mainInput.setSource(url);
